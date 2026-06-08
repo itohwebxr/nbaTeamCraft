@@ -44,6 +44,20 @@ export default function ResultPage() {
       if (parts.length === 1) return name;
       return `${parts[0][0]} ${parts[parts.length - 1]}`;
     };
+    const slotKey = (slot: string) => slot === "BENCH1" ? "6th" : slot.toLowerCase();
+
+    const shareParams = new URLSearchParams({ name: label });
+    if (evaluation) {
+      shareParams.set("overall", String(evaluation.overall));
+      shareParams.set("tier", evaluation.tier);
+    }
+    [...starters, ...bench].forEach((e) => {
+      if (e) shareParams.set(slotKey(e.slot), formatName(e.playerSeason.name));
+    });
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    const sharePageUrl = `${siteUrl}/share?${shareParams.toString()}`;
+
     const slotLabel = (slot: string) => slot === "BENCH1" ? "6TH" : slot;
     const rosterLines = [...starters, ...bench]
       .filter((e): e is NonNullable<typeof e> => e != null)
@@ -52,8 +66,9 @@ export default function ResultPage() {
     const text = evaluation
       ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\n#NBATeamCraft`
       : `🏀 ${label}\n${rosterLines}\n#NBATeamCraft`;
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank", "noopener");
+
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(sharePageUrl)}`;
+    window.open(tweetUrl, "_blank", "noopener");
   };
 
   const starters = STARTER_SLOTS.map((slot) => roster.find((e) => e.slot === slot));
