@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createServerClient } from "@/lib/supabase";
 import { RosterEntry, TeamEvaluation } from "@/types";
 import { calcTeamEvaluation } from "@/lib/evaluate";
 
@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
 
   // Fetch population stats for percentile calculation
   // Use all player_seasons as the reference population
+  const supabase = createServerClient();
   const { data: population, error: popErr } = await supabase
     .from("player_seasons")
     .select("ppg, rpg, apg, spg, bpg");

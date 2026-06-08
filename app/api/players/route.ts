@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createServerClient } from "@/lib/supabase";
 import { PlayerSeason } from "@/types";
 
 // GET /api/players?teamId=xxx
@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "teamId is required" }, { status: 400 });
   }
 
+  const supabase = createServerClient();
   const { data: seasons, error: seasonsErr } = await supabase
     .from("player_seasons")
     .select(`

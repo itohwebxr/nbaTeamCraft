@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
+import { createServerClient } from "@/lib/supabase";
 
 // GET /api/teams?exclude=id1,id2,id3
 // Returns a single random team not in the exclude list
@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const excludeParam = searchParams.get("exclude") ?? "";
   const excludeIds = excludeParam ? excludeParam.split(",").filter(Boolean) : [];
 
+  const supabase = createServerClient();
   let query = supabase
     .from("teams")
     .select("id, name, abbreviation, season");
