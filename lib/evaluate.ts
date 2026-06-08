@@ -52,15 +52,25 @@ export function calcTeamEvaluation(
   const minStarterOverall = starterOveralls.length > 0 ? Math.min(...starterOveralls) : 0;
   const weakStarterPenalty = Math.pow(Math.max(0, 75 - minStarterOverall) / 15, 2) * 15;
 
-  // 6th man position cover bonus: if 6th man plays the same position as the weakest starter
+  // 6th man cover bonus: +3/+2/+1 for covering the weakest/2nd/3rd weakest starter position
   const sixthMan = roster.find((e) => e.slot === "BENCH1");
-  const weakestStarterEntry = starterEntries.length > 0
-    ? starterEntries.reduce((min, e) => e.playerSeason.overall < min.playerSeason.overall ? e : min)
-    : null;
-  const sixthManCoverBonus =
-    sixthMan && weakestStarterEntry && sixthMan.assignedPosition === weakestStarterEntry.assignedPosition
-      ? 3
-      : 0;
+  const sortedStartersByOverall = [...starterEntries].sort(
+    (a, b) => a.playerSeason.overall - b.playerSeason.overall
+  );
+  const coverBonuses = [3, 2, 1];
+  let sixthManCoverBonus = 0;
+  if (sixthMan) {
+    for (let i = 0; i < Math.min(3, sortedStartersByOverall.length); i++) {
+      if (sixthMan.assignedPosition === sortedStartersByOverall[i].assignedPosition) {
+        sixthManCoverBonus = coverBonuses[i];
+        break;
+      }
+    }
+  }
+
+  // Multi-star bonus: each additional player with overall >= 87 adds +3 (max +9)
+  const starCount = roster.filter((e) => e.playerSeason.overall >= 87).length;
+  const multiStarBonus = Math.max(0, starCount - 1) * 3;
 
   // Roster imbalance penalty: penalize when outside (PG/SG) and inside (PF/C) strength gap is large
   const getStarterOverall = (pos: string) =>
@@ -70,7 +80,7 @@ export function calcTeamEvaluation(
   const imbalanceDiff = Math.abs(outsideStrength - insideStrength);
   const imbalancePenalty = Math.pow(Math.max(0, (imbalanceDiff - 15) / 25), 2) * 10;
 
-  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + superstarBonus + sixthManCoverBonus - weakStarterPenalty - imbalancePenalty)));
+  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + superstarBonus + multiStarBonus + sixthManCoverBonus - weakStarterPenalty - imbalancePenalty)));
 
   const offense = toRating(
     weightedAvg(roster, (ps) => {
