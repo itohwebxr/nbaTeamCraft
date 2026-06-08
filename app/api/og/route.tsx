@@ -94,20 +94,20 @@ export async function GET(req: NextRequest) {
 
           {/* Right: roster */}
           <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1, gap: "14px" }}>
-            {players.map((p) => (
-              <div key={p.slot} style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            {players.map((player) => (
+              <div key={player.slot} style={{ display: "flex", alignItems: "center", gap: "20px" }}>
                 <span
                   style={{
                     fontSize: "16px",
                     fontWeight: 700,
-                    color: p.slot === "6TH" ? "#71717a" : "#f97316",
+                    color: player.slot === "6TH" ? "#71717a" : "#f97316",
                     width: "44px",
                     flexShrink: 0,
                   }}
                 >
-                  {p.slot}
+                  {player.slot}
                 </span>
-                <span style={{ fontSize: "26px", fontWeight: 600, color: "#ffffff" }}>{p.name}</span>
+                <span style={{ fontSize: "26px", fontWeight: 600, color: "#ffffff" }}>{player.name}</span>
               </div>
             ))}
           </div>
