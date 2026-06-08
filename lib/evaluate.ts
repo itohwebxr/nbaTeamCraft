@@ -59,7 +59,7 @@ export function calcTeamEvaluation(
     : null;
   const sixthManCoverBonus =
     sixthMan && weakestStarterEntry && sixthMan.assignedPosition === weakestStarterEntry.assignedPosition
-      ? Math.max(0, (78 - minStarterOverall) * 0.4)
+      ? 3
       : 0;
 
   // Roster imbalance penalty: penalize when outside (PG/SG) and inside (PF/C) strength gap is large
