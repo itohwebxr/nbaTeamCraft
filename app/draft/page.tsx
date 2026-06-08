@@ -138,9 +138,17 @@ export default function DraftPage() {
                 {currentPlayers.map((player) => {
                   const draftablePositions = store.getDraftablePositions(player);
                   const isDrafted = store.isPlayerDrafted(player.nba_player_id);
-                  const isReplaceable = !isDrafted && store.roster.some(
-                    (e) => e.playerSeason.team_id === player.team_id
-                  );
+                  const displaced = !isDrafted
+                    ? store.roster.find((e) => e.playerSeason.team_id === player.team_id)
+                    : undefined;
+                  const isReplaceable = displaced != null;
+                  const refund = displaced?.playerSeason.cost ?? 0;
+                  const budgetAfter = budgetRemaining - player.cost + refund;
+                  // After drafting, remaining slots still needing to be filled
+                  const slotsAfter = isReplaceable
+                    ? (8 - filledSlots)       // replacing: count doesn't change
+                    : Math.max(0, 8 - filledSlots - 1);
+                  const budgetOk = budgetAfter >= 0 && budgetAfter >= slotsAfter;
                   return (
                     <PlayerCard
                       key={player.id}
@@ -148,7 +156,7 @@ export default function DraftPage() {
                       draftablePositions={draftablePositions}
                       isDrafted={isDrafted}
                       isReplaceable={isReplaceable}
-                      budgetRemaining={budgetRemaining}
+                      budgetOk={budgetOk}
                       onDraft={handleDraftAttempt}
                     />
                   );

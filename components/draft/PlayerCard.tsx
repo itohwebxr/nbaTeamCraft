@@ -7,7 +7,7 @@ interface PlayerCardProps {
   draftablePositions: Position[];
   isDrafted: boolean;
   isReplaceable: boolean;
-  budgetRemaining: number;
+  budgetOk: boolean;
   onDraft: (player: PlayerSeason, positions: Position[]) => void;
 }
 
@@ -16,11 +16,10 @@ export default function PlayerCard({
   draftablePositions,
   isDrafted,
   isReplaceable,
-  budgetRemaining,
+  budgetOk,
   onDraft,
 }: PlayerCardProps) {
-  const canAfford = player.cost <= budgetRemaining;
-  const canDraft = draftablePositions.length > 0 && !isDrafted && canAfford;
+  const canDraft = draftablePositions.length > 0 && !isDrafted && budgetOk;
   const positionStr = player.positions.map((p) => p.position).join("/");
 
   const overallColor =
@@ -36,9 +35,7 @@ export default function PlayerCard({
       className={`relative p-3 rounded-xl border transition-all
         ${isDrafted
           ? "opacity-40 border-zinc-700 bg-zinc-900/50 cursor-not-allowed"
-          : !canAfford
-          ? "opacity-50 border-zinc-700 bg-zinc-900/50 cursor-not-allowed"
-          : draftablePositions.length === 0
+          : !canDraft
           ? "opacity-50 border-zinc-700 bg-zinc-900/50 cursor-not-allowed"
           : "border-zinc-700 bg-zinc-900 hover:border-orange-500/60 hover:bg-zinc-800 cursor-pointer"
         }`}
