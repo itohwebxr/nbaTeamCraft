@@ -56,22 +56,37 @@ export default function DraftPage() {
   };
 
   const commitDraft = (player: PlayerSeason, position: Position) => {
-    // Determine slot: starter if position matches a starter slot, otherwise bench
+    // If a player from the same team is already drafted, their slot becomes available
+    const displaced = store.roster.find(
+      (e) => e.playerSeason.team_id === player.team_id
+    );
+
     const vacantStarters = store.getVacantStarterSlots();
-    const isStarterPos = vacantStarters.includes(position);
+    const effectiveVacantStarters =
+      displaced && STARTER_SLOTS.includes(displaced.slot as Position)
+        ? [...vacantStarters, displaced.slot as Position]
+        : vacantStarters;
+    const isStarterPos = effectiveVacantStarters.includes(position);
 
     let slot: RosterSlot;
     if (isStarterPos) {
       slot = position;
     } else {
       const benchSlots = store.getVacantBenchSlots();
-      slot = benchSlots[0];
+      const effectiveBench =
+        displaced && BENCH_SLOTS.includes(displaced.slot as BenchSlot)
+          ? [...benchSlots, displaced.slot as BenchSlot]
+          : benchSlots;
+      slot = effectiveBench[0];
     }
+
+    // Replacing keeps roster size same; new player raises it by 1
+    const nextSize = displaced ? store.roster.length : store.roster.length + 1;
 
     store.draftPlayer(player, slot, position);
     setPendingDraft(null);
 
-    if (store.roster.length + 1 === 8) {
+    if (nextSize === 8) {
       router.push("/result");
     }
   };
@@ -123,12 +138,16 @@ export default function DraftPage() {
                 {currentPlayers.map((player) => {
                   const draftablePositions = store.getDraftablePositions(player);
                   const isDrafted = store.isPlayerDrafted(player.nba_player_id);
+                  const isReplaceable = !isDrafted && store.roster.some(
+                    (e) => e.playerSeason.team_id === player.team_id
+                  );
                   return (
                     <PlayerCard
                       key={player.id}
                       player={player}
                       draftablePositions={draftablePositions}
                       isDrafted={isDrafted}
+                      isReplaceable={isReplaceable}
                       budgetRemaining={budgetRemaining}
                       onDraft={handleDraftAttempt}
                     />

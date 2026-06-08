@@ -6,6 +6,7 @@ interface PlayerCardProps {
   player: PlayerSeason;
   draftablePositions: Position[];
   isDrafted: boolean;
+  isReplaceable: boolean;
   budgetRemaining: number;
   onDraft: (player: PlayerSeason, positions: Position[]) => void;
 }
@@ -14,6 +15,7 @@ export default function PlayerCard({
   player,
   draftablePositions,
   isDrafted,
+  isReplaceable,
   budgetRemaining,
   onDraft,
 }: PlayerCardProps) {
@@ -45,6 +47,13 @@ export default function PlayerCard({
       {isDrafted && (
         <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 z-10">
           <span className="text-xs font-bold text-zinc-400 tracking-widest">DRAFTED</span>
+        </div>
+      )}
+      {isReplaceable && !isDrafted && (
+        <div className="absolute top-2 right-2 z-10">
+          <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded px-1.5 py-0.5 tracking-widest">
+            SWAP
+          </span>
         </div>
       )}
 

@@ -52,11 +52,25 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
   },
 
   draftPlayer: (playerSeason, slot, assignedPosition) => {
-    set((state) => ({
-      roster: [...state.roster, { playerSeason, slot, assignedPosition }],
-      draftedPlayerIds: [...state.draftedPlayerIds, playerSeason.nba_player_id],
-      usedBudget: state.usedBudget + playerSeason.cost,
-    }));
+    set((state) => {
+      // Remove existing player from the same team if any (1 player per team rule)
+      const displaced = state.roster.find(
+        (e) => e.playerSeason.team_id === playerSeason.team_id
+      );
+      const baseRoster = displaced
+        ? state.roster.filter((e) => e.playerSeason.team_id !== playerSeason.team_id)
+        : state.roster;
+      const baseDraftedIds = displaced
+        ? state.draftedPlayerIds.filter((id) => id !== displaced.playerSeason.nba_player_id)
+        : state.draftedPlayerIds;
+      const budgetRefund = displaced ? displaced.playerSeason.cost : 0;
+
+      return {
+        roster: [...baseRoster, { playerSeason, slot, assignedPosition }],
+        draftedPlayerIds: [...baseDraftedIds, playerSeason.nba_player_id],
+        usedBudget: state.usedBudget - budgetRefund + playerSeason.cost,
+      };
+    });
   },
 
   reset: () => set(initialState),
@@ -74,12 +88,24 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
   },
 
   getDraftablePositions: (player) => {
-    const vacantStarters = get().getVacantStarterSlots();
-    const hasBenchVacancy = get().getVacantBenchSlots().length > 0;
-    const playerPositions = player.positions.map((p) => p.position);
+    const { roster } = get();
+    // If a player from the same team is already drafted, their slot counts as vacant
+    const displaced = roster.find((e) => e.playerSeason.team_id === player.team_id);
 
+    const vacantStarters = get().getVacantStarterSlots();
+    const effectiveVacantStarters =
+      displaced && STARTER_SLOTS.includes(displaced.slot as StarterSlot)
+        ? [...vacantStarters, displaced.slot as StarterSlot]
+        : vacantStarters;
+
+    const vacantBench = get().getVacantBenchSlots();
+    const hasBenchVacancy =
+      vacantBench.length > 0 ||
+      (displaced != null && BENCH_SLOTS.includes(displaced.slot as BenchSlot));
+
+    const playerPositions = player.positions.map((p) => p.position);
     const matchingStarters = playerPositions.filter((pos) =>
-      vacantStarters.includes(pos)
+      effectiveVacantStarters.includes(pos)
     );
 
     if (matchingStarters.length === 0 && hasBenchVacancy) {
