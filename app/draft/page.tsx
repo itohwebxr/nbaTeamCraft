@@ -113,7 +113,7 @@ export default function DraftPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col lg:flex-row gap-4">
         {/* Left: Team + Players */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 order-2 lg:order-1">
           {loading ? (
             <div className="flex items-center justify-center h-48 text-zinc-500">
               Loading team...
@@ -134,7 +134,7 @@ export default function DraftPage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                 {currentPlayers.map((player) => {
                   const draftablePositions = store.getDraftablePositions(player);
                   const isDrafted = store.isPlayerDrafted(player.nba_player_id);
@@ -159,7 +159,7 @@ export default function DraftPage() {
         </div>
 
         {/* Right: My Roster */}
-        <div className="lg:w-64 shrink-0">
+        <div className="lg:w-64 shrink-0 order-1 lg:order-2">
           <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest mb-3">
             My Team
           </h3>
