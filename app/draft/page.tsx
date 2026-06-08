@@ -169,7 +169,7 @@ export default function DraftPage() {
               onClick={() => setShowResetModal(true)}
               className="text-xs text-zinc-600 hover:text-red-400 transition-colors"
             >
-              やり直す
+              Reset Draft
             </button>
           </div>
           <div className="space-y-1.5">
@@ -217,16 +217,16 @@ export default function DraftPage() {
       {showResetModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
           <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-black text-white mb-2">やり直しますか？</h2>
+            <h2 className="text-lg font-black text-white mb-2">Start Over?</h2>
             <p className="text-sm text-zinc-400 mb-6">
-              現在選択中の選手がすべてリセットされます。この操作は取り消せません。
+              All selected players will be removed. This cannot be undone.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowResetModal(false)}
                 className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
               >
-                キャンセル
+                Cancel
               </button>
               <button
                 onClick={() => {
@@ -236,7 +236,7 @@ export default function DraftPage() {
                 }}
                 className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-colors"
               >
-                リセット
+                Reset
               </button>
             </div>
           </div>
