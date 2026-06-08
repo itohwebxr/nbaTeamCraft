@@ -32,7 +32,7 @@ export function calcOverall(
   }
 
   const mpgPenalty = stats.mpg < 10 ? -5 : 0;
-  const overall = Math.round(60 + rawScore * 40) + mpgPenalty;
+  const overall = Math.round(60 + Math.pow(rawScore, 1.3) * 40) + mpgPenalty;
   return Math.max(60, Math.min(100, overall));
 }
 

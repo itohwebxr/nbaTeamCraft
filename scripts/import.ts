@@ -165,7 +165,7 @@ function calcOverall(stats: PlayerStats, population: PlayerStats[]): number {
     rawScore += pct * weights[key];
   }
   const mpgPenalty = stats.mpg < 10 ? -5 : 0;
-  return Math.max(60, Math.min(100, Math.round(60 + rawScore * 40) + mpgPenalty));
+  return Math.max(60, Math.min(100, Math.round(60 + Math.pow(rawScore, 1.3) * 40) + mpgPenalty));
 }
 
 function calcCost(overall: number): number {
