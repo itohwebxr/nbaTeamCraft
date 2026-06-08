@@ -201,7 +201,7 @@ function parsePerGame(html: string): Map<string, PerGameRow> {
   const $ = cheerio.load(uncommentHtml(html));
   const map = new Map<string, PerGameRow>();
 
-  $("#per_game tbody tr").each((_, row) => {
+  $("#per_game_stats tbody tr").each((_, row) => {
     const $row = $(row);
     if ($row.hasClass("thead")) return;
 
