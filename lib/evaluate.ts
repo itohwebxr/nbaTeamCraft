@@ -41,7 +41,15 @@ export function calcTeamEvaluation(
   const avgOverall = weightedAvg(roster, (ps) => ps.overall);
   const maxOverall = Math.max(...roster.map((e) => e.playerSeason.overall));
   const starBonus = (maxOverall - avgOverall) * 0.65;
-  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + starBonus)));
+
+  // Penalize weak starters — weakest starter drags the team rating down
+  const starterOveralls = roster
+    .filter((e) => isStarter(e.slot))
+    .map((e) => e.playerSeason.overall);
+  const minStarterOverall = starterOveralls.length > 0 ? Math.min(...starterOveralls) : 0;
+  const weakStarterPenalty = Math.max(0, (78 - minStarterOverall) * 0.7);
+
+  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + starBonus - weakStarterPenalty)));
 
   const offense = toRating(
     weightedAvg(roster, (ps) => {
