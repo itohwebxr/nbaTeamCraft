@@ -10,13 +10,15 @@
 import * as cheerio from "cheerio";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
+import ws from "ws";
 import { getAllTeamSeasons } from "./teams";
 
 dotenv.config({ path: ".env.local" });
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  { realtime: { transport: ws } }
 );
 
 // Rate limit: 1 req/sec to respect BBRef
