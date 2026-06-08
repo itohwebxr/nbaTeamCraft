@@ -62,7 +62,15 @@ export function calcTeamEvaluation(
       ? Math.max(0, (78 - minStarterOverall) * 0.4)
       : 0;
 
-  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + superstarBonus + sixthManCoverBonus - weakStarterPenalty)));
+  // Roster balance bonus: reward teams with strong both outside (PG/SG) and inside (PF/C)
+  const getStarterOverall = (pos: string) =>
+    starterEntries.find((e) => e.slot === pos)?.playerSeason.overall ?? 0;
+  const outsideStrength = Math.max(getStarterOverall("PG"), getStarterOverall("SG"));
+  const insideStrength = Math.max(getStarterOverall("PF"), getStarterOverall("C"));
+  const balanceScore = Math.min(outsideStrength, insideStrength);
+  const balanceBonus = Math.max(0, ((balanceScore - 80) / 20) * 7);
+
+  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + superstarBonus + balanceBonus + sixthManCoverBonus - weakStarterPenalty)));
 
   const offense = toRating(
     weightedAvg(roster, (ps) => {
