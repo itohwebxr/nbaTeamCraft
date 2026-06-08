@@ -146,14 +146,7 @@ interface PlayerStats {
   mpg: number;
 }
 
-// Position-based weights for Overall (60-100)
-const WEIGHTS: Record<string, Record<string, number>> = {
-  PG: { ppg: 0.30, rpg: 0.10, apg: 0.30, spg: 0.18, bpg: 0.12 },
-  SG: { ppg: 0.35, rpg: 0.10, apg: 0.18, spg: 0.18, bpg: 0.19 },
-  SF: { ppg: 0.32, rpg: 0.15, apg: 0.15, spg: 0.18, bpg: 0.20 },
-  PF: { ppg: 0.28, rpg: 0.27, apg: 0.10, spg: 0.15, bpg: 0.20 },
-  C:  { ppg: 0.25, rpg: 0.35, apg: 0.06, spg: 0.10, bpg: 0.24 },
-};
+const WEIGHTS = { ppg: 0.55, rpg: 0.12, apg: 0.18, spg: 0.07, bpg: 0.08 };
 
 function percentileRank(value: number, population: number[]): number {
   if (population.length === 0) return 0;
@@ -164,7 +157,7 @@ function percentileRank(value: number, population: number[]): number {
 }
 
 function calcOverall(stats: PlayerStats, population: PlayerStats[]): number {
-  const weights = WEIGHTS[stats.position] ?? WEIGHTS["SF"];
+  const weights = WEIGHTS;
   let rawScore = 0;
   for (const key of Object.keys(weights)) {
     const pop = population.map((p) => p[key as keyof PlayerStats] as number);
