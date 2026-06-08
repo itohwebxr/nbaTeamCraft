@@ -2,7 +2,7 @@ import { PlayerSeason, RosterEntry, TeamEvaluation, Tier } from "@/types";
 import { percentileRank } from "./overall";
 
 const STARTER_WEIGHT = 1.0;
-const BENCH_WEIGHT = 0.5;
+const BENCH_WEIGHT = 0.7;
 
 function isStarter(slot: string): boolean {
   return ["PG", "SG", "SF", "PF", "C"].includes(slot);
@@ -43,16 +43,25 @@ export function calcTeamEvaluation(
   const starBonus = (maxOverall - avgOverall) * 0.65;
 
   // Extra bonus for having a generational superstar (overall 95+)
-  const superstarBonus = maxOverall >= 95 ? (maxOverall - 94) * 1.5 : 0;
+  const superstarBonus = maxOverall >= 95 ? (maxOverall - 94) * 2.5 : 0;
 
   // Penalize weak starters — weakest starter drags the team rating down
-  const starterOveralls = roster
-    .filter((e) => isStarter(e.slot))
-    .map((e) => e.playerSeason.overall);
+  const starterEntries = roster.filter((e) => isStarter(e.slot));
+  const starterOveralls = starterEntries.map((e) => e.playerSeason.overall);
   const minStarterOverall = starterOveralls.length > 0 ? Math.min(...starterOveralls) : 0;
-  const weakStarterPenalty = Math.max(0, (78 - minStarterOverall) * 0.7);
+  const weakStarterPenalty = Math.max(0, (72 - minStarterOverall) * 0.7);
 
-  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + starBonus + superstarBonus - weakStarterPenalty)));
+  // 6th man position cover bonus: if 6th man plays the same position as the weakest starter
+  const sixthMan = roster.find((e) => e.slot === "BENCH1");
+  const weakestStarterEntry = starterEntries.length > 0
+    ? starterEntries.reduce((min, e) => e.playerSeason.overall < min.playerSeason.overall ? e : min)
+    : null;
+  const sixthManCoverBonus =
+    sixthMan && weakestStarterEntry && sixthMan.assignedPosition === weakestStarterEntry.assignedPosition
+      ? Math.max(0, (78 - minStarterOverall) * 0.4)
+      : 0;
+
+  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + starBonus + superstarBonus + sixthManCoverBonus - weakStarterPenalty)));
 
   const offense = toRating(
     weightedAvg(roster, (ps) => {
