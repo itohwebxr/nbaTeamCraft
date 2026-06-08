@@ -97,17 +97,17 @@ async function extractPageData(page: Page): Promise<{
   advanced: Array<{ bbref_player_id: string; win_shares: number; dws: number }>;
 }> {
   return page.evaluate(() => {
-    function getPlayerIdFromHref(href: string | null): string | null {
+    const getPlayerIdFromHref = (href: string | null): string | null => {
       if (!href) return null;
       const m = href.match(/\/players\/\w\/(\w+)\.html/);
       return m ? m[1] : null;
-    }
+    };
 
-    function parseFloat2(text: string | null): number {
+    const parseFloat2 = (text: string | null): number => {
       if (!text) return 0;
       const v = parseFloat(text);
       return isNaN(v) ? 0 : v;
-    }
+    };
 
     // Team name
     const teamName = document.querySelector("h1 span")?.textContent?.trim() ?? "Unknown";
