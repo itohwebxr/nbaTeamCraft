@@ -197,7 +197,7 @@ function loadCSV(filePath: string): PlayerStats[] {
     const playerIdRaw = row["player_id"] ?? row["player_additional"] ?? "";
     const nameRaw = row["player"] ?? row["name"] ?? "";
     const posRaw = row["pos"] ?? row["position"] ?? "";
-    const tmRaw = (row["tm"] ?? row["team"] ?? "").toUpperCase();
+    const tmRaw = (row["team"] ?? row["tm"] ?? "").toUpperCase();
     const seasonRaw = row["season"] ?? row["year"] ?? "";
     const gRaw = row["g"] ?? row["games"] ?? "0";
 
@@ -221,12 +221,12 @@ function loadCSV(filePath: string): PlayerStats[] {
       season_label: seasonResult.label,
       season_year: seasonResult.year,
       games,
-      ppg: safeFloat(row["pts"] ?? row["ppg"]),
-      rpg: safeFloat(row["trb"] ?? row["reb"] ?? row["rpg"]),
-      apg: safeFloat(row["ast"] ?? row["apg"]),
-      spg: safeFloat(row["stl"] ?? row["spg"]),
-      bpg: safeFloat(row["blk"] ?? row["bpg"]),
-      mpg: safeFloat(row["mp"] ?? row["mpg"] ?? row["min"]),
+      ppg: safeFloat(row["pts_per_game"] ?? row["pts"] ?? row["ppg"]),
+      rpg: safeFloat(row["trb_per_game"] ?? row["trb"] ?? row["reb"] ?? row["rpg"]),
+      apg: safeFloat(row["ast_per_game"] ?? row["ast"] ?? row["apg"]),
+      spg: safeFloat(row["stl_per_game"] ?? row["stl"] ?? row["spg"]),
+      bpg: safeFloat(row["blk_per_game"] ?? row["blk"] ?? row["bpg"]),
+      mpg: safeFloat(row["mp_per_game"] ?? row["mp"] ?? row["mpg"] ?? row["min"]),
     });
   }
 
