@@ -1,14 +1,17 @@
 /**
- * NBA TeamCraft — Kaggle SQLite importer
+ * NBA TeamCraft — Kaggle CSV importer
+ * Dataset: sumitrodatta/nba-aba-baa-stats
  *
  * Usage:
- *   npx tsx scripts/import.ts <path-to-basketball.sqlite>
- *   npx tsx scripts/import.ts ./basketball.sqlite
+ *   npx tsx scripts/import.ts <path-to-per-game-csv>
+ *   npx tsx scripts/import.ts "data/Player Per Game.csv"
  *
- * Downloads: https://www.kaggle.com/datasets/wyattowalsh/basketball
+ * The CSV should contain columns:
+ *   player_id (or player), pos, tm, season, g, mp, pts, trb, ast, stl, blk
  */
 
-import Database from "better-sqlite3";
+import * as fs from "fs";
+import * as path from "path";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import ws from "ws";
@@ -21,42 +24,129 @@ const supabase = createClient(
   { realtime: { transport: ws as any } }
 );
 
-// Season filter: 2000 = 2000-01 season
-const MIN_SEASON = 2000;
+// 2000-01 season onwards (season column value "2001" = 2000-01)
+const MIN_SEASON_YEAR = 2001;
+const MIN_GAMES = 5;
 
-// Position mapping from Kaggle data to our PG/SG/SF/PF/C
-function normalizePosition(raw: string | null): string {
-  if (!raw) return "SF";
-  const p = raw.trim().toUpperCase();
-  if (p === "PG" || p === "POINT GUARD") return "PG";
-  if (p === "SG" || p === "SHOOTING GUARD") return "SG";
-  if (p === "SF" || p === "SMALL FORWARD") return "SF";
-  if (p === "PF" || p === "POWER FORWARD") return "PF";
-  if (p === "C"  || p === "CENTER") return "C";
-  // Handle combined e.g. "PG-SG" → take first
-  const first = p.split(/[-\/]/)[0].trim();
-  return normalizePosition(first);
+// Normalize column names from CSV (case-insensitive, strip spaces)
+function normalizeKey(key: string): string {
+  return key.trim().toLowerCase().replace(/[^a-z0-9_]/g, "_");
 }
 
-// Parse "MM:SS" or numeric minutes string → decimal minutes
-function parseMinutes(raw: string | number | null): number {
-  if (raw === null || raw === undefined) return 0;
-  if (typeof raw === "number") return raw;
-  const str = String(raw).trim();
-  if (str.includes(":")) {
-    const [m, s] = str.split(":").map(Number);
-    return m + (s || 0) / 60;
-  }
-  const v = parseFloat(str);
-  return isNaN(v) ? 0 : v;
+// Parse CSV into array of objects with normalized keys
+function parseCSV(filePath: string): Record<string, string>[] {
+  const content = fs.readFileSync(filePath, "utf-8");
+  const lines = content.split("\n").filter((l) => l.trim());
+  if (lines.length < 2) return [];
+
+  const headers = lines[0].split(",").map(normalizeKey);
+  console.log(`CSV columns: ${headers.join(", ")}`);
+
+  return lines.slice(1).map((line) => {
+    // Handle quoted fields with commas inside
+    const fields: string[] = [];
+    let current = "";
+    let inQuote = false;
+    for (const ch of line) {
+      if (ch === '"') { inQuote = !inQuote; }
+      else if (ch === "," && !inQuote) { fields.push(current.trim()); current = ""; }
+      else { current += ch; }
+    }
+    fields.push(current.trim());
+
+    const obj: Record<string, string> = {};
+    headers.forEach((h, i) => { obj[h] = (fields[i] ?? "").replace(/^"|"$/g, ""); });
+    return obj;
+  });
 }
 
-function safeFloat(v: unknown): number {
-  const n = parseFloat(String(v ?? 0));
+function safeFloat(v: string | undefined): number {
+  if (!v || v === "" || v === "NA" || v === "null") return 0;
+  const n = parseFloat(v);
   return isNaN(n) ? 0 : n;
 }
 
-// Position-based weights for Overall
+function safeInt(v: string | undefined): number {
+  return Math.round(safeFloat(v));
+}
+
+// Position mapping
+const POS_MAP: Record<string, string> = {
+  PG: "PG", SG: "SG", SF: "SF", PF: "PF", C: "C",
+  G: "SG", F: "SF", "F-C": "PF", "C-F": "C",
+  "G-F": "SG", "F-G": "SF",
+};
+
+function normalizePosition(raw: string | undefined): string {
+  if (!raw) return "SF";
+  const t = raw.trim().toUpperCase();
+  // Take primary position (before hyphen)
+  const primary = t.split("-")[0];
+  return POS_MAP[primary] ?? POS_MAP[t] ?? "SF";
+}
+
+// Convert season string to our "YYYY-YY" format
+// Input examples: "2001", "2000-01", "2001-02", 2001
+function normalizeSeason(raw: string | undefined): { label: string; year: number } | null {
+  if (!raw) return null;
+  const s = raw.trim();
+
+  // Already "YYYY-YY" format
+  if (/^\d{4}-\d{2}$/.test(s)) {
+    const year = parseInt(s.slice(0, 4)) + 1;
+    return { label: s, year };
+  }
+  // Pure year number e.g. "2001" means 2000-01 season
+  if (/^\d{4}$/.test(s)) {
+    const year = parseInt(s);
+    const prev = year - 1;
+    const label = `${prev}-${String(year).slice(2)}`;
+    return { label, year };
+  }
+  // "2000-2001" format
+  if (/^\d{4}-\d{4}$/.test(s)) {
+    const year = parseInt(s.slice(5));
+    const prev = year - 1;
+    const label = `${prev}-${String(year).slice(2)}`;
+    return { label, year };
+  }
+  return null;
+}
+
+// Team name lookup — supplemented by team abbreviation
+const TEAM_NAMES: Record<string, string> = {
+  ATL: "Atlanta Hawks", BOS: "Boston Celtics", BRK: "Brooklyn Nets",
+  CHA: "Charlotte Hornets", CHH: "Charlotte Hornets", CHI: "Chicago Bulls",
+  CLE: "Cleveland Cavaliers", DAL: "Dallas Mavericks", DEN: "Denver Nuggets",
+  DET: "Detroit Pistons", GSW: "Golden State Warriors", HOU: "Houston Rockets",
+  IND: "Indiana Pacers", LAC: "LA Clippers", LAL: "Los Angeles Lakers",
+  MEM: "Memphis Grizzlies", MIA: "Miami Heat", MIL: "Milwaukee Bucks",
+  MIN: "Minnesota Timberwolves", NJN: "New Jersey Nets", NOH: "New Orleans Hornets",
+  NOK: "New Orleans/OKC Hornets", NOP: "New Orleans Pelicans", NYK: "New York Knicks",
+  OKC: "Oklahoma City Thunder", ORL: "Orlando Magic", PHI: "Philadelphia 76ers",
+  PHO: "Phoenix Suns", POR: "Portland Trail Blazers", SAC: "Sacramento Kings",
+  SAS: "San Antonio Spurs", SEA: "Seattle SuperSonics", TOR: "Toronto Raptors",
+  UTA: "Utah Jazz", VAN: "Vancouver Grizzlies", WAS: "Washington Wizards",
+  WSB: "Washington Bullets",
+};
+
+interface PlayerStats {
+  player_id: string;
+  name: string;
+  position: string;
+  team_abbr: string;
+  season_label: string;
+  season_year: number;
+  games: number;
+  ppg: number;
+  rpg: number;
+  apg: number;
+  spg: number;
+  bpg: number;
+  mpg: number;
+}
+
+// Position-based weights for Overall (60-100)
 const WEIGHTS: Record<string, Record<string, number>> = {
   PG: { ppg: 0.30, rpg: 0.10, apg: 0.30, spg: 0.18, bpg: 0.12 },
   SG: { ppg: 0.35, rpg: 0.10, apg: 0.18, spg: 0.18, bpg: 0.19 },
@@ -73,33 +163,14 @@ function percentileRank(value: number, population: number[]): number {
   return (below + equal * 0.5) / sorted.length;
 }
 
-interface PlayerStats {
-  nba_player_id: string;
-  name: string;
-  position: string;
-  team_tricode: string;
-  team_name: string;
-  season_id: number;
-  games: number;
-  ppg: number;
-  rpg: number;
-  apg: number;
-  spg: number;
-  bpg: number;
-  mpg: number;
-}
-
 function calcOverall(stats: PlayerStats, population: PlayerStats[]): number {
-  const pos = stats.position;
-  const weights = WEIGHTS[pos] ?? WEIGHTS["SF"];
-
+  const weights = WEIGHTS[stats.position] ?? WEIGHTS["SF"];
   let rawScore = 0;
   for (const key of Object.keys(weights)) {
     const pop = population.map((p) => p[key as keyof PlayerStats] as number);
     const pct = percentileRank(stats[key as keyof PlayerStats] as number, pop);
     rawScore += pct * weights[key];
   }
-
   const mpgPenalty = stats.mpg < 10 ? -5 : 0;
   return Math.max(60, Math.min(100, Math.round(60 + rawScore * 40) + mpgPenalty));
 }
@@ -112,218 +183,126 @@ function calcCost(overall: number): number {
   return 1;
 }
 
-function seasonLabel(seasonId: number): string {
-  // 2000 → "2000-01", 2024 → "2024-25"
-  const next = String(seasonId + 1).slice(2);
-  return `${seasonId}-${next}`;
-}
+function loadCSV(filePath: string): PlayerStats[] {
+  const rows = parseCSV(filePath);
+  if (rows.length === 0) throw new Error("CSV is empty or malformed");
 
-function buildTeamName(tricode: string, teamFullName: string, season: string): string {
-  return `${season} ${teamFullName}`;
-}
+  // Show first row to verify column mapping
+  console.log("First row sample:", JSON.stringify(rows[0]));
 
-interface RawRow {
-  player_id: string | number;
-  first_name: string;
-  last_name: string;
-  position: string;
-  team_tricode: string;
-  team_full_name: string;
-  season_id: number;
-  games: number;
-  total_pts: number;
-  total_reb: number;
-  total_ast: number;
-  total_stl: number;
-  total_blk: number;
-  total_min: number;
-}
+  const result: PlayerStats[] = [];
 
-function loadFromSqlite(dbPath: string): PlayerStats[] {
-  const db = new Database(dbPath, { readonly: true });
+  for (const row of rows) {
+    // Detect column names flexibly
+    const playerIdRaw = row["player_id"] ?? row["player_additional"] ?? "";
+    const nameRaw = row["player"] ?? row["name"] ?? "";
+    const posRaw = row["pos"] ?? row["position"] ?? "";
+    const tmRaw = (row["tm"] ?? row["team"] ?? "").toUpperCase();
+    const seasonRaw = row["season"] ?? row["year"] ?? "";
+    const gRaw = row["g"] ?? row["games"] ?? "0";
 
-  // Probe which tables exist
-  const tables: string[] = db
-    .prepare("SELECT name FROM sqlite_master WHERE type='table'")
-    .all()
-    .map((r: any) => r.name);
+    // Skip traded player total rows
+    if (tmRaw === "TOT" || tmRaw === "2TM" || tmRaw === "3TM" || tmRaw === "4TM") continue;
 
-  console.log(`Tables found (first 20): ${tables.slice(0, 20).join(", ")}`);
+    const seasonResult = normalizeSeason(seasonRaw);
+    if (!seasonResult) continue;
+    if (seasonResult.year < MIN_SEASON_YEAR) continue;
 
-  // Try star schema first (fact_player_game_traditional + dim_player + dim_team)
-  const hasFact = tables.includes("fact_player_game_traditional");
-  const hasDimPlayer = tables.includes("dim_player");
-  const hasDimTeam = tables.includes("dim_team");
+    const games = safeInt(gRaw);
+    if (games < MIN_GAMES) continue;
 
-  let rows: RawRow[] = [];
+    if (!nameRaw) continue;
 
-  if (hasFact && hasDimPlayer && hasDimTeam) {
-    console.log("Using star schema tables...");
-    rows = db.prepare(`
-      SELECT
-        p.personId        AS player_id,
-        p.firstName       AS first_name,
-        p.familyName      AS last_name,
-        p.position        AS position,
-        t.teamTricode     AS team_tricode,
-        t.teamName        AS team_full_name,
-        f.season_id       AS season_id,
-        COUNT(f.game_id)  AS games,
-        SUM(f.points)           AS total_pts,
-        SUM(f.reboundsTotal)    AS total_reb,
-        SUM(f.assists)          AS total_ast,
-        SUM(f.steals)           AS total_stl,
-        SUM(f.blocks)           AS total_blk,
-        SUM(f.minutes)          AS total_min
-      FROM fact_player_game_traditional f
-      JOIN dim_player p ON f.player_id = p.personId
-      JOIN dim_team   t ON f.team_id   = t.team_id
-      WHERE f.season_id >= ${MIN_SEASON}
-      GROUP BY p.personId, t.team_id, f.season_id
-      HAVING games >= 5
-    `).all() as RawRow[];
-  } else {
-    // Fallback: try common_player_info + game table structure
-    const hasGame = tables.includes("game");
-    const hasPlayerInfo = tables.includes("common_player_info");
-
-    if (hasGame && hasPlayerInfo) {
-      console.log("\nDumping ALL table schemas:");
-      for (const t of tables) {
-        const cols = db.prepare(`PRAGMA table_info(${t})`).all().map((r: any) => r.name);
-        console.log(`  ${t}: ${cols.join(", ")}`);
-      }
-      // Sample first row of player table
-      try {
-        const sample = db.prepare("SELECT * FROM player LIMIT 1").get();
-        console.log("\nplayer sample row:", JSON.stringify(sample));
-      } catch(e) { console.log("player table error:", e); }
-    } else {
-      // Dump ALL table schemas for debugging
-      console.log("\nDumping ALL table schemas:");
-      for (const t of tables) {
-        const cols = db.prepare(`PRAGMA table_info(${t})`).all().map((r: any) => r.name);
-        console.log(`  ${t}: ${cols.join(", ")}`);
-      }
-      db.close();
-      throw new Error("Cannot find player stats tables. Check schema above.");
-    }
+    result.push({
+      player_id: playerIdRaw || nameRaw.toLowerCase().replace(/\s+/g, "_"),
+      name: nameRaw,
+      position: normalizePosition(posRaw),
+      team_abbr: tmRaw,
+      season_label: seasonResult.label,
+      season_year: seasonResult.year,
+      games,
+      ppg: safeFloat(row["pts"] ?? row["ppg"]),
+      rpg: safeFloat(row["trb"] ?? row["reb"] ?? row["rpg"]),
+      apg: safeFloat(row["ast"] ?? row["apg"]),
+      spg: safeFloat(row["stl"] ?? row["spg"]),
+      bpg: safeFloat(row["blk"] ?? row["bpg"]),
+      mpg: safeFloat(row["mp"] ?? row["mpg"] ?? row["min"]),
+    });
   }
 
-  db.close();
-
-  return rows.map((r) => ({
-    nba_player_id: String(r.player_id),
-    name: `${r.first_name} ${r.last_name}`.trim(),
-    position: normalizePosition(r.position),
-    team_tricode: r.team_tricode ?? "UNK",
-    team_name: r.team_full_name ?? "Unknown Team",
-    season_id: r.season_id,
-    games: r.games,
-    ppg: r.games > 0 ? safeFloat(r.total_pts) / r.games : 0,
-    rpg: r.games > 0 ? safeFloat(r.total_reb) / r.games : 0,
-    apg: r.games > 0 ? safeFloat(r.total_ast) / r.games : 0,
-    spg: r.games > 0 ? safeFloat(r.total_stl) / r.games : 0,
-    bpg: r.games > 0 ? safeFloat(r.total_blk) / r.games : 0,
-    mpg: r.games > 0 ? parseMinutes(r.total_min) / r.games : 0,
-  }));
+  return result;
 }
 
-async function upsertBatch(playerStats: PlayerStats[]): Promise<void> {
-  // Group by season for overall calculation within each season pool
+async function upsertAll(players: PlayerStats[]): Promise<void> {
+  // Group by season for percentile calculation
   const bySeason = new Map<number, PlayerStats[]>();
-  for (const ps of playerStats) {
-    const arr = bySeason.get(ps.season_id) ?? [];
-    arr.push(ps);
-    bySeason.set(ps.season_id, arr);
+  for (const p of players) {
+    const arr = bySeason.get(p.season_year) ?? [];
+    arr.push(p);
+    bySeason.set(p.season_year, arr);
   }
 
   let processed = 0;
-  const total = playerStats.length;
+  const total = players.length;
 
-  for (const [seasonId, seasonPlayers] of bySeason) {
-    const season = seasonLabel(seasonId);
-    console.log(`\nSeason ${season}: ${seasonPlayers.length} player-team entries`);
-
-    // Group by team within season
+  for (const [seasonYear, seasonPlayers] of [...bySeason.entries()].sort((a, b) => a[0] - b[0])) {
+    const season = seasonPlayers[0].season_label;
     const byTeam = new Map<string, PlayerStats[]>();
-    for (const ps of seasonPlayers) {
-      const key = ps.team_tricode;
-      const arr = byTeam.get(key) ?? [];
-      arr.push(ps);
-      byTeam.set(key, arr);
+    for (const p of seasonPlayers) {
+      const arr = byTeam.get(p.team_abbr) ?? [];
+      arr.push(p);
+      byTeam.set(p.team_abbr, arr);
     }
 
-    for (const [tricode, teamPlayers] of byTeam) {
-      const teamFullName = buildTeamName(tricode, teamPlayers[0].team_name, season);
+    process.stdout.write(`Season ${season}: ${seasonPlayers.length} players, ${byTeam.size} teams\n`);
 
-      // Upsert team
+    for (const [abbr, teamPlayers] of byTeam) {
+      const teamFullName = `${season} ${TEAM_NAMES[abbr] ?? abbr}`;
+
       const { data: teamData, error: teamErr } = await supabase
         .from("teams")
-        .upsert(
-          { name: teamFullName, abbreviation: tricode, season },
-          { onConflict: "abbreviation,season" }
-        )
-        .select("id")
-        .single();
+        .upsert({ name: teamFullName, abbreviation: abbr, season }, { onConflict: "abbreviation,season" })
+        .select("id").single();
 
       if (teamErr || !teamData) {
-        console.error(`  [error] team ${tricode} ${season}:`, teamErr?.message);
-        continue;
+        console.error(`  [error] team ${abbr}:`, teamErr?.message); continue;
       }
 
       for (const ps of teamPlayers) {
-        // Upsert player
         const { data: playerData, error: playerErr } = await supabase
           .from("players")
-          .upsert(
-            { nba_player_id: ps.nba_player_id, name: ps.name },
-            { onConflict: "nba_player_id" }
-          )
-          .select("id")
-          .single();
+          .upsert({ nba_player_id: ps.player_id, name: ps.name }, { onConflict: "nba_player_id" })
+          .select("id").single();
 
         if (playerErr || !playerData) {
-          console.error(`  [error] player ${ps.name}:`, playerErr?.message);
-          continue;
+          console.error(`  [error] player ${ps.name}:`, playerErr?.message); continue;
         }
 
         const overall = calcOverall(ps, seasonPlayers);
         const cost = calcCost(overall);
 
-        // Upsert player_season
         const { data: psData, error: psErr } = await supabase
           .from("player_seasons")
-          .upsert(
-            {
-              player_id: playerData.id,
-              team_id: teamData.id,
-              season,
-              ppg: Math.round(ps.ppg * 100) / 100,
-              rpg: Math.round(ps.rpg * 100) / 100,
-              apg: Math.round(ps.apg * 100) / 100,
-              spg: Math.round(ps.spg * 100) / 100,
-              bpg: Math.round(ps.bpg * 100) / 100,
-              mpg: Math.round(ps.mpg * 100) / 100,
-              overall,
-              cost,
-            },
-            { onConflict: "player_id,team_id,season" }
-          )
-          .select("id")
-          .single();
+          .upsert({
+            player_id: playerData.id,
+            team_id: teamData.id,
+            season,
+            ppg: Math.round(ps.ppg * 100) / 100,
+            rpg: Math.round(ps.rpg * 100) / 100,
+            apg: Math.round(ps.apg * 100) / 100,
+            spg: Math.round(ps.spg * 100) / 100,
+            bpg: Math.round(ps.bpg * 100) / 100,
+            mpg: Math.round(ps.mpg * 100) / 100,
+            overall,
+            cost,
+          }, { onConflict: "player_id,team_id,season" })
+          .select("id").single();
 
         if (psErr || !psData) {
-          console.error(`  [error] player_season ${ps.name}:`, psErr?.message);
-          continue;
+          console.error(`  [error] player_season ${ps.name}:`, psErr?.message); continue;
         }
 
-        // Upsert position
-        await supabase
-          .from("player_season_positions")
-          .delete()
-          .eq("player_season_id", psData.id);
-
+        await supabase.from("player_season_positions").delete().eq("player_season_id", psData.id);
         await supabase.from("player_season_positions").insert({
           player_season_id: psData.id,
           position: ps.position,
@@ -331,8 +310,8 @@ async function upsertBatch(playerStats: PlayerStats[]): Promise<void> {
         });
 
         processed++;
-        if (processed % 100 === 0) {
-          console.log(`  Progress: ${processed}/${total}`);
+        if (processed % 200 === 0) {
+          process.stdout.write(`  Progress: ${processed}/${total}\n`);
         }
       }
     }
@@ -340,22 +319,27 @@ async function upsertBatch(playerStats: PlayerStats[]): Promise<void> {
 }
 
 async function main() {
-  const dbPath = process.argv[2];
-  if (!dbPath) {
-    console.error("Usage: npx tsx scripts/import.ts <path-to-basketball.sqlite>");
+  const csvPath = process.argv[2];
+  if (!csvPath) {
+    console.error('Usage: npx tsx scripts/import.ts "data/Player Per Game.csv"');
     process.exit(1);
   }
 
-  console.log(`Loading from: ${dbPath}`);
-  const playerStats = loadFromSqlite(dbPath);
-  console.log(`Loaded ${playerStats.length} player-season-team records`);
-
-  if (playerStats.length === 0) {
-    console.error("No data loaded. Check the schema dump above.");
+  if (!fs.existsSync(csvPath)) {
+    console.error(`File not found: ${csvPath}`);
     process.exit(1);
   }
 
-  await upsertBatch(playerStats);
+  console.log(`Loading: ${csvPath}`);
+  const players = loadCSV(csvPath);
+  console.log(`Loaded ${players.length} player-season-team records (season >= 2000-01, games >= ${MIN_GAMES})`);
+
+  if (players.length === 0) {
+    console.error("No records loaded. Check CSV column names in the output above.");
+    process.exit(1);
+  }
+
+  await upsertAll(players);
   console.log("\nImport complete.");
 }
 
