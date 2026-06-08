@@ -122,7 +122,7 @@ async function fetchTeamPage(abbr: string, year: number): Promise<string | null>
     await page.setUserAgent(
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     );
-    const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+    const response = await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
     const status = response?.status() ?? 0;
     if (status === 404) {
       console.log(`  [skip] 404 ${abbr} ${year}`);
@@ -385,6 +385,10 @@ async function scrapeTeamSeason(abbr: string, year: number): Promise<void> {
   const roster = parseRoster(html);
   const perGameMap = parsePerGame(html);
   const advancedMap = parseAdvanced(html);
+  // Debug: list all table IDs found in the page
+  const $ = cheerio.load(uncommentHtml(html));
+  const tableIds = $("table[id]").map((_, el) => $(el).attr("id")).get();
+  console.log(`  tables found: ${tableIds.join(", ")}`);
   console.log(`  roster:${roster.length} perGame:${perGameMap.size} advanced:${advancedMap.size}`);
 
   const players: PlayerRow[] = [];
