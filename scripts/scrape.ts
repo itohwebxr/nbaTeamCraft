@@ -90,75 +90,75 @@ interface PlayerRow {
 }
 
 // Extract all data directly from the rendered DOM via page.evaluate()
+// Passed as a string to avoid tsx __name transformation issues
+const EXTRACT_SCRIPT = `(function() {
+  var getId = function(href) {
+    if (!href) return null;
+    var m = href.match(/\\/players\\/\\w\\/(\\w+)\\.html/);
+    return m ? m[1] : null;
+  };
+  var pf = function(el) {
+    var t = el ? el.innerText : "";
+    var v = parseFloat(t);
+    return isNaN(v) ? 0 : v;
+  };
+
+  var teamName = (document.querySelector("h1 span") || {}).textContent || "Unknown";
+  teamName = teamName.trim();
+
+  var roster = [];
+  document.querySelectorAll("#roster tbody tr").forEach(function(row) {
+    if (row.classList.contains("thead")) return;
+    var a = row.querySelector('td[data-stat="player"] a');
+    var id = getId(a ? a.getAttribute("href") : null);
+    var name = a ? a.textContent.trim() : "";
+    var posEl = row.querySelector('td[data-stat="pos"]');
+    var posRaw = posEl ? posEl.innerText.trim() : "";
+    if (id && name) roster.push({ bbref_player_id: id, name: name, posRaw: posRaw });
+  });
+
+  var perGame = [];
+  document.querySelectorAll("#per_game_stats tbody tr").forEach(function(row) {
+    if (row.classList.contains("thead")) return;
+    var a = row.querySelector('td[data-stat="player"] a');
+    var id = getId(a ? a.getAttribute("href") : null);
+    if (!id) return;
+    var g = pf(row.querySelector('td[data-stat="g"]'));
+    if (g === 0) return;
+    perGame.push({
+      bbref_player_id: id,
+      ppg: pf(row.querySelector('td[data-stat="pts_per_g"]')),
+      rpg: pf(row.querySelector('td[data-stat="trb_per_g"]')),
+      apg: pf(row.querySelector('td[data-stat="ast_per_g"]')),
+      spg: pf(row.querySelector('td[data-stat="stl_per_g"]')),
+      bpg: pf(row.querySelector('td[data-stat="blk_per_g"]')),
+      mpg: pf(row.querySelector('td[data-stat="mp_per_g"]')),
+    });
+  });
+
+  var advanced = [];
+  document.querySelectorAll("#advanced tbody tr").forEach(function(row) {
+    if (row.classList.contains("thead")) return;
+    var a = row.querySelector('td[data-stat="player"] a');
+    var id = getId(a ? a.getAttribute("href") : null);
+    if (!id) return;
+    advanced.push({
+      bbref_player_id: id,
+      win_shares: pf(row.querySelector('td[data-stat="ws"]')),
+      dws: pf(row.querySelector('td[data-stat="dws"]')),
+    });
+  });
+
+  return { teamName: teamName, roster: roster, perGame: perGame, advanced: advanced };
+})()`;
+
 async function extractPageData(page: Page): Promise<{
   teamName: string;
   roster: Array<{ bbref_player_id: string; name: string; posRaw: string }>;
   perGame: Array<{ bbref_player_id: string; ppg: number; rpg: number; apg: number; spg: number; bpg: number; mpg: number }>;
   advanced: Array<{ bbref_player_id: string; win_shares: number; dws: number }>;
 }> {
-  return page.evaluate(() => {
-    const getPlayerIdFromHref = (href: string | null): string | null => {
-      if (!href) return null;
-      const m = href.match(/\/players\/\w\/(\w+)\.html/);
-      return m ? m[1] : null;
-    };
-
-    const parseFloat2 = (text: string | null): number => {
-      if (!text) return 0;
-      const v = parseFloat(text);
-      return isNaN(v) ? 0 : v;
-    };
-
-    // Team name
-    const teamName = document.querySelector("h1 span")?.textContent?.trim() ?? "Unknown";
-
-    // Roster
-    const roster: Array<{ bbref_player_id: string; name: string; posRaw: string }> = [];
-    document.querySelectorAll("#roster tbody tr").forEach((row) => {
-      if (row.classList.contains("thead")) return;
-      const a = row.querySelector('td[data-stat="player"] a') as HTMLAnchorElement | null;
-      const id = getPlayerIdFromHref(a?.getAttribute("href") ?? null);
-      const name = a?.textContent?.trim() ?? "";
-      const posRaw = (row.querySelector('td[data-stat="pos"]') as HTMLElement)?.innerText?.trim() ?? "";
-      if (id && name) roster.push({ bbref_player_id: id, name, posRaw });
-    });
-
-    // Per game stats — table id is "per_game_stats"
-    const perGame: Array<{ bbref_player_id: string; ppg: number; rpg: number; apg: number; spg: number; bpg: number; mpg: number }> = [];
-    document.querySelectorAll("#per_game_stats tbody tr").forEach((row) => {
-      if (row.classList.contains("thead")) return;
-      const a = row.querySelector('td[data-stat="player"] a') as HTMLAnchorElement | null;
-      const id = getPlayerIdFromHref(a?.getAttribute("href") ?? null);
-      if (!id) return;
-      const g = parseFloat2((row.querySelector('td[data-stat="g"]') as HTMLElement)?.innerText);
-      if (g === 0) return;
-      perGame.push({
-        bbref_player_id: id,
-        ppg: parseFloat2((row.querySelector('td[data-stat="pts_per_g"]') as HTMLElement)?.innerText),
-        rpg: parseFloat2((row.querySelector('td[data-stat="trb_per_g"]') as HTMLElement)?.innerText),
-        apg: parseFloat2((row.querySelector('td[data-stat="ast_per_g"]') as HTMLElement)?.innerText),
-        spg: parseFloat2((row.querySelector('td[data-stat="stl_per_g"]') as HTMLElement)?.innerText),
-        bpg: parseFloat2((row.querySelector('td[data-stat="blk_per_g"]') as HTMLElement)?.innerText),
-        mpg: parseFloat2((row.querySelector('td[data-stat="mp_per_g"]') as HTMLElement)?.innerText),
-      });
-    });
-
-    // Advanced stats
-    const advanced: Array<{ bbref_player_id: string; win_shares: number; dws: number }> = [];
-    document.querySelectorAll("#advanced tbody tr").forEach((row) => {
-      if (row.classList.contains("thead")) return;
-      const a = row.querySelector('td[data-stat="player"] a') as HTMLAnchorElement | null;
-      const id = getPlayerIdFromHref(a?.getAttribute("href") ?? null);
-      if (!id) return;
-      advanced.push({
-        bbref_player_id: id,
-        win_shares: parseFloat2((row.querySelector('td[data-stat="ws"]') as HTMLElement)?.innerText),
-        dws: parseFloat2((row.querySelector('td[data-stat="dws"]') as HTMLElement)?.innerText),
-      });
-    });
-
-    return { teamName, roster, perGame, advanced };
-  });
+  return page.evaluate(EXTRACT_SCRIPT) as Promise<any>;
 }
 
 function calcOverall(stats: PlayerRow, population: PlayerRow[]): number {
