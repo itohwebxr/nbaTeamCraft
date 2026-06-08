@@ -17,8 +17,8 @@ export async function GET(request: NextRequest) {
     query = query.not("id", "in", `(${excludeIds.join(",")})`);
   }
 
-  // Fetch a random subset then pick one — Supabase doesn't support ORDER BY RANDOM() directly
-  const { data, error } = await query.limit(200);
+  // Fetch all teams then pick one randomly — ~750 total (30 teams × 25 seasons)
+  const { data, error } = await query.limit(1000);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
