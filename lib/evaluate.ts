@@ -43,7 +43,7 @@ export function calcTeamEvaluation(
 
   // Superstar bonus: exponential curve from overall 90→100, max ~+15
   const superstarBonus = maxOverall >= 90
-    ? Math.pow((maxOverall - 89) / 11, 2) * 15
+    ? Math.pow((maxOverall - 89) / 11, 2) * 8
     : 0;
 
   // Penalize weak starters: exponential curve from overall 75→60, max ~-15
