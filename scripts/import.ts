@@ -188,20 +188,16 @@ function loadFromSqlite(dbPath: string): PlayerStats[] {
     const hasPlayerInfo = tables.includes("common_player_info");
 
     if (hasGame && hasPlayerInfo) {
-      console.log("Using common_player_info + game tables...");
-
-      // Probe game table columns
-      const gameColumns: string[] = db
-        .prepare("PRAGMA table_info(game)")
-        .all()
-        .map((r: any) => r.name);
-      console.log(`game columns (first 20): ${gameColumns.slice(0, 20).join(", ")}`);
-
-      const playerInfoCols: string[] = db
-        .prepare("PRAGMA table_info(common_player_info)")
-        .all()
-        .map((r: any) => r.name);
-      console.log(`common_player_info columns: ${playerInfoCols.join(", ")}`);
+      console.log("\nDumping ALL table schemas:");
+      for (const t of tables) {
+        const cols = db.prepare(`PRAGMA table_info(${t})`).all().map((r: any) => r.name);
+        console.log(`  ${t}: ${cols.join(", ")}`);
+      }
+      // Sample first row of player table
+      try {
+        const sample = db.prepare("SELECT * FROM player LIMIT 1").get();
+        console.log("\nplayer sample row:", JSON.stringify(sample));
+      } catch(e) { console.log("player table error:", e); }
     } else {
       // Dump ALL table schemas for debugging
       console.log("\nDumping ALL table schemas:");
