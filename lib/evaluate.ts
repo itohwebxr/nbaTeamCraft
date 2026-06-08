@@ -38,9 +38,10 @@ export function calcTeamEvaluation(
   roster: RosterEntry[],
   population: PopulationStats
 ): TeamEvaluation {
-  const overall = Math.round(
-    Math.max(0, Math.min(100, weightedAvg(roster, (ps) => ps.overall)))
-  );
+  const avgOverall = weightedAvg(roster, (ps) => ps.overall);
+  const maxOverall = Math.max(...roster.map((e) => e.playerSeason.overall));
+  const starBonus = (maxOverall - avgOverall) * 0.4;
+  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + starBonus)));
 
   const offense = toRating(
     weightedAvg(roster, (ps) => {
