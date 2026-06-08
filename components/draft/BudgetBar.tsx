@@ -25,7 +25,7 @@ export default function BudgetBar({ used }: BudgetBarProps) {
         />
       </div>
       <span className="text-sm font-bold text-white whitespace-nowrap">
-        {remaining}
+        {used}
         <span className="text-zinc-400 font-normal"> / {TOTAL_BUDGET}</span>
       </span>
     </div>
