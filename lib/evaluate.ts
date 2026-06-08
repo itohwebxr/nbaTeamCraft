@@ -46,7 +46,7 @@ export function calcTeamEvaluation(
     weightedAvg(roster, (ps) => {
       const ppgPct = percentileRank(ps.ppg, population.ppg);
       const apgPct = percentileRank(ps.apg, population.apg);
-      return ppgPct * 0.75 + apgPct * 0.25;
+      return ppgPct * 0.65 + apgPct * 0.35;
     })
   );
 

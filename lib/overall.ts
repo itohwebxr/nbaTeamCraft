@@ -11,11 +11,11 @@ interface RawStats {
 
 // Position-based weights (sum = 1.0 per position)
 const WEIGHTS: Record<Position, Record<keyof Omit<RawStats, "mpg">, number>> = {
-  PG: { ppg: 0.38, rpg: 0.10, apg: 0.24, spg: 0.14, bpg: 0.14 },
-  SG: { ppg: 0.44, rpg: 0.10, apg: 0.13, spg: 0.13, bpg: 0.20 },
-  SF: { ppg: 0.42, rpg: 0.12, apg: 0.10, spg: 0.14, bpg: 0.22 },
-  PF: { ppg: 0.38, rpg: 0.22, apg: 0.08, spg: 0.12, bpg: 0.20 },
-  C:  { ppg: 0.35, rpg: 0.28, apg: 0.06, spg: 0.08, bpg: 0.23 },
+  PG: { ppg: 0.35, rpg: 0.08, apg: 0.32, spg: 0.12, bpg: 0.13 },
+  SG: { ppg: 0.40, rpg: 0.08, apg: 0.20, spg: 0.12, bpg: 0.20 },
+  SF: { ppg: 0.38, rpg: 0.11, apg: 0.16, spg: 0.13, bpg: 0.22 },
+  PF: { ppg: 0.34, rpg: 0.21, apg: 0.14, spg: 0.11, bpg: 0.20 },
+  C:  { ppg: 0.32, rpg: 0.27, apg: 0.12, spg: 0.07, bpg: 0.22 },
 };
 
 export function percentileRank(value: number, population: number[]): number {

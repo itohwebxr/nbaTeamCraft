@@ -49,13 +49,6 @@ export default function PlayerCard({
           <span className="text-xs font-bold text-zinc-400 tracking-widest">DRAFTED</span>
         </div>
       )}
-      {isReplaceable && !isDrafted && (
-        <div className="absolute top-2 right-2 z-10">
-          <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 border border-amber-400/30 rounded px-1.5 py-0.5 tracking-widest">
-            SWAP
-          </span>
-        </div>
-      )}
 
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
