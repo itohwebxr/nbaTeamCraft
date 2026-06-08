@@ -39,9 +39,19 @@ export default function ResultPage() {
 
   const handleShare = () => {
     const label = teamName || "My NBA Team";
+    const formatName = (name: string) => {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length === 1) return name;
+      return `${parts[0][0]} ${parts[parts.length - 1]}`;
+    };
+    const slotLabel = (slot: string) => slot === "BENCH1" ? "6TH" : slot;
+    const rosterLines = [...starters, ...bench]
+      .filter((e): e is NonNullable<typeof e> => e != null)
+      .map((e) => `${slotLabel(e.slot)} : ${formatName(e.playerSeason.name)}`)
+      .join("\n");
     const text = evaluation
-      ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nOFF ${evaluation.offense} | DEF ${evaluation.defense} | REB ${evaluation.rebound} | PLAY ${evaluation.playmaking}\n#NBATeamCraft`
-      : `🏀 ${label} #NBATeamCraft`;
+      ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\n#NBATeamCraft`
+      : `🏀 ${label}\n${rosterLines}\n#NBATeamCraft`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(url, "_blank", "noopener");
   };
