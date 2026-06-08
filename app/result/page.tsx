@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useDraftStore } from "@/stores/draftStore";
-import { TeamEvaluation, STARTER_SLOTS, BENCH_SLOTS } from "@/types";
+import { TeamEvaluation, STARTER_SLOTS, BENCH_SLOTS, TOTAL_BUDGET } from "@/types";
 import TeamStats from "@/components/result/TeamStats";
 import TeamNameInput from "@/components/result/TeamNameInput";
 
@@ -54,7 +54,7 @@ export default function ResultPage() {
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
-          <span className="text-xs text-zinc-500">Budget used: {usedBudget}/25</span>
+          <span className="text-xs text-zinc-500">Budget used: {usedBudget}/{TOTAL_BUDGET}</span>
         </div>
       </header>
 

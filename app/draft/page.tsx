@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { PlayerSeason, Position, Team, STARTER_SLOTS, BENCH_SLOTS, RosterSlot } from "@/types";
+import { PlayerSeason, Position, Team, STARTER_SLOTS, BENCH_SLOTS, RosterSlot, TOTAL_BUDGET } from "@/types";
 import { useDraftStore } from "@/stores/draftStore";
 import TeamCard from "@/components/draft/TeamCard";
 import PlayerCard from "@/components/draft/PlayerCard";
@@ -94,7 +94,7 @@ export default function DraftPage() {
   };
 
   const { currentTeam, currentPlayers, roster, usedBudget } = store;
-  const budgetRemaining = 25 - usedBudget;
+  const budgetRemaining = TOTAL_BUDGET - usedBudget;
   const totalSlots = 8;
   const filledSlots = roster.length;
 
