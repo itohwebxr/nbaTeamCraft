@@ -10,6 +10,7 @@ import {
   STARTER_SLOTS,
   BENCH_SLOTS,
   TOTAL_BUDGET,
+  TOTAL_ROSTER_SIZE,
 } from "@/types";
 
 interface DraftStore {
@@ -155,6 +156,6 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
   },
 
   isRosterComplete: () => {
-    return get().roster.length === 8;
+    return get().roster.length === TOTAL_ROSTER_SIZE;
   },
 }));

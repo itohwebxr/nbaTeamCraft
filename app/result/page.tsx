@@ -9,7 +9,7 @@ import TeamStats from "@/components/result/TeamStats";
 import TeamNameInput from "@/components/result/TeamNameInput";
 
 function SlotLabel({ slot }: { slot: string }) {
-  if (slot === "BENCH1" || slot === "BENCH2" || slot === "BENCH3") return "BENCH";
+  if (slot === "BENCH1") return "6TH";
   return slot;
 }
 
@@ -99,7 +99,7 @@ export default function ResultPage() {
             ))}
           </div>
 
-          <p className="text-xs text-zinc-600 mb-2">BENCH</p>
+          <p className="text-xs text-zinc-600 mb-2">6TH MAN</p>
           <div className="space-y-2">
             {bench.map((entry, i) => (
               <div key={i} className="flex items-center gap-3">

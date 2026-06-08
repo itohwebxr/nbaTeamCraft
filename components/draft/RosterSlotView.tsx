@@ -9,7 +9,7 @@ interface RosterSlotViewProps {
 
 const SLOT_LABELS: Record<string, string> = {
   PG: "PG", SG: "SG", SF: "SF", PF: "PF", C: "C",
-  BENCH1: "BENCH", BENCH2: "BENCH", BENCH3: "BENCH",
+  BENCH1: "6TH",
 };
 
 export default function RosterSlotView({ slot, entry }: RosterSlotViewProps) {

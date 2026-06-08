@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { PlayerSeason, Position, Team, STARTER_SLOTS, BENCH_SLOTS, RosterSlot, TOTAL_BUDGET } from "@/types";
+import { PlayerSeason, Position, Team, STARTER_SLOTS, BENCH_SLOTS, RosterSlot, TOTAL_BUDGET, TOTAL_ROSTER_SIZE } from "@/types";
 import { useDraftStore } from "@/stores/draftStore";
 import TeamCard from "@/components/draft/TeamCard";
 import PlayerCard from "@/components/draft/PlayerCard";
@@ -88,14 +88,14 @@ export default function DraftPage() {
     store.draftPlayer(player, slot, position);
     setPendingDraft(null);
 
-    if (nextSize === 8) {
+    if (nextSize === TOTAL_ROSTER_SIZE) {
       router.push("/result");
     }
   };
 
   const { currentTeam, currentPlayers, roster, usedBudget } = store;
   const budgetRemaining = TOTAL_BUDGET - usedBudget;
-  const totalSlots = 8;
+  const totalSlots = TOTAL_ROSTER_SIZE;
   const filledSlots = roster.length;
 
   return (
@@ -142,8 +142,8 @@ export default function DraftPage() {
                   const budgetAfter = budgetRemaining - player.cost + refund;
                   // After drafting, remaining slots still needing to be filled
                   const slotsAfter = isReplaceable
-                    ? (8 - filledSlots)       // replacing: count doesn't change
-                    : Math.max(0, 8 - filledSlots - 1);
+                    ? (TOTAL_ROSTER_SIZE - filledSlots)
+                    : Math.max(0, TOTAL_ROSTER_SIZE - filledSlots - 1);
                   const budgetOk = budgetAfter >= 0 && budgetAfter >= slotsAfter;
                   return (
                     <PlayerCard
@@ -183,7 +183,7 @@ export default function DraftPage() {
               />
             ))}
             <div className="mt-3">
-              <p className="hidden lg:block text-xs text-zinc-600 mb-2">BENCH</p>
+              <p className="hidden lg:block text-xs text-zinc-600 mb-2">6TH MAN</p>
               {BENCH_SLOTS.map((slot) => (
                 <RosterSlotView
                   key={slot}

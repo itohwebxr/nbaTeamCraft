@@ -1,7 +1,7 @@
 export type Position = "PG" | "SG" | "SF" | "PF" | "C";
 
 export type StarterSlot = Position;
-export type BenchSlot = "BENCH1" | "BENCH2" | "BENCH3";
+export type BenchSlot = "BENCH1";
 export type RosterSlot = StarterSlot | BenchSlot;
 
 export interface Player {
@@ -59,7 +59,8 @@ export interface TeamEvaluation {
 export type Tier = "S" | "A" | "B" | "C" | "D";
 
 export const STARTER_SLOTS: StarterSlot[] = ["PG", "SG", "SF", "PF", "C"];
-export const BENCH_SLOTS: BenchSlot[] = ["BENCH1", "BENCH2", "BENCH3"];
+export const BENCH_SLOTS: BenchSlot[] = ["BENCH1"];
 export const ALL_SLOTS: RosterSlot[] = [...STARTER_SLOTS, ...BENCH_SLOTS];
 
-export const TOTAL_BUDGET = 23;
+export const TOTAL_ROSTER_SIZE = 6;
+export const TOTAL_BUDGET = 17;
