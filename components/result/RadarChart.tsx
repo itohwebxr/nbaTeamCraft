@@ -48,7 +48,7 @@ export default function RadarChart({
   const polygonPath = dataPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
 
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+    <svg width={size * 1.25} height={size} viewBox={`0 0 ${size} ${size}`}>
       {/* Grid rings */}
       {ringPaths.map((d, i) => (
         <path key={i} d={d} fill="none" stroke="#3f3f46" strokeWidth="0.5" />
