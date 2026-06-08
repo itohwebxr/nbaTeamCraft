@@ -40,7 +40,7 @@ export function calcTeamEvaluation(
 ): TeamEvaluation {
   const avgOverall = weightedAvg(roster, (ps) => ps.overall);
   const maxOverall = Math.max(...roster.map((e) => e.playerSeason.overall));
-  const starBonus = (maxOverall - avgOverall) * 0.4;
+  const starBonus = (maxOverall - avgOverall) * 0.65;
   const overall = Math.round(Math.max(0, Math.min(100, avgOverall + starBonus)));
 
   const offense = toRating(
@@ -80,9 +80,9 @@ export function calcTeamEvaluation(
 }
 
 export function calcTier(overall: number): Tier {
-  if (overall >= 88) return "S";
-  if (overall >= 80) return "A";
-  if (overall >= 72) return "B";
-  if (overall >= 65) return "C";
+  if (overall >= 91) return "S";
+  if (overall >= 86) return "A";
+  if (overall >= 81) return "B";
+  if (overall >= 75) return "C";
   return "D";
 }
