@@ -42,6 +42,9 @@ export function calcTeamEvaluation(
   const maxOverall = Math.max(...roster.map((e) => e.playerSeason.overall));
   const starBonus = (maxOverall - avgOverall) * 0.65;
 
+  // Extra bonus for having a generational superstar (overall 95+)
+  const superstarBonus = maxOverall >= 95 ? (maxOverall - 94) * 1.5 : 0;
+
   // Penalize weak starters — weakest starter drags the team rating down
   const starterOveralls = roster
     .filter((e) => isStarter(e.slot))
@@ -49,7 +52,7 @@ export function calcTeamEvaluation(
   const minStarterOverall = starterOveralls.length > 0 ? Math.min(...starterOveralls) : 0;
   const weakStarterPenalty = Math.max(0, (78 - minStarterOverall) * 0.7);
 
-  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + starBonus - weakStarterPenalty)));
+  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + starBonus + superstarBonus - weakStarterPenalty)));
 
   const offense = toRating(
     weightedAvg(roster, (ps) => {
@@ -88,9 +91,9 @@ export function calcTeamEvaluation(
 }
 
 export function calcTier(overall: number): Tier {
-  if (overall >= 87) return "S";
+  if (overall >= 90) return "S";
   if (overall >= 84) return "A";
-  if (overall >= 81) return "B";
-  if (overall >= 78) return "C";
+  if (overall >= 78) return "B";
+  if (overall >= 72) return "C";
   return "D";
 }
