@@ -192,8 +192,13 @@ interface AdvancedRow {
   dws: number;
 }
 
+// BBRef embeds some tables inside HTML comments — strip them before parsing
+function uncommentHtml(html: string): string {
+  return html.replace(/<!--([\s\S]*?)-->/g, "$1");
+}
+
 function parsePerGame(html: string): Map<string, PerGameRow> {
-  const $ = cheerio.load(html);
+  const $ = cheerio.load(uncommentHtml(html));
   const map = new Map<string, PerGameRow>();
 
   $("#per_game tbody tr").each((_, row) => {
@@ -224,17 +229,11 @@ function parsePerGame(html: string): Map<string, PerGameRow> {
 }
 
 function parseAdvanced(html: string): Map<string, AdvancedRow> {
-  const $ = cheerio.load(html);
+  const $ = cheerio.load(uncommentHtml(html));
   const map = new Map<string, AdvancedRow>();
 
-  // Advanced table may be commented out — uncomment it
-  const advHtml = html.replace(/<!--([\s\S]*?)-->/g, (_, inner) =>
-    inner.includes("id=\"advanced\"") ? inner : `<!--${inner}-->`
-  );
-  const $adv = cheerio.load(advHtml);
-
-  $adv("#advanced tbody tr").each((_, row) => {
-    const $row = $adv(row);
+  $("#advanced tbody tr").each((_, row) => {
+    const $row = $(row);
     if ($row.hasClass("thead")) return;
 
     const playerLink = $row.find('td[data-stat="player"] a');
@@ -386,6 +385,7 @@ async function scrapeTeamSeason(abbr: string, year: number): Promise<void> {
   const roster = parseRoster(html);
   const perGameMap = parsePerGame(html);
   const advancedMap = parseAdvanced(html);
+  console.log(`  roster:${roster.length} perGame:${perGameMap.size} advanced:${advancedMap.size}`);
 
   const players: PlayerRow[] = [];
 
