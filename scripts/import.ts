@@ -191,6 +191,7 @@ function loadCSV(filePath: string): PlayerStats[] {
   console.log("First row sample:", JSON.stringify(rows[0]));
 
   const result: PlayerStats[] = [];
+  let debugCount = 0;
 
   for (const row of rows) {
     // Detect column names flexibly
@@ -213,7 +214,7 @@ function loadCSV(filePath: string): PlayerStats[] {
 
     if (!nameRaw) continue;
 
-    result.push({
+    const entry: PlayerStats = {
       player_id: playerIdRaw || nameRaw.toLowerCase().replace(/\s+/g, "_"),
       name: nameRaw,
       position: normalizePosition(posRaw),
@@ -227,7 +228,13 @@ function loadCSV(filePath: string): PlayerStats[] {
       spg: safeFloat(row["stl_per_game"] ?? row["stl"] ?? row["spg"]),
       bpg: safeFloat(row["blk_per_game"] ?? row["blk"] ?? row["bpg"]),
       mpg: safeFloat(row["mp_per_game"] ?? row["mp"] ?? row["mpg"] ?? row["min"]),
-    });
+    };
+    // Print first 3 entries to verify stats mapping
+    if (debugCount < 3) {
+      console.log(`  [debug] ${entry.name} | ppg=${entry.ppg} rpg=${entry.rpg} apg=${entry.apg} mpg=${entry.mpg}`);
+      debugCount++;
+    }
+    result.push(entry);
   }
 
   return result;
