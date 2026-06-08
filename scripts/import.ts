@@ -203,14 +203,14 @@ function loadFromSqlite(dbPath: string): PlayerStats[] {
         .map((r: any) => r.name);
       console.log(`common_player_info columns: ${playerInfoCols.join(", ")}`);
     } else {
-      // Last resort: dump all table column info for debugging
-      console.log("Could not find expected tables. Dumping schema...");
-      for (const t of tables.slice(0, 10)) {
+      // Dump ALL table schemas for debugging
+      console.log("\nDumping ALL table schemas:");
+      for (const t of tables) {
         const cols = db.prepare(`PRAGMA table_info(${t})`).all().map((r: any) => r.name);
         console.log(`  ${t}: ${cols.join(", ")}`);
       }
       db.close();
-      throw new Error("Cannot find player stats tables. Check table names above and update import.ts.");
+      throw new Error("Cannot find player stats tables. Check schema above.");
     }
   }
 
