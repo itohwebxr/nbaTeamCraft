@@ -80,9 +80,9 @@ export function calcTeamEvaluation(
 }
 
 export function calcTier(overall: number): Tier {
-  if (overall >= 91) return "S";
-  if (overall >= 86) return "A";
+  if (overall >= 87) return "S";
+  if (overall >= 84) return "A";
   if (overall >= 81) return "B";
-  if (overall >= 75) return "C";
+  if (overall >= 78) return "C";
   return "D";
 }
