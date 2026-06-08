@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -6,13 +7,7 @@ export default function Home() {
       <div className="max-w-md w-full text-center space-y-8">
         {/* Logo */}
         <div>
-          <p className="text-xs font-bold text-orange-400 uppercase tracking-[0.3em] mb-2">
-            Fantasy Draft
-          </p>
-          <h1 className="text-5xl font-black tracking-tight leading-none">
-            NBA<br />
-            <span className="text-orange-400">TeamCraft</span>
-          </h1>
+          <Image src="/logo.png" alt="NBA TeamCraft" width={240} height={80} className="mx-auto object-contain" />
           <p className="mt-4 text-zinc-400 text-sm leading-relaxed">
             Draft 8 players from historic NBA rosters.<br />
             Build the greatest team ever assembled.

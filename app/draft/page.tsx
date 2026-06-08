@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { PlayerSeason, Position, Team, STARTER_SLOTS, BENCH_SLOTS, RosterSlot } from "@/types";
 import { useDraftStore } from "@/stores/draftStore";
 import TeamCard from "@/components/draft/TeamCard";
@@ -102,7 +103,7 @@ export default function DraftPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center gap-4">
-          <h1 className="text-lg font-black text-orange-400 tracking-tight">NBA TeamCraft</h1>
+          <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={120} className="object-contain" />
           <div className="flex-1">
             <BudgetBar used={usedBudget} />
           </div>
