@@ -62,15 +62,15 @@ export function calcTeamEvaluation(
       ? Math.max(0, (78 - minStarterOverall) * 0.4)
       : 0;
 
-  // Roster balance bonus: reward teams with strong both outside (PG/SG) and inside (PF/C)
+  // Roster imbalance penalty: penalize when outside (PG/SG) and inside (PF/C) strength gap is large
   const getStarterOverall = (pos: string) =>
     starterEntries.find((e) => e.slot === pos)?.playerSeason.overall ?? 0;
   const outsideStrength = Math.max(getStarterOverall("PG"), getStarterOverall("SG"));
   const insideStrength = Math.max(getStarterOverall("PF"), getStarterOverall("C"));
-  const balanceScore = Math.min(outsideStrength, insideStrength);
-  const balanceBonus = Math.max(0, ((balanceScore - 80) / 20) * 7);
+  const imbalanceDiff = Math.abs(outsideStrength - insideStrength);
+  const imbalancePenalty = Math.pow(Math.max(0, (imbalanceDiff - 15) / 25), 2) * 10;
 
-  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + superstarBonus + balanceBonus + sixthManCoverBonus - weakStarterPenalty)));
+  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + superstarBonus + sixthManCoverBonus - weakStarterPenalty - imbalancePenalty)));
 
   const offense = toRating(
     weightedAvg(roster, (ps) => {
