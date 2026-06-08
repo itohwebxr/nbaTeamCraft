@@ -77,7 +77,7 @@ export default function ResultPage() {
           <div className="space-y-2 mb-4">
             {starters.map((entry, i) => (
               <div key={i} className="flex items-center gap-3">
-                <span className="text-xs font-bold text-orange-400 w-8 shrink-0">
+                <span className="text-xs font-bold text-orange-400 w-16 shrink-0">
                   {STARTER_SLOTS[i]}
                 </span>
                 {entry ? (
