@@ -181,14 +181,16 @@ export default function DraftPage() {
                 entry={roster.find((e) => e.slot === slot)}
               />
             ))}
-            <p className="hidden lg:block text-xs text-zinc-600 mt-3 mb-2">BENCH</p>
-            {BENCH_SLOTS.map((slot) => (
-              <RosterSlotView
-                key={slot}
-                slot={slot}
-                entry={roster.find((e) => e.slot === slot)}
-              />
-            ))}
+            <div className="mt-3">
+              <p className="hidden lg:block text-xs text-zinc-600 mb-2">BENCH</p>
+              {BENCH_SLOTS.map((slot) => (
+                <RosterSlotView
+                  key={slot}
+                  slot={slot}
+                  entry={roster.find((e) => e.slot === slot)}
+                />
+              ))}
+            </div>
           </div>
 
           {filledSlots > 0 && filledSlots < 8 && (
