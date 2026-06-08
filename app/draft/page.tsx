@@ -172,7 +172,7 @@ export default function DraftPage() {
             My Team
           </h3>
           <div className="space-y-1.5">
-            <p className="text-xs text-zinc-600 mb-2">STARTERS</p>
+            <p className="hidden lg:block text-xs text-zinc-600 mb-2">STARTERS</p>
             {STARTER_SLOTS.map((slot) => (
               <RosterSlotView
                 key={slot}
@@ -180,7 +180,7 @@ export default function DraftPage() {
                 entry={roster.find((e) => e.slot === slot)}
               />
             ))}
-            <p className="text-xs text-zinc-600 mt-3 mb-2">BENCH</p>
+            <p className="hidden lg:block text-xs text-zinc-600 mt-3 mb-2">BENCH</p>
             {BENCH_SLOTS.map((slot) => (
               <RosterSlotView
                 key={slot}
