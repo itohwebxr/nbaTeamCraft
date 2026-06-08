@@ -285,7 +285,9 @@ async function upsertAll(players: PlayerStats[]): Promise<void> {
           console.error(`  [error] player ${ps.name}:`, playerErr?.message); continue;
         }
 
-        const overall = calcOverall(ps, seasonPlayers);
+        // Use MPG >= 20 players as population; fall back to full season if too small
+        const qualifiedPop = seasonPlayers.filter((p) => p.mpg >= 20);
+        const overall = calcOverall(ps, qualifiedPop.length >= 30 ? qualifiedPop : seasonPlayers);
         const cost = calcCost(overall);
 
         const { data: psData, error: psErr } = await supabase

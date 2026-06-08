@@ -19,12 +19,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "roster is required" }, { status: 400 });
   }
 
-  // Fetch population stats for percentile calculation
-  // Use all player_seasons as the reference population
+  // Fetch population stats — limit to MPG >= 20 to exclude low-minute players
+  // and make percentile rankings more representative of real contributors
   const supabase = createServerClient();
   const { data: population, error: popErr } = await supabase
     .from("player_seasons")
-    .select("ppg, rpg, apg, spg, bpg");
+    .select("ppg, rpg, apg, spg, bpg")
+    .gte("mpg", 20);
 
   if (popErr) {
     return NextResponse.json({ error: popErr.message }, { status: 500 });
