@@ -294,7 +294,7 @@ async function upsertTeamAndPlayers(
     .from("teams")
     .upsert(
       { name: teamFullName, abbreviation: abbr, season },
-      { onConflict: "name" }
+      { onConflict: "abbreviation,season" }
     )
     .select("id")
     .single();

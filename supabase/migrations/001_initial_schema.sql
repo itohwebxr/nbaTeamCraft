@@ -12,7 +12,8 @@ create table teams (
   name text not null,           -- e.g. "2000-01 Los Angeles Lakers"
   abbreviation text not null,   -- e.g. "LAL"
   season text not null,         -- e.g. "2000-01"
-  created_at timestamptz default now()
+  created_at timestamptz default now(),
+  unique (abbreviation, season)
 );
 
 create table player_seasons (
