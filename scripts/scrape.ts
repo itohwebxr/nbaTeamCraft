@@ -11,6 +11,7 @@ import * as cheerio from "cheerio";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import ws from "ws";
+import puppeteer, { Browser } from "puppeteer";
 import { getAllTeamSeasons } from "./teams";
 
 dotenv.config({ path: ".env.local" });
@@ -21,9 +22,28 @@ const supabase = createClient(
   { realtime: { transport: ws } }
 );
 
-// Rate limit: 1 req/sec to respect BBRef
-const DELAY_MS = 1200;
+// Rate limit: 2 sec between requests to respect BBRef
+const DELAY_MS = 2000;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+let browser: Browser | null = null;
+
+async function getBrowser(): Promise<Browser> {
+  if (!browser) {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+  }
+  return browser;
+}
+
+async function closeBrowser(): Promise<void> {
+  if (browser) {
+    await browser.close();
+    browser = null;
+  }
+}
 
 // Position mapping from BBRef abbreviations
 const POS_MAP: Record<string, string[]> = {
@@ -97,26 +117,26 @@ interface PlayerRow {
 async function fetchTeamPage(abbr: string, year: number): Promise<string | null> {
   const url = `https://www.basketball-reference.com/teams/${abbr}/${year}.html`;
   try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Connection": "keep-alive",
-        "Upgrade-Insecure-Requests": "1",
-        "Cache-Control": "max-age=0",
-      },
-    });
-    if (res.status === 404) {
+    const b = await getBrowser();
+    const page = await b.newPage();
+    await page.setUserAgent(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    );
+    const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
+    const status = response?.status() ?? 0;
+    if (status === 404) {
       console.log(`  [skip] 404 ${abbr} ${year}`);
+      await page.close();
       return null;
     }
-    if (!res.ok) {
-      console.error(`  [error] HTTP ${res.status} for ${abbr} ${year}`);
+    if (status >= 400) {
+      console.error(`  [error] HTTP ${status} for ${abbr} ${year}`);
+      await page.close();
       return null;
     }
-    return await res.text();
+    const html = await page.content();
+    await page.close();
+    return html;
   } catch (e) {
     console.error(`  [error] fetch failed for ${abbr} ${year}:`, e);
     return null;
@@ -420,6 +440,10 @@ async function main() {
   }
 
   console.log("Scraping complete.");
+  await closeBrowser();
 }
 
-main().catch(console.error);
+main().catch(async (e) => {
+  console.error(e);
+  await closeBrowser();
+});
