@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 interface TeamNameInputProps {
   value: string;
   onChange: (v: string) => void;
@@ -8,7 +10,10 @@ interface TeamNameInputProps {
 const EXAMPLES = ["Defensive Monsters", "Three Point Madness", "Lob City Forever", "European Legends"];
 
 export default function TeamNameInput({ value, onChange }: TeamNameInputProps) {
-  const placeholder = EXAMPLES[Math.floor(Math.random() * EXAMPLES.length)] ?? EXAMPLES[0];
+  // useState initializer runs only on the client, avoiding SSR/client mismatch
+  const [placeholder] = useState(
+    () => EXAMPLES[Math.floor(Math.random() * EXAMPLES.length)] ?? EXAMPLES[0]
+  );
 
   return (
     <div>
