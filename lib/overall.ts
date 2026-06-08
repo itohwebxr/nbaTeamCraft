@@ -9,7 +9,7 @@ interface RawStats {
   mpg: number;
 }
 
-const WEIGHTS = { ppg: 0.36, rpg: 0.15, apg: 0.22, spg: 0.12, bpg: 0.15 };
+const WEIGHTS = { ppg: 0.50, rpg: 0.12, apg: 0.18, spg: 0.10, bpg: 0.10 };
 
 export function percentileRank(value: number, population: number[]): number {
   if (population.length === 0) return 0;
