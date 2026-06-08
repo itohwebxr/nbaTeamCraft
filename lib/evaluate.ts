@@ -49,7 +49,7 @@ export function calcTeamEvaluation(
   const starterEntries = roster.filter((e) => isStarter(e.slot));
   const starterOveralls = starterEntries.map((e) => e.playerSeason.overall);
   const minStarterOverall = starterOveralls.length > 0 ? Math.min(...starterOveralls) : 0;
-  const weakStarterPenalty = Math.max(0, (72 - minStarterOverall) * 0.7);
+  const weakStarterPenalty = Math.max(0, (72 - minStarterOverall) * 0.5);
 
   // 6th man position cover bonus: if 6th man plays the same position as the weakest starter
   const sixthMan = roster.find((e) => e.slot === "BENCH1");
