@@ -40,16 +40,17 @@ export function calcTeamEvaluation(
 ): TeamEvaluation {
   const avgOverall = weightedAvg(roster, (ps) => ps.overall);
   const maxOverall = Math.max(...roster.map((e) => e.playerSeason.overall));
-  const starBonus = (maxOverall - avgOverall) * 0.65;
 
-  // Extra bonus for having a generational superstar (overall 95+)
-  const superstarBonus = maxOverall >= 95 ? (maxOverall - 94) * 2.5 : 0;
+  // Superstar bonus: exponential curve from overall 90→100, max ~+15
+  const superstarBonus = maxOverall >= 90
+    ? Math.pow((maxOverall - 89) / 11, 2) * 15
+    : 0;
 
-  // Penalize weak starters — weakest starter drags the team rating down
+  // Penalize weak starters: exponential curve from overall 75→60, max ~-15
   const starterEntries = roster.filter((e) => isStarter(e.slot));
   const starterOveralls = starterEntries.map((e) => e.playerSeason.overall);
   const minStarterOverall = starterOveralls.length > 0 ? Math.min(...starterOveralls) : 0;
-  const weakStarterPenalty = Math.max(0, (72 - minStarterOverall) * 0.5);
+  const weakStarterPenalty = Math.pow(Math.max(0, 75 - minStarterOverall) / 15, 2) * 15;
 
   // 6th man position cover bonus: if 6th man plays the same position as the weakest starter
   const sixthMan = roster.find((e) => e.slot === "BENCH1");
@@ -61,7 +62,7 @@ export function calcTeamEvaluation(
       ? Math.max(0, (78 - minStarterOverall) * 0.4)
       : 0;
 
-  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + starBonus + superstarBonus + sixthManCoverBonus - weakStarterPenalty)));
+  const overall = Math.round(Math.max(0, Math.min(100, avgOverall + superstarBonus + sixthManCoverBonus - weakStarterPenalty)));
 
   const offense = toRating(
     weightedAvg(roster, (ps) => {
