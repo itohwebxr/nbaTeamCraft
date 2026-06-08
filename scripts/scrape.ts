@@ -201,6 +201,16 @@ async function scrapeTeamSeason(abbr: string, year: number): Promise<void> {
     if (status === 404) { console.log(`  [skip] 404`); return; }
     if (status >= 400) { console.error(`  [error] HTTP ${status}`); return; }
 
+    // Debug: inspect DOM structure
+    const domDebug = await page.evaluate(`(function() {
+      var t = document.querySelector("#per_game_stats");
+      if (!t) return "table NOT FOUND";
+      var rows = t.querySelectorAll("tbody tr");
+      var firstRow = rows[0] ? rows[0].innerHTML.substring(0, 200) : "no rows";
+      return "rows:" + rows.length + " firstRow:" + firstRow;
+    })()`);
+    console.log(`  DOM debug: ${domDebug}`);
+
     const { teamName, roster, perGame, advanced } = await extractPageData(page);
 
     const perGameMap = new Map(perGame.map((r) => [r.bbref_player_id, r]));
