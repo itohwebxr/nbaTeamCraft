@@ -62,4 +62,4 @@ export const STARTER_SLOTS: StarterSlot[] = ["PG", "SG", "SF", "PF", "C"];
 export const BENCH_SLOTS: BenchSlot[] = ["BENCH1", "BENCH2", "BENCH3"];
 export const ALL_SLOTS: RosterSlot[] = [...STARTER_SLOTS, ...BENCH_SLOTS];
 
-export const TOTAL_BUDGET = 20;
+export const TOTAL_BUDGET = 23;
