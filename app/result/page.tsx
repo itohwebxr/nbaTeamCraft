@@ -52,7 +52,11 @@ export default function ResultPage() {
       shareParams.set("tier", evaluation.tier);
     }
     [...starters, ...bench].forEach((e) => {
-      if (e) shareParams.set(slotKey(e.slot), formatName(e.playerSeason.name));
+      if (e) {
+        const key = slotKey(e.slot);
+        shareParams.set(key, formatName(e.playerSeason.name));
+        shareParams.set(`${key}_s`, e.playerSeason.season);
+      }
     });
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;

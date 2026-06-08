@@ -20,10 +20,14 @@ export async function GET(req: NextRequest) {
   const tier = p.get("tier") || "—";
   const tierColor = TIER_COLORS[tier] ?? "#6b7280";
 
-  const players = SLOT_ORDER.map((slot) => ({
-    slot,
-    name: p.get(slot.toLowerCase()) || "",
-  })).filter((e) => e.name);
+  const players = SLOT_ORDER.map((slot) => {
+    const key = slot.toLowerCase();
+    return {
+      slot,
+      name: p.get(key) || "",
+      season: p.get(`${key}_s`) || "",
+    };
+  }).filter((e) => e.name);
 
   return new ImageResponse(
     (
@@ -108,6 +112,9 @@ export async function GET(req: NextRequest) {
                   {player.slot}
                 </span>
                 <span style={{ fontSize: "26px", fontWeight: 600, color: "#ffffff" }}>{player.name}</span>
+                {player.season ? (
+                  <span style={{ fontSize: "16px", color: "#52525b", marginLeft: "4px" }}>{player.season}</span>
+                ) : null}
               </div>
             ))}
           </div>
