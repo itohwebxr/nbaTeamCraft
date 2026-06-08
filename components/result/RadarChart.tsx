@@ -8,27 +8,17 @@ interface RadarChartProps {
   size?: number;
 }
 
+// 4 axes at 90° intervals: OFF(top) → PLAY(right) → DEF(bottom) → REB(left)
 const AXES = [
-  { key: "offense",    label: "OFF",  angle: -90  },
-  { key: "playmaking", label: "PLAY", angle: -18  },
-  { key: "defense",    label: "DEF",  angle: 54   },
-  { key: "rebound",    label: "REB",  angle: 126  },
-  { key: "offense",    label: "",     angle: 198  }, // close polygon
+  { key: "offense",    label: "OFF",  angle: 0   },
+  { key: "playmaking", label: "PLAY", angle: 90  },
+  { key: "defense",    label: "DEF",  angle: 180 },
+  { key: "rebound",    label: "REB",  angle: 270 },
 ] as const;
-
-const LABELS = [
-  { key: "offense",    label: "OFF",  angle: -90  },
-  { key: "playmaking", label: "PLAY", angle: -18  },
-  { key: "defense",    label: "DEF",  angle: 54   },
-  { key: "rebound",    label: "REB",  angle: 126  },
-];
 
 function polar(cx: number, cy: number, r: number, angleDeg: number) {
   const rad = (angleDeg - 90) * (Math.PI / 180);
-  return {
-    x: cx + r * Math.cos(rad),
-    y: cy + r * Math.sin(rad),
-  };
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
 export default function RadarChart({
@@ -37,35 +27,35 @@ export default function RadarChart({
   const cx = size / 2;
   const cy = size / 2;
   const maxR = size * 0.38;
-  const ANGLES = [-90, -18, 54, 126, 198];
-  const values = [offense, playmaking, defense, rebound, offense];
   const stats = { offense, playmaking, defense, rebound };
-
-  // Grid rings
   const rings = [25, 50, 75, 100];
 
-  // Data polygon
-  const points = ANGLES.map((angle, i) => {
-    const r = (values[i] / 100) * maxR;
-    return polar(cx, cy, r, angle);
+  // Grid rings — 4 points, close with Z
+  const ringPaths = rings.map((pct) => {
+    const r = (pct / 100) * maxR;
+    const pts = AXES.map(({ angle }) => polar(cx, cy, r, angle));
+    return pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
   });
-  const polygonPath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
 
   // Axis lines
-  const axes = ANGLES.slice(0, 4).map((angle) => polar(cx, cy, maxR, angle));
+  const axisEnds = AXES.map(({ angle }) => polar(cx, cy, maxR, angle));
+
+  // Data polygon — 4 points + close
+  const dataPoints = AXES.map(({ key, angle }) => {
+    const val = stats[key as keyof typeof stats];
+    return polar(cx, cy, (val / 100) * maxR, angle);
+  });
+  const polygonPath = dataPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
 
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {/* Grid rings */}
-      {rings.map((pct) => {
-        const r = (pct / 100) * maxR;
-        const ringPoints = ANGLES.slice(0, 4).map((angle) => polar(cx, cy, r, angle));
-        const d = ringPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
-        return <path key={pct} d={d} fill="none" stroke="#3f3f46" strokeWidth="0.5" />;
-      })}
+      {ringPaths.map((d, i) => (
+        <path key={i} d={d} fill="none" stroke="#3f3f46" strokeWidth="0.5" />
+      ))}
 
       {/* Axis lines */}
-      {axes.map((pt, i) => (
+      {axisEnds.map((pt, i) => (
         <line key={i} x1={cx} y1={cy} x2={pt.x} y2={pt.y} stroke="#52525b" strokeWidth="0.5" />
       ))}
 
@@ -73,7 +63,7 @@ export default function RadarChart({
       <path d={polygonPath} fill="#f97316" fillOpacity="0.25" stroke="#f97316" strokeWidth="1.5" />
 
       {/* Labels */}
-      {LABELS.map(({ key, label, angle }) => {
+      {AXES.map(({ key, label, angle }) => {
         const pt = polar(cx, cy, maxR + 16, angle);
         const val = stats[key as keyof typeof stats];
         return (

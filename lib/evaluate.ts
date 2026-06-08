@@ -31,7 +31,7 @@ function weightedAvg(
 }
 
 function toRating(score: number): number {
-  return Math.round(Math.max(0, Math.min(100, score * 100)));
+  return Math.round(Math.max(0, Math.min(100, 60 + Math.pow(score, 1.3) * 40)));
 }
 
 export function calcTeamEvaluation(
