@@ -7,23 +7,19 @@ interface RawStats {
   spg: number;
   bpg: number;
   mpg: number;
-  win_shares: number;
 }
 
-// Position-based weights
+// Position-based weights (sum = 1.0 per position)
 const WEIGHTS: Record<Position, Record<keyof Omit<RawStats, "mpg">, number>> = {
-  PG: { ppg: 0.25, rpg: 0.08, apg: 0.25, spg: 0.15, bpg: 0.07, win_shares: 0.20 },
-  SG: { ppg: 0.30, rpg: 0.08, apg: 0.15, spg: 0.15, bpg: 0.07, win_shares: 0.25 },
-  SF: { ppg: 0.28, rpg: 0.12, apg: 0.12, spg: 0.15, bpg: 0.08, win_shares: 0.25 },
-  PF: { ppg: 0.25, rpg: 0.22, apg: 0.08, spg: 0.12, bpg: 0.13, win_shares: 0.20 },
-  C:  { ppg: 0.22, rpg: 0.28, apg: 0.05, spg: 0.08, bpg: 0.17, win_shares: 0.20 },
+  PG: { ppg: 0.30, rpg: 0.10, apg: 0.30, spg: 0.18, bpg: 0.12 },
+  SG: { ppg: 0.35, rpg: 0.10, apg: 0.18, spg: 0.18, bpg: 0.19 },
+  SF: { ppg: 0.32, rpg: 0.15, apg: 0.15, spg: 0.18, bpg: 0.20 },
+  PF: { ppg: 0.28, rpg: 0.27, apg: 0.10, spg: 0.15, bpg: 0.20 },
+  C:  { ppg: 0.25, rpg: 0.35, apg: 0.06, spg: 0.10, bpg: 0.24 },
 };
 
-/**
- * Calculate percentile rank of a value within a population.
- * Returns 0.0–1.0.
- */
 export function percentileRank(value: number, population: number[]): number {
+  if (population.length === 0) return 0;
   const sorted = [...population].sort((a, b) => a - b);
   const below = sorted.filter((v) => v < value).length;
   const equal = sorted.filter((v) => v === value).length;
@@ -31,8 +27,7 @@ export function percentileRank(value: number, population: number[]): number {
 }
 
 /**
- * Given a player's stats and the full population of stats,
- * calculate an overall rating (60–100).
+ * Calculate overall rating (60–100) using position-weighted percentile scores.
  */
 export function calcOverall(
   stats: RawStats,
@@ -49,7 +44,7 @@ export function calcOverall(
     rawScore += pct * weights[key];
   }
 
-  // MPG penalty: players with low minutes are penalised
+  // MPG penalty for low-minute players
   const mpgPenalty = stats.mpg < 10 ? -5 : 0;
 
   const overall = Math.round(60 + rawScore * 40) + mpgPenalty;

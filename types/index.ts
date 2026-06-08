@@ -6,7 +6,7 @@ export type RosterSlot = StarterSlot | BenchSlot;
 
 export interface Player {
   id: string;
-  bbref_player_id: string;
+  nba_player_id: string;
   name: string;
 }
 
@@ -27,13 +27,11 @@ export interface PlayerSeason {
   spg: number;
   bpg: number;
   mpg: number;
-  win_shares: number;
-  dws: number;
   overall: number;
   cost: number;
   // joined from players
   name: string;
-  bbref_player_id: string;
+  nba_player_id: string;
 }
 
 export interface Team {
@@ -47,21 +45,6 @@ export interface RosterEntry {
   playerSeason: PlayerSeason;
   slot: RosterSlot;
   assignedPosition: Position;
-}
-
-export interface DraftState {
-  // Teams that have appeared this session (to prevent repeats)
-  appearedTeamIds: string[];
-  // Currently displayed team and its players
-  currentTeam: Team | null;
-  currentPlayers: PlayerSeason[];
-  // Drafted player bbref_player_ids (to prevent duplicates across teams)
-  draftedBbrefIds: string[];
-  // The user's roster
-  roster: RosterEntry[];
-  // Budget
-  totalBudget: number;
-  usedBudget: number;
 }
 
 export interface TeamEvaluation {

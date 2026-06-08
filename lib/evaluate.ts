@@ -14,14 +14,8 @@ interface PopulationStats {
   spg: number[];
   bpg: number[];
   rpg: number[];
-  win_shares: number[];
-  dws: number[];
-  overall: number[];
 }
 
-/**
- * Weighted average of a mapped value over roster entries.
- */
 function weightedAvg(
   roster: RosterEntry[],
   fn: (ps: PlayerSeason) => number
@@ -36,46 +30,50 @@ function weightedAvg(
   return totalWeight > 0 ? sum / totalWeight : 0;
 }
 
-function toRating(pct: number): number {
-  return Math.round(Math.max(60, Math.min(100, 60 + pct * 40)));
+function toRating(score: number): number {
+  return Math.round(Math.max(0, Math.min(100, score * 100)));
 }
 
 export function calcTeamEvaluation(
   roster: RosterEntry[],
   population: PopulationStats
 ): TeamEvaluation {
-  const avgOverall = weightedAvg(roster, (ps) => ps.overall);
-  const overall = Math.round(Math.max(60, Math.min(100, avgOverall)));
-
-  const offenseScore = weightedAvg(roster, (ps) => {
-    const ppgPct = percentileRank(ps.ppg, population.ppg);
-    const apgPct = percentileRank(ps.apg, population.apg);
-    return ppgPct * 0.6 + apgPct * 0.4;
-  });
-
-  const defenseScore = weightedAvg(roster, (ps) => {
-    const dwsPct = percentileRank(ps.dws, population.dws);
-    const spgPct = percentileRank(ps.spg, population.spg);
-    const bpgPct = percentileRank(ps.bpg, population.bpg);
-    return dwsPct * 0.6 + spgPct * 0.25 + bpgPct * 0.15;
-  });
-
-  const reboundScore = weightedAvg(roster, (ps) =>
-    percentileRank(ps.rpg, population.rpg)
+  const overall = Math.round(
+    Math.max(0, Math.min(100, weightedAvg(roster, (ps) => ps.overall)))
   );
 
-  const playmakingScore = weightedAvg(roster, (ps) => {
-    const apgPct = percentileRank(ps.apg, population.apg);
-    const wsPct = percentileRank(ps.win_shares, population.win_shares);
-    return apgPct * 0.8 + wsPct * 0.2;
-  });
+  const offense = toRating(
+    weightedAvg(roster, (ps) => {
+      const ppgPct = percentileRank(ps.ppg, population.ppg);
+      const apgPct = percentileRank(ps.apg, population.apg);
+      return ppgPct * 0.65 + apgPct * 0.35;
+    })
+  );
+
+  // Defense: SPG(0.40) + BPG(0.35) + RPG(0.25) — RPG captures defensive rebounding
+  const defense = toRating(
+    weightedAvg(roster, (ps) => {
+      const spgPct = percentileRank(ps.spg, population.spg);
+      const bpgPct = percentileRank(ps.bpg, population.bpg);
+      const rpgPct = percentileRank(ps.rpg, population.rpg);
+      return spgPct * 0.40 + bpgPct * 0.35 + rpgPct * 0.25;
+    })
+  );
+
+  const rebound = toRating(
+    weightedAvg(roster, (ps) => percentileRank(ps.rpg, population.rpg))
+  );
+
+  const playmaking = toRating(
+    weightedAvg(roster, (ps) => percentileRank(ps.apg, population.apg))
+  );
 
   return {
     overall,
-    offense: toRating(offenseScore),
-    defense: toRating(defenseScore),
-    rebound: toRating(reboundScore),
-    playmaking: toRating(playmakingScore),
+    offense,
+    defense,
+    rebound,
+    playmaking,
     tier: calcTier(overall),
   };
 }

@@ -13,37 +13,26 @@ import {
 } from "@/types";
 
 interface DraftStore {
-  // Session state
   appearedTeamIds: string[];
-  draftedBbrefIds: string[];
-
-  // Current team display
+  draftedPlayerIds: string[];  // nba_player_id list
   currentTeam: Team | null;
   currentPlayers: PlayerSeason[];
-
-  // Roster
   roster: RosterEntry[];
-
-  // Budget
   totalBudget: number;
   usedBudget: number;
-
-  // Actions
   setCurrentTeam: (team: Team, players: PlayerSeason[]) => void;
   draftPlayer: (playerSeason: PlayerSeason, slot: RosterSlot, assignedPosition: Position) => void;
   reset: () => void;
-
-  // Derived helpers
   getVacantStarterSlots: () => StarterSlot[];
   getVacantBenchSlots: () => BenchSlot[];
   getDraftablePositions: (player: PlayerSeason) => Position[];
-  isPlayerDrafted: (bbrefId: string) => boolean;
+  isPlayerDrafted: (nbaPlayerId: string) => boolean;
   isRosterComplete: () => boolean;
 }
 
 const initialState = {
   appearedTeamIds: [] as string[],
-  draftedBbrefIds: [] as string[],
+  draftedPlayerIds: [] as string[],
   currentTeam: null,
   currentPlayers: [] as PlayerSeason[],
   roster: [] as RosterEntry[],
@@ -65,7 +54,7 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
   draftPlayer: (playerSeason, slot, assignedPosition) => {
     set((state) => ({
       roster: [...state.roster, { playerSeason, slot, assignedPosition }],
-      draftedBbrefIds: [...state.draftedBbrefIds, playerSeason.bbref_player_id],
+      draftedPlayerIds: [...state.draftedPlayerIds, playerSeason.nba_player_id],
       usedBudget: state.usedBudget + playerSeason.cost,
     }));
   },
@@ -89,27 +78,22 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
     const hasBenchVacancy = get().getVacantBenchSlots().length > 0;
     const playerPositions = player.positions.map((p) => p.position);
 
-    // Positions that match vacant starter slots
     const matchingStarters = playerPositions.filter((pos) =>
       vacantStarters.includes(pos)
     );
 
-    // Bench is position-free: any position works if bench slot is open
-    // We represent bench-eligible as returning the player's primary position
     if (matchingStarters.length === 0 && hasBenchVacancy) {
-      // Only bench available — return primary position to assign to bench
       return playerPositions.slice(0, 1);
     }
 
     return matchingStarters;
   },
 
-  isPlayerDrafted: (bbrefId) => {
-    return get().draftedBbrefIds.includes(bbrefId);
+  isPlayerDrafted: (nbaPlayerId) => {
+    return get().draftedPlayerIds.includes(nbaPlayerId);
   },
 
   isRosterComplete: () => {
-    const { roster } = get();
-    return roster.length === 8;
+    return get().roster.length === 8;
   },
 }));
