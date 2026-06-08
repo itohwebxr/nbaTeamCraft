@@ -19,6 +19,7 @@ export default function DraftPage() {
     player: PlayerSeason;
     positions: Position[];
   } | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const fetchNextTeam = useCallback(async () => {
     setLoading(true);
@@ -126,12 +127,6 @@ export default function DraftPage() {
 
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest">Roster</h3>
-                <button
-                  onClick={fetchNextTeam}
-                  className="text-xs text-zinc-500 hover:text-orange-400 transition-colors"
-                >
-                  Skip →
-                </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -168,9 +163,15 @@ export default function DraftPage() {
 
         {/* Right: My Roster */}
         <div className="lg:w-64 shrink-0 order-1 lg:order-2">
-          <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest mb-3">
-            My Team
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest">My Team</h3>
+            <button
+              onClick={() => setShowResetModal(true)}
+              className="text-xs text-zinc-600 hover:text-red-400 transition-colors"
+            >
+              やり直す
+            </button>
+          </div>
           <div className="space-y-1.5">
             <p className="hidden lg:block text-xs text-zinc-600 mb-2">STARTERS</p>
             {STARTER_SLOTS.map((slot) => (
@@ -210,6 +211,36 @@ export default function DraftPage() {
           onSelect={(pos) => commitDraft(pendingDraft.player, pos)}
           onCancel={() => setPendingDraft(null)}
         />
+      )}
+
+      {/* Reset confirmation modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-black text-white mb-2">やり直しますか？</h2>
+            <p className="text-sm text-zinc-400 mb-6">
+              現在選択中の選手がすべてリセットされます。この操作は取り消せません。
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetModal(false)}
+                className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={() => {
+                  store.reset();
+                  setShowResetModal(false);
+                  fetchNextTeam();
+                }}
+                className="flex-1 py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-sm transition-colors"
+              >
+                リセット
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
