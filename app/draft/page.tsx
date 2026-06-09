@@ -215,10 +215,12 @@ export default function DraftPage() {
             </div>
           </div>
 
-          {filledSlots > 0 && filledSlots < TOTAL_ROSTER_SIZE && (
+          {filledSlots < TOTAL_ROSTER_SIZE && (
             <button
               onClick={fetchNextTeam}
+              disabled={filledSlots === 0}
               className="w-full mt-4 py-3 rounded-xl bg-orange-500 hover:bg-orange-400
+                disabled:opacity-40 disabled:cursor-not-allowed
                 text-white font-bold text-sm transition-colors"
             >
               Next Team →
