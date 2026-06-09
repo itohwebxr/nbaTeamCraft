@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 type SearchParams = Promise<{ [key: string]: string | undefined }>;
 
 function buildOgUrl(params: { [key: string]: string | undefined }): string {
