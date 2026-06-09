@@ -20,6 +20,7 @@ export default function ResultPage() {
   const [evaluation, setEvaluation] = useState<TeamEvaluation | null>(null);
   const [teamName, setTeamName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     if (roster.length === 0) {
@@ -46,6 +47,8 @@ export default function ResultPage() {
   }, []);
 
   const handleShare = async () => {
+    if (sharing) return;
+    setSharing(true);
     const label = teamName || "My NBA Team";
     const formatName = (name: string) => {
       const parts = name.trim().split(/\s+/);
@@ -80,7 +83,8 @@ export default function ResultPage() {
       gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier });
     }
 
-    let sharePageUrl: string;
+    const fallbackUrl = `${window.location.origin}/share?${new URLSearchParams(shareData).toString()}`;
+    let sharePageUrl = fallbackUrl;
     try {
       const res = await fetch("/api/share", {
         method: "POST",
@@ -88,10 +92,11 @@ export default function ResultPage() {
         body: JSON.stringify(shareData),
       });
       const json = await res.json();
-      sharePageUrl = json.url;
+      if (json.url) sharePageUrl = json.url;
     } catch {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-      sharePageUrl = `${siteUrl}/share?${new URLSearchParams(shareData).toString()}`;
+      // use fallbackUrl
+    } finally {
+      setSharing(false);
     }
 
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(sharePageUrl)}`;
@@ -183,9 +188,17 @@ export default function ResultPage() {
         <div className="flex gap-3">
           <button
             onClick={handleShare}
-            className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+            disabled={sharing}
+            className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
           >
-            <span>𝕏</span> Share
+            {sharing ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Sharing...
+              </>
+            ) : (
+              <><span>𝕏</span> Share</>
+            )}
           </button>
           <button
             onClick={() => {
