@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/teams?exclude=id1,id2,id3
 // Returns a single random team not in the exclude list
 export async function GET(request: NextRequest) {

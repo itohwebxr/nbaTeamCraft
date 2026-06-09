@@ -3,6 +3,8 @@ import { createServerClient } from "@/lib/supabase";
 import { RosterEntry, TeamEvaluation } from "@/types";
 import { calcTeamEvaluation } from "@/lib/evaluate";
 
+export const dynamic = "force-dynamic";
+
 // POST /api/evaluate
 // Body: { roster: RosterEntry[] }
 // Returns TeamEvaluation
