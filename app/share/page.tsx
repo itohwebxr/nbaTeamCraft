@@ -57,6 +57,16 @@ export async function generateMetadata({
 const SLOT_ORDER = ["pg", "sg", "sf", "pf", "c", "6th"];
 const SLOT_LABEL: Record<string, string> = { "6th": "6TH" };
 
+function ClientRedirect() {
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `window.location.replace("/");`,
+      }}
+    />
+  );
+}
+
 export default async function SharePage({
   searchParams,
 }: {
@@ -75,6 +85,7 @@ export default async function SharePage({
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center px-4">
+      <ClientRedirect />
       <header className="mb-8">
         <Image src="/logo.png" alt="NBA TeamCraft" height={40} width={75} className="object-contain" />
       </header>
