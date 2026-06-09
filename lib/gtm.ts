@@ -2,6 +2,7 @@ type GtmEvent = Record<string, unknown> & { event: string };
 
 function push(data: GtmEvent) {
   if (typeof window === "undefined") return;
+  if (process.env.NODE_ENV !== "production") return;
   (window as unknown as { dataLayer: GtmEvent[] }).dataLayer =
     (window as unknown as { dataLayer: GtmEvent[] }).dataLayer ?? [];
   (window as unknown as { dataLayer: GtmEvent[] }).dataLayer.push(data);
