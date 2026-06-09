@@ -1,13 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<{ [key: string]: string | undefined }>;
 
-function buildOgUrl(params: { [key: string]: string | undefined }): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+async function getSiteUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = host.startsWith("localhost") ? "http" : "https";
+  return `${proto}://${host}`;
+}
+
+async function buildOgUrl(params: { [key: string]: string | undefined }): Promise<string> {
+  const siteUrl = await getSiteUrl();
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v) qs.set(k, v);
@@ -24,7 +33,7 @@ export async function generateMetadata({
   const name = params.name || "My NBA Team";
   const overall = params.overall || "";
   const tier = params.tier || "";
-  const ogImageUrl = buildOgUrl(params);
+  const ogImageUrl = await buildOgUrl(params);
   const title = `${name} | NBA TeamCraft`;
   const description = overall ? `Overall: ${overall} (${tier} Tier) — NBA TeamCraft` : "NBA TeamCraft";
 
