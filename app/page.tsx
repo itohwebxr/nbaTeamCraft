@@ -9,7 +9,7 @@ export default function Home() {
         <div>
           <Image src="/logo.png" alt="NBA TeamCraft" width={240} height={80} className="mx-auto object-contain" />
           <p className="mt-4 text-zinc-400 text-sm leading-relaxed">
-            Draft 8 players from historic NBA rosters.<br />
+            Draft 6 players from historic NBA rosters.<br />
             Build the greatest team ever assembled.
           </p>
         </div>
@@ -24,11 +24,11 @@ export default function Home() {
             </li>
             <li className="flex gap-2">
               <span className="text-orange-400 shrink-0">02</span>
-              Draft players to fill 5 starter slots (PG/SG/SF/PF/C) + 3 bench
+              Draft players to fill 5 starter slots (PG/SG/SF/PF/C) + 1 bench
             </li>
             <li className="flex gap-2">
               <span className="text-orange-400 shrink-0">03</span>
-              Budget: <span className="font-bold text-white">25 points</span> — star players cost more
+              Budget: <span className="font-bold text-white">17 points</span> — star players cost more
             </li>
             <li className="flex gap-2">
               <span className="text-orange-400 shrink-0">04</span>
