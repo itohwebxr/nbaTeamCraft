@@ -10,46 +10,58 @@ import {
   STARTER_SLOTS,
   BENCH_SLOTS,
   TOTAL_BUDGET,
+  TOTAL_ROSTER_SIZE,
 } from "@/types";
 
 interface DraftStore {
-  // Session state
   appearedTeamIds: string[];
-  draftedBbrefIds: string[];
-
-  // Current team display
+  draftedPlayerIds: string[];  // nba_player_id list
   currentTeam: Team | null;
   currentPlayers: PlayerSeason[];
-
-  // Roster
   roster: RosterEntry[];
-
-  // Budget
   totalBudget: number;
   usedBudget: number;
-
-  // Actions
   setCurrentTeam: (team: Team, players: PlayerSeason[]) => void;
   draftPlayer: (playerSeason: PlayerSeason, slot: RosterSlot, assignedPosition: Position) => void;
   reset: () => void;
-
-  // Derived helpers
   getVacantStarterSlots: () => StarterSlot[];
   getVacantBenchSlots: () => BenchSlot[];
   getDraftablePositions: (player: PlayerSeason) => Position[];
-  isPlayerDrafted: (bbrefId: string) => boolean;
+  isPlayerDrafted: (nbaPlayerId: string) => boolean;
   isRosterComplete: () => boolean;
 }
 
 const initialState = {
   appearedTeamIds: [] as string[],
-  draftedBbrefIds: [] as string[],
+  draftedPlayerIds: [] as string[],
   currentTeam: null,
   currentPlayers: [] as PlayerSeason[],
   roster: [] as RosterEntry[],
   totalBudget: TOTAL_BUDGET,
   usedBudget: 0,
 };
+
+// For each position, ensure the highest-overall player holds the starter slot.
+// Bench players are re-assigned BENCH1/BENCH2/BENCH3 in order.
+function rebalanceSlots(roster: RosterEntry[]): RosterEntry[] {
+  const starters: RosterEntry[] = [];
+  const benchCandidates: RosterEntry[] = [];
+
+  for (const pos of STARTER_SLOTS) {
+    const group = roster
+      .filter((e) => e.assignedPosition === pos)
+      .sort((a, b) => b.playerSeason.overall - a.playerSeason.overall);
+    if (group.length === 0) continue;
+    starters.push({ ...group[0], slot: pos });
+    for (let i = 1; i < group.length; i++) benchCandidates.push(group[i]);
+  }
+
+  const result = [...starters];
+  BENCH_SLOTS.forEach((benchSlot, i) => {
+    if (benchCandidates[i]) result.push({ ...benchCandidates[i], slot: benchSlot });
+  });
+  return result;
+}
 
 export const useDraftStore = create<DraftStore>((set, get) => ({
   ...initialState,
@@ -63,11 +75,29 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
   },
 
   draftPlayer: (playerSeason, slot, assignedPosition) => {
-    set((state) => ({
-      roster: [...state.roster, { playerSeason, slot, assignedPosition }],
-      draftedBbrefIds: [...state.draftedBbrefIds, playerSeason.bbref_player_id],
-      usedBudget: state.usedBudget + playerSeason.cost,
-    }));
+    set((state) => {
+      // Remove existing player from the same team if any (1 player per team rule)
+      const displaced = state.roster.find(
+        (e) => e.playerSeason.team_id === playerSeason.team_id
+      );
+      const baseRoster = displaced
+        ? state.roster.filter((e) => e.playerSeason.team_id !== playerSeason.team_id)
+        : state.roster;
+      const baseDraftedIds = displaced
+        ? state.draftedPlayerIds.filter((id) => id !== displaced.playerSeason.nba_player_id)
+        : state.draftedPlayerIds;
+      const budgetRefund = displaced ? displaced.playerSeason.cost : 0;
+
+      const newRoster = rebalanceSlots([
+        ...baseRoster,
+        { playerSeason, slot, assignedPosition },
+      ]);
+      return {
+        roster: newRoster,
+        draftedPlayerIds: [...baseDraftedIds, playerSeason.nba_player_id],
+        usedBudget: state.usedBudget - budgetRefund + playerSeason.cost,
+      };
+    });
   },
 
   reset: () => set(initialState),
@@ -85,31 +115,47 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
   },
 
   getDraftablePositions: (player) => {
+    const { roster } = get();
+    const displaced = roster.find((e) => e.playerSeason.team_id === player.team_id);
+
     const vacantStarters = get().getVacantStarterSlots();
-    const hasBenchVacancy = get().getVacantBenchSlots().length > 0;
+    const effectiveVacantStarters =
+      displaced && STARTER_SLOTS.includes(displaced.slot as StarterSlot)
+        ? [...vacantStarters, displaced.slot as StarterSlot]
+        : vacantStarters;
+
+    const vacantBench = get().getVacantBenchSlots();
+    const hasBenchVacancy =
+      vacantBench.length > 0 ||
+      (displaced != null && BENCH_SLOTS.includes(displaced.slot as BenchSlot));
+
     const playerPositions = player.positions.map((p) => p.position);
 
-    // Positions that match vacant starter slots
-    const matchingStarters = playerPositions.filter((pos) =>
-      vacantStarters.includes(pos)
+    // Positions with a vacant starter slot
+    const matchingVacantStarters = playerPositions.filter((pos) =>
+      effectiveVacantStarters.includes(pos)
     );
+    if (matchingVacantStarters.length > 0) return matchingVacantStarters;
 
-    // Bench is position-free: any position works if bench slot is open
-    // We represent bench-eligible as returning the player's primary position
-    if (matchingStarters.length === 0 && hasBenchVacancy) {
-      // Only bench available — return primary position to assign to bench
-      return playerPositions.slice(0, 1);
+    // Starter slot occupied but same position exists — still draftable to bench,
+    // rebalance will auto-promote if this player has higher overall.
+    const matchingOccupiedStarters = playerPositions.filter((pos) =>
+      STARTER_SLOTS.includes(pos) && !effectiveVacantStarters.includes(pos)
+    );
+    if (matchingOccupiedStarters.length > 0 && hasBenchVacancy) {
+      return matchingOccupiedStarters;
     }
 
-    return matchingStarters;
+    if (hasBenchVacancy) return playerPositions.slice(0, 1);
+
+    return [];
   },
 
-  isPlayerDrafted: (bbrefId) => {
-    return get().draftedBbrefIds.includes(bbrefId);
+  isPlayerDrafted: (nbaPlayerId) => {
+    return get().draftedPlayerIds.includes(nbaPlayerId);
   },
 
   isRosterComplete: () => {
-    const { roster } = get();
-    return roster.length === 8;
+    return get().roster.length === TOTAL_ROSTER_SIZE;
   },
 }));
