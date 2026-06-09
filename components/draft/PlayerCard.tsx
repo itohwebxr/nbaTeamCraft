@@ -9,6 +9,7 @@ interface PlayerCardProps {
   isReplaceable: boolean;
   budgetOk: boolean;
   onDraft: (player: PlayerSeason, positions: Position[]) => void;
+  onBudgetBlock?: (player: PlayerSeason) => void;
 }
 
 export default function PlayerCard({
@@ -18,6 +19,7 @@ export default function PlayerCard({
   isReplaceable,
   budgetOk,
   onDraft,
+  onBudgetBlock,
 }: PlayerCardProps) {
   const canDraft = draftablePositions.length > 0 && !isDrafted && budgetOk;
   const positionStr = player.positions.map((p) => p.position).join("/");
@@ -39,7 +41,13 @@ export default function PlayerCard({
           ? "opacity-50 border-zinc-700 bg-zinc-900/50 cursor-not-allowed"
           : "border-zinc-700 bg-zinc-900 hover:border-orange-500/60 hover:bg-zinc-800 cursor-pointer"
         }`}
-      onClick={() => canDraft && onDraft(player, draftablePositions)}
+      onClick={() => {
+        if (canDraft) {
+          onDraft(player, draftablePositions);
+        } else if (!isDrafted && draftablePositions.length > 0 && !budgetOk) {
+          onBudgetBlock?.(player);
+        }
+      }}
     >
       {isDrafted && (
         <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 z-10">

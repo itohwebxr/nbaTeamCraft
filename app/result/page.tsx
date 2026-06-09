@@ -7,6 +7,7 @@ import { useDraftStore } from "@/stores/draftStore";
 import { TeamEvaluation, STARTER_SLOTS, BENCH_SLOTS, TOTAL_BUDGET } from "@/types";
 import TeamStats from "@/components/result/TeamStats";
 import TeamNameInput from "@/components/result/TeamNameInput";
+import { gtm } from "@/lib/gtm";
 
 function SlotLabel({ slot }: { slot: string }) {
   if (slot === "BENCH1") return "6TH";
@@ -32,7 +33,14 @@ export default function ResultPage() {
       body: JSON.stringify({ roster }),
     })
       .then((r) => r.json())
-      .then((data) => setEvaluation(data))
+      .then((data) => {
+        setEvaluation(data);
+        gtm.viewResult({
+          overall: data.overall,
+          tier: data.tier,
+          used_budget: usedBudget,
+        });
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -71,6 +79,9 @@ export default function ResultPage() {
       ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\n#NBATeamCraft`
       : `🏀 ${label}\n${rosterLines}\n#NBATeamCraft`;
 
+    if (evaluation) {
+      gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier });
+    }
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(sharePageUrl)}`;
     window.open(tweetUrl, "_blank", "noopener");
   };
@@ -165,7 +176,13 @@ export default function ResultPage() {
             <span>𝕏</span> Share
           </button>
           <button
-            onClick={() => { reset(); router.push("/draft"); }}
+            onClick={() => {
+              if (evaluation) {
+                gtm.draftAgain({ previous_overall: evaluation.overall, previous_tier: evaluation.tier });
+              }
+              reset();
+              router.push("/draft");
+            }}
             className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
           >
             Draft Again
