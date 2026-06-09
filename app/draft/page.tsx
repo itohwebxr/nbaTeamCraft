@@ -106,15 +106,6 @@ export default function DraftPage() {
 
     store.draftPlayer(player, slot, position);
     setPendingDraft(null);
-
-    if (nextSize === TOTAL_ROSTER_SIZE) {
-      gtm.draftComplete({
-        used_budget: store.usedBudget - (displaced?.playerSeason.cost ?? 0) + player.cost,
-        remaining_budget: TOTAL_BUDGET - store.usedBudget + (displaced?.playerSeason.cost ?? 0) - player.cost,
-        teams_seen_count: store.appearedTeamIds.length,
-      });
-      router.push("/result");
-    }
   };
 
   const { currentTeam, currentPlayers, roster, usedBudget } = store;
@@ -224,13 +215,31 @@ export default function DraftPage() {
             </div>
           </div>
 
-          {filledSlots > 0 && filledSlots < 8 && (
+          {filledSlots < TOTAL_ROSTER_SIZE && (
             <button
               onClick={fetchNextTeam}
+              disabled={filledSlots === 0}
               className="w-full mt-4 py-3 rounded-xl bg-orange-500 hover:bg-orange-400
+                disabled:opacity-40 disabled:cursor-not-allowed
                 text-white font-bold text-sm transition-colors"
             >
               Next Team →
+            </button>
+          )}
+          {filledSlots === TOTAL_ROSTER_SIZE && (
+            <button
+              onClick={() => {
+                gtm.draftComplete({
+                  used_budget: usedBudget,
+                  remaining_budget: TOTAL_BUDGET - usedBudget,
+                  teams_seen_count: store.appearedTeamIds.length,
+                });
+                router.push("/result");
+              }}
+              className="w-full mt-4 py-3 rounded-xl bg-green-500 hover:bg-green-400
+                text-white font-bold text-sm transition-colors"
+            >
+              View Results →
             </button>
           )}
         </div>

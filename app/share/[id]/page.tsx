@@ -85,6 +85,18 @@ export async function generateMetadata({
 const SLOT_ORDER = ["pg", "sg", "sf", "pf", "c", "6th"] as const;
 const SLOT_LABEL: Record<string, string> = { "6th": "6TH" };
 
+// Client-side redirect so bots (Twitter crawler) still receive the OGP HTML,
+// while human visitors are forwarded to the top page.
+function ClientRedirect() {
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `window.location.replace("/");`,
+      }}
+    />
+  );
+}
+
 export default async function ShareIdPage({
   params,
 }: {
@@ -106,6 +118,7 @@ export default async function ShareIdPage({
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center px-4">
+      <ClientRedirect />
       <header className="mb-8">
         <Image src="/logo.png" alt="NBA TeamCraft" height={40} width={75} className="object-contain" />
       </header>
