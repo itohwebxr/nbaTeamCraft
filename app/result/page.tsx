@@ -45,7 +45,7 @@ export default function ResultPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const label = teamName || "My NBA Team";
     const formatName = (name: string) => {
       const parts = name.trim().split(/\s+/);
@@ -53,24 +53,21 @@ export default function ResultPage() {
       return `${parts[0][0]} ${parts[parts.length - 1]}`;
     };
     const slotKey = (slot: string) => slot === "BENCH1" ? "6th" : slot.toLowerCase();
+    const slotLabel = (slot: string) => slot === "BENCH1" ? "6TH" : slot;
 
-    const shareParams = new URLSearchParams({ name: label });
+    const shareData: Record<string, string> = { name: label };
     if (evaluation) {
-      shareParams.set("overall", String(evaluation.overall));
-      shareParams.set("tier", evaluation.tier);
+      shareData.overall = String(evaluation.overall);
+      shareData.tier = evaluation.tier;
     }
     [...starters, ...bench].forEach((e) => {
       if (e) {
         const key = slotKey(e.slot);
-        shareParams.set(key, formatName(e.playerSeason.name));
-        shareParams.set(`${key}_s`, e.playerSeason.season);
+        shareData[key] = formatName(e.playerSeason.name);
+        shareData[`${key}_s`] = e.playerSeason.season;
       }
     });
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-    const sharePageUrl = `${siteUrl}/share?${shareParams.toString()}`;
-
-    const slotLabel = (slot: string) => slot === "BENCH1" ? "6TH" : slot;
     const rosterLines = [...starters, ...bench]
       .filter((e): e is NonNullable<typeof e> => e != null)
       .map((e) => `${slotLabel(e.slot)} : ${formatName(e.playerSeason.name)}`)
@@ -82,6 +79,21 @@ export default function ResultPage() {
     if (evaluation) {
       gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier });
     }
+
+    let sharePageUrl: string;
+    try {
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(shareData),
+      });
+      const json = await res.json();
+      sharePageUrl = json.url;
+    } catch {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+      sharePageUrl = `${siteUrl}/share?${new URLSearchParams(shareData).toString()}`;
+    }
+
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(sharePageUrl)}`;
     window.open(tweetUrl, "_blank", "noopener");
   };
