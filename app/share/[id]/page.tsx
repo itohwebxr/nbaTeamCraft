@@ -1,32 +1,60 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { createServerClient } from "@/lib/supabase";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-type SearchParams = Promise<{ [key: string]: string | undefined }>;
+type ShareData = {
+  name?: string;
+  overall?: string;
+  tier?: string;
+  pg?: string; pg_s?: string;
+  sg?: string; sg_s?: string;
+  sf?: string; sf_s?: string;
+  pf?: string; pf_s?: string;
+  c?: string;  c_s?: string;
+  "6th"?: string; "6th_s"?: string;
+};
 
-function buildOgUrl(params: { [key: string]: string | undefined }): string {
+async function getShareData(id: string): Promise<ShareData | null> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("shares")
+    .select("data")
+    .eq("id", id)
+    .single();
+  if (error || !data) return null;
+  return data.data as ShareData;
+}
+
+function buildOgUrl(params: ShareData): string {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
-    if (v) qs.set(k, v);
+    if (v) qs.set(k, String(v));
   }
   return `${siteUrl}/api/og?${qs.toString()}`;
 }
 
 export async function generateMetadata({
-  searchParams,
+  params,
 }: {
-  searchParams: SearchParams;
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const params = await searchParams;
-  const name = params.name || "My NBA Team";
-  const overall = params.overall || "";
-  const tier = params.tier || "";
-  const ogImageUrl = buildOgUrl(params);
+  const { id } = await params;
+  const share = await getShareData(id);
+  if (!share) return { title: "NBA TeamCraft" };
+
+  const name = share.name || "My NBA Team";
+  const overall = share.overall || "";
+  const tier = share.tier || "";
+  const ogImageUrl = buildOgUrl(share);
   const title = `${name} | NBA TeamCraft`;
-  const description = overall ? `Overall: ${overall} (${tier} Tier) — NBA TeamCraft` : "NBA TeamCraft";
+  const description = overall
+    ? `Overall: ${overall} (${tier} Tier) — NBA TeamCraft`
+    : "NBA TeamCraft";
 
   return {
     title,
@@ -45,23 +73,26 @@ export async function generateMetadata({
   };
 }
 
-const SLOT_ORDER = ["pg", "sg", "sf", "pf", "c", "6th"];
+const SLOT_ORDER = ["pg", "sg", "sf", "pf", "c", "6th"] as const;
 const SLOT_LABEL: Record<string, string> = { "6th": "6TH" };
 
-export default async function SharePage({
-  searchParams,
+export default async function ShareIdPage({
+  params,
 }: {
-  searchParams: SearchParams;
+  params: Promise<{ id: string }>;
 }) {
-  const params = await searchParams;
-  const name = params.name || "My NBA Team";
-  const overall = params.overall || "";
-  const tier = params.tier || "";
+  const { id } = await params;
+  const share = await getShareData(id);
+  if (!share) notFound();
+
+  const name = share.name || "My NBA Team";
+  const overall = share.overall || "";
+  const tier = share.tier || "";
 
   const players = SLOT_ORDER.map((key) => ({
     slot: SLOT_LABEL[key] ?? key.toUpperCase(),
-    name: params[key] || "",
-    season: params[`${key}_s`] || "",
+    name: (share as Record<string, string | undefined>)[key] || "",
+    season: (share as Record<string, string | undefined>)[`${key}_s`] || "",
   })).filter((e) => e.name);
 
   return (
