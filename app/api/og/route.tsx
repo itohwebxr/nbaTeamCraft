@@ -57,49 +57,45 @@ export async function GET(req: NextRequest) {
 
         {/* Body */}
         <div style={{ display: "flex", flex: 1, gap: "64px" }}>
-          {/* Left: team name + overall */}
-          <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", width: "360px" }}>
-            <div
-              style={{
-                fontSize: "28px",
-                color: "#a1a1aa",
-                marginBottom: "12px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {teamName}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-              {logoData ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={logoData} alt="NBA TeamCraft" style={{ width: "72px", height: "38px", objectFit: "contain" }} />
-              ) : null}
-              <span style={{ fontSize: "120px", fontWeight: 900, color: "#ffffff", lineHeight: 1 }}>
-                {overall}
-              </span>
-            </div>
-            <div
-              style={{
-                marginTop: "16px",
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-              }}
-            >
-              <span
+          {/* Left: logo + info block */}
+          <div style={{ display: "flex", alignItems: "center", gap: "32px", width: "400px" }}>
+            {/* Logo */}
+            {logoData ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoData} alt="NBA TeamCraft" style={{ width: "120px", height: "64px", objectFit: "contain", flexShrink: 0 }} />
+            ) : null}
+
+            {/* Team name + overall + tier */}
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", minWidth: 0 }}>
+              <div
                 style={{
-                  background: tierColor,
-                  color: "#000",
-                  fontWeight: 900,
                   fontSize: "22px",
-                  padding: "4px 18px",
-                  borderRadius: "8px",
+                  color: "#a1a1aa",
+                  marginBottom: "4px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {tier} Tier
+                {teamName}
+              </div>
+              <span style={{ fontSize: "96px", fontWeight: 900, color: "#ffffff", lineHeight: 1 }}>
+                {overall}
               </span>
+              <div style={{ marginTop: "12px", display: "flex" }}>
+                <span
+                  style={{
+                    background: tierColor,
+                    color: "#000",
+                    fontWeight: 900,
+                    fontSize: "20px",
+                    padding: "4px 16px",
+                    borderRadius: "8px",
+                  }}
+                >
+                  {tier} Tier
+                </span>
+              </div>
             </div>
           </div>
 
