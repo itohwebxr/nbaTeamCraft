@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { headers } from "next/headers";
 import { createServerClient } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 
@@ -29,13 +30,21 @@ async function getShareData(id: string): Promise<ShareData | null> {
   return data.data as ShareData;
 }
 
-function buildOgUrl(params: ShareData): string {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+async function buildOgUrl(params: ShareData): Promise<string> {
+  const siteUrl = await getSiteUrl();
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v) qs.set(k, String(v));
   }
   return `${siteUrl}/api/og?${qs.toString()}`;
+}
+
+async function getSiteUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = host.startsWith("localhost") ? "http" : "https";
+  return `${proto}://${host}`;
 }
 
 export async function generateMetadata({
@@ -50,7 +59,7 @@ export async function generateMetadata({
   const name = share.name || "My NBA Team";
   const overall = share.overall || "";
   const tier = share.tier || "";
-  const ogImageUrl = buildOgUrl(share);
+  const ogImageUrl = await buildOgUrl(share);
   const title = `${name} | NBA TeamCraft`;
   const description = overall
     ? `Overall: ${overall} (${tier} Tier) — NBA TeamCraft`
