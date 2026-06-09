@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
             {/* Logo */}
             {logoData ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoData} alt="NBA TeamCraft" style={{ width: "120px", height: "64px", objectFit: "contain", flexShrink: 0 }} />
+              <img src={logoData} alt="NBA TeamCraft" style={{ width: "160px", height: "170px", objectFit: "contain", flexShrink: 0 }} />
             ) : null}
 
             {/* Team name + overall + tier */}
