@@ -162,7 +162,7 @@ function calcOverall(stats: PlayerStats, population: PlayerStats[]): number {
   for (const key of Object.keys(weights)) {
     const pop = population.map((p) => p[key as keyof PlayerStats] as number);
     const pct = percentileRank(stats[key as keyof PlayerStats] as number, pop);
-    rawScore += pct * weights[key];
+    rawScore += pct * weights[key as keyof typeof weights];
   }
   const mpgPenalty = stats.mpg < 10 ? -5 : 0;
   return Math.max(60, Math.min(100, Math.round(60 + Math.pow(rawScore, 1.3) * 40) + mpgPenalty));

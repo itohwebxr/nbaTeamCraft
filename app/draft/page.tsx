@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { PlayerSeason, Position, Team, STARTER_SLOTS, BENCH_SLOTS, RosterSlot, TOTAL_BUDGET, TOTAL_ROSTER_SIZE } from "@/types";
+import { PlayerSeason, Position, Team, STARTER_SLOTS, BENCH_SLOTS, RosterSlot, BenchSlot, TOTAL_BUDGET, TOTAL_ROSTER_SIZE } from "@/types";
 import { useDraftStore } from "@/stores/draftStore";
 import TeamCard from "@/components/draft/TeamCard";
 import PlayerCard from "@/components/draft/PlayerCard";
