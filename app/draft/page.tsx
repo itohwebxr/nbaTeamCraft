@@ -237,10 +237,11 @@ export default function DraftPage() {
                 });
                 router.push("/result");
               }}
-              className="w-full mt-4 py-3 rounded-xl bg-green-500 hover:bg-green-400
-                text-white font-bold text-sm transition-colors"
+              className="pulse-glow w-full mt-4 py-3.5 rounded-xl font-display font-black text-lg tracking-widest uppercase
+                bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400
+                text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              View Results →
+              🏆 View Results
             </button>
           )}
         </div>
