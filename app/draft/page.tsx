@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { PlayerSeason, Position, Team, STARTER_SLOTS, BENCH_SLOTS, RosterSlot, BenchSlot, TOTAL_BUDGET, TOTAL_ROSTER_SIZE } from "@/types";
+import { gtm } from "@/lib/gtm";
 import { useDraftStore } from "@/stores/draftStore";
 import TeamCard from "@/components/draft/TeamCard";
 import PlayerCard from "@/components/draft/PlayerCard";
@@ -35,6 +36,7 @@ export default function DraftPage() {
       const players: PlayerSeason[] = await playersRes.json();
 
       store.setCurrentTeam(team, players);
+      gtm.nextTeam(store.appearedTeamIds.length + 1);
     } catch (e) {
       console.error(e);
     } finally {
@@ -85,10 +87,32 @@ export default function DraftPage() {
     // Replacing keeps roster size same; new player raises it by 1
     const nextSize = displaced ? store.roster.length : store.roster.length + 1;
 
+    if (displaced) {
+      gtm.draftReplace({
+        new_player_name: player.name,
+        old_player_name: displaced.playerSeason.name,
+        cost_diff: player.cost - displaced.playerSeason.cost,
+      });
+    }
+
+    gtm.draftPlayer({
+      player_name: player.name,
+      player_overall: player.overall,
+      player_cost: player.cost,
+      position,
+      slot: isStarterPos ? "starter" : "bench",
+      roster_size: nextSize,
+    });
+
     store.draftPlayer(player, slot, position);
     setPendingDraft(null);
 
     if (nextSize === TOTAL_ROSTER_SIZE) {
+      gtm.draftComplete({
+        used_budget: store.usedBudget - (displaced?.playerSeason.cost ?? 0) + player.cost,
+        remaining_budget: TOTAL_BUDGET - store.usedBudget + (displaced?.playerSeason.cost ?? 0) - player.cost,
+        teams_seen_count: store.appearedTeamIds.length,
+      });
       router.push("/result");
     }
   };
@@ -154,6 +178,12 @@ export default function DraftPage() {
                       isReplaceable={isReplaceable}
                       budgetOk={budgetOk}
                       onDraft={handleDraftAttempt}
+                      onBudgetBlock={(p) => gtm.budgetBlock({
+                        player_overall: p.overall,
+                        player_cost: p.cost,
+                        budget_remaining: budgetRemaining,
+                        roster_size: filledSlots,
+                      })}
                     />
                   );
                 })}
@@ -233,6 +263,10 @@ export default function DraftPage() {
               </button>
               <button
                 onClick={() => {
+                  gtm.draftReset({
+                    roster_size_at_reset: store.roster.length,
+                    used_budget_at_reset: store.usedBudget,
+                  });
                   store.reset();
                   setShowResetModal(false);
                   fetchNextTeam();
