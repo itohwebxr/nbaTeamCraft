@@ -76,8 +76,8 @@ export default function ResultPage() {
       .map((e) => `${slotLabel(e.slot)} : ${formatName(e.playerSeason.name)}`)
       .join("\n");
     const text = evaluation
-      ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\n#NBATeamCraft`
-      : `🏀 ${label}\n${rosterLines}\n#NBATeamCraft`;
+      ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\n#NBATeamCraft\n`
+      : `🏀 ${label}\n${rosterLines}\n#NBATeamCraft\n`;
 
     if (evaluation) {
       gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier });
