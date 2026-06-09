@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
 
 export const dynamic = "force-dynamic";
 
@@ -44,11 +45,63 @@ export async function generateMetadata({
   };
 }
 
+const SLOT_ORDER = ["pg", "sg", "sf", "pf", "c", "6th"];
+const SLOT_LABEL: Record<string, string> = { "6th": "6TH" };
+
 export default async function SharePage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  await searchParams;
-  redirect("/");
+  const params = await searchParams;
+  const name = params.name || "My NBA Team";
+  const overall = params.overall || "";
+  const tier = params.tier || "";
+
+  const players = SLOT_ORDER.map((key) => ({
+    slot: SLOT_LABEL[key] ?? key.toUpperCase(),
+    name: params[key] || "",
+    season: params[`${key}_s`] || "",
+  })).filter((e) => e.name);
+
+  return (
+    <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center px-4">
+      <header className="mb-8">
+        <Image src="/logo.png" alt="NBA TeamCraft" height={40} width={75} className="object-contain" />
+      </header>
+
+      <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-5">
+        <div>
+          <p className="text-zinc-500 text-xs uppercase tracking-widest mb-1">Team</p>
+          <h1 className="text-xl font-black text-white truncate">{name}</h1>
+        </div>
+
+        {overall && (
+          <div className="flex items-center gap-3">
+            <span className="text-5xl font-black text-white">{overall}</span>
+            <span className="text-sm font-bold text-zinc-400">{tier} Tier</span>
+          </div>
+        )}
+
+        {players.length > 0 && (
+          <div className="space-y-2">
+            {players.map((p) => (
+              <div key={p.slot} className="flex items-center gap-3">
+                <span className="text-xs font-bold text-orange-400 w-10 shrink-0">{p.slot}</span>
+                <span className="text-sm font-semibold text-white flex-1 truncate">{p.name}</span>
+                {p.season && <span className="text-xs text-zinc-500 shrink-0">{p.season}</span>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Link
+          href="/draft"
+          className="block w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm text-center transition-colors"
+        >
+          Build Your Team →
+        </Link>
+      </div>
+    </div>
+  );
 }
