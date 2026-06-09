@@ -112,6 +112,7 @@ export default function DraftPage() {
   const budgetRemaining = TOTAL_BUDGET - usedBudget;
   const totalSlots = TOTAL_ROSTER_SIZE;
   const filledSlots = roster.length;
+  const draftedFromCurrentTeam = currentPlayers.some((p) => store.isPlayerDrafted(p.nba_player_id));
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -218,7 +219,7 @@ export default function DraftPage() {
           {filledSlots < TOTAL_ROSTER_SIZE && (
             <button
               onClick={fetchNextTeam}
-              disabled={filledSlots === 0}
+              disabled={!draftedFromCurrentTeam}
               className="w-full mt-4 py-3 rounded-xl bg-orange-500 hover:bg-orange-400
                 disabled:opacity-40 disabled:cursor-not-allowed
                 text-white font-bold text-sm transition-colors"
