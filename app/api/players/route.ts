@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
 import { PlayerSeason } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/players?teamId=xxx
 // Returns all players for a given team, with positions joined
 export async function GET(request: NextRequest) {
