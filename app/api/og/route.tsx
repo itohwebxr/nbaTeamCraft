@@ -20,6 +20,12 @@ export async function GET(req: NextRequest) {
   const tier = p.get("tier") || "—";
   const tierColor = TIER_COLORS[tier] ?? "#6b7280";
 
+  const logoUrl = `${req.nextUrl.origin}/logo.png`;
+  const logoData = await fetch(logoUrl)
+    .then((r) => r.arrayBuffer())
+    .then((buf) => `data:image/png;base64,${Buffer.from(buf).toString("base64")}`)
+    .catch(() => null);
+
   const players = SLOT_ORDER.map((slot) => {
     const key = slot.toLowerCase();
     return {
@@ -65,7 +71,11 @@ export async function GET(req: NextRequest) {
             >
               {teamName}
             </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: "16px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+              {logoData ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoData} alt="NBA TeamCraft" style={{ width: "72px", height: "38px", objectFit: "contain" }} />
+              ) : null}
               <span style={{ fontSize: "120px", fontWeight: 900, color: "#ffffff", lineHeight: 1 }}>
                 {overall}
               </span>
