@@ -57,13 +57,19 @@ export default function Home() {
         <div className="max-w-md w-full text-center space-y-8 relative z-10">
 
           {/* Logo */}
-          <div className="fade-up fade-up-1">
+          <div className="fade-up fade-up-1 relative">
+            {/* Orange glow behind logo */}
+            <div
+              aria-hidden
+              className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[280px] pointer-events-none
+                bg-[radial-gradient(ellipse_at_center,rgba(249,115,22,0.35)_0%,rgba(249,115,22,0.12)_45%,transparent_70%)]"
+            />
             <Image
               src="/logo.png"
               alt="NBA TeamCraft"
               width={280}
               height={94}
-              className="mx-auto object-contain w-40 md:w-[280px] drop-shadow-[0_0_48px_rgba(249,115,22,0.45)] drop-shadow-[0_0_96px_rgba(249,115,22,0.2)]"
+              className="relative mx-auto object-contain w-40 md:w-[280px] drop-shadow-[0_0_48px_rgba(249,115,22,0.45)] drop-shadow-[0_0_96px_rgba(249,115,22,0.2)]"
             />
             <p className="mt-4 text-zinc-400 text-sm leading-relaxed font-display tracking-wide">
               Draft 6 players from historic NBA rosters.<br />
