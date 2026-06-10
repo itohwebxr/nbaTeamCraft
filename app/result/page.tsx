@@ -336,6 +336,18 @@ export default function ResultPage() {
         {/* Actions */}
         <div className="flex gap-3">
           <button
+            onClick={() => {
+              if (evaluation) {
+                gtm.draftAgain({ previous_overall: evaluation.overall, previous_tier: evaluation.tier });
+              }
+              reset();
+              router.push("/draft");
+            }}
+            className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+          >
+            Draft Again
+          </button>
+          <button
             onClick={handleShare}
             disabled={sharing}
             className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
@@ -348,18 +360,6 @@ export default function ResultPage() {
             ) : (
               <><span>𝕏</span> Share</>
             )}
-          </button>
-          <button
-            onClick={() => {
-              if (evaluation) {
-                gtm.draftAgain({ previous_overall: evaluation.overall, previous_tier: evaluation.tier });
-              }
-              reset();
-              router.push("/draft");
-            }}
-            className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
-          >
-            Draft Again
           </button>
         </div>
       </div>
