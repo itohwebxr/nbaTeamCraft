@@ -11,20 +11,30 @@ import {
   BENCH_SLOTS,
   TOTAL_BUDGET,
   TOTAL_ROSTER_SIZE,
+  DraftMode,
+  SandboxConfig,
 } from "@/types";
 
 interface DraftStore {
+  // Game state
   appearedTeamIds: string[];
-  draftedPlayerIds: string[];  // nba_player_id list
+  draftedPlayerIds: string[];
   currentTeam: Team | null;
   currentPlayers: PlayerSeason[];
   roster: RosterEntry[];
   totalBudget: number;
   usedBudget: number;
+  // Mode state
+  mode: DraftMode;
+  sandboxConfig: SandboxConfig;
+  // Actions
   setCurrentTeam: (team: Team, players: PlayerSeason[]) => void;
   markTeamAppeared: (teamId: string) => void;
+  clearCurrentTeam: () => void;
   draftPlayer: (playerSeason: PlayerSeason, slot: RosterSlot, assignedPosition: Position) => void;
   reset: () => void;
+  setMode: (mode: DraftMode) => void;
+  setSandboxConfig: (config: Partial<SandboxConfig>) => void;
   getVacantStarterSlots: () => StarterSlot[];
   getVacantBenchSlots: () => BenchSlot[];
   getDraftablePositions: (player: PlayerSeason) => Position[];
@@ -32,18 +42,25 @@ interface DraftStore {
   isRosterComplete: () => boolean;
 }
 
-const initialState = {
+const initialGameState = {
   appearedTeamIds: [] as string[],
   draftedPlayerIds: [] as string[],
-  currentTeam: null,
+  currentTeam: null as Team | null,
   currentPlayers: [] as PlayerSeason[],
   roster: [] as RosterEntry[],
   totalBudget: TOTAL_BUDGET,
   usedBudget: 0,
 };
 
+const initialModeState = {
+  mode: "draft" as DraftMode,
+  sandboxConfig: { teamFilter: "Random", seasonFilter: "Random" } as SandboxConfig,
+};
+
+const initialState = { ...initialGameState, ...initialModeState };
+
 // For each position, ensure the highest-overall player holds the starter slot.
-// Bench players are re-assigned BENCH1/BENCH2/BENCH3 in order.
+// Bench players are re-assigned BENCH1 in order.
 function rebalanceSlots(roster: RosterEntry[]): RosterEntry[] {
   const starters: RosterEntry[] = [];
   const benchCandidates: RosterEntry[] = [];
@@ -83,9 +100,13 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
     }));
   },
 
+  clearCurrentTeam: () => {
+    set({ currentTeam: null, currentPlayers: [], appearedTeamIds: [] });
+  },
+
+
   draftPlayer: (playerSeason, slot, assignedPosition) => {
     set((state) => {
-      // Remove existing player from the same team if any (1 player per team rule)
       const displaced = state.roster.find(
         (e) => e.playerSeason.team_id === playerSeason.team_id
       );
@@ -109,7 +130,18 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
     });
   },
 
-  reset: () => set(initialState),
+  // Resets game state but preserves mode and sandbox config (so Draft Again stays in same mode)
+  reset: () => set((state) => ({
+    ...initialGameState,
+    mode: state.mode,
+    sandboxConfig: state.sandboxConfig,
+  })),
+
+  setMode: (mode) => set({ mode }),
+
+  setSandboxConfig: (config) => set((state) => ({
+    sandboxConfig: { ...state.sandboxConfig, ...config },
+  })),
 
   getVacantStarterSlots: () => {
     const { roster } = get();
@@ -140,14 +172,11 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
 
     const playerPositions = player.positions.map((p) => p.position);
 
-    // Positions with a vacant starter slot
     const matchingVacantStarters = playerPositions.filter((pos) =>
       effectiveVacantStarters.includes(pos)
     );
     if (matchingVacantStarters.length > 0) return matchingVacantStarters;
 
-    // Starter slot occupied but same position exists — still draftable to bench,
-    // rebalance will auto-promote if this player has higher overall.
     const matchingOccupiedStarters = playerPositions.filter((pos) =>
       STARTER_SLOTS.includes(pos) && !effectiveVacantStarters.includes(pos)
     );

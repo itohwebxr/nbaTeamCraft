@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   const overall = p.get("overall") || "—";
   const tier = p.get("tier") || "—";
   const tierColor = TIER_COLORS[tier] ?? "#6b7280";
+  const isSandbox = p.get("mode") === "sandbox";
 
   const logoUrl = `${req.nextUrl.origin}/logo.png`;
   const logoData = await fetch(logoUrl)
@@ -49,10 +50,26 @@ export async function GET(req: NextRequest) {
         }}
       >
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", marginBottom: "32px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "32px" }}>
           <span style={{ fontSize: "18px", color: "#71717a", letterSpacing: "0.15em", textTransform: "uppercase" }}>
             NBA TeamCraft
           </span>
+          {isSandbox && (
+            <span
+              style={{
+                fontSize: "13px",
+                fontWeight: 700,
+                color: "#000",
+                background: "#f97316",
+                padding: "3px 10px",
+                borderRadius: "6px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+              }}
+            >
+              SANDBOX MODE
+            </span>
+          )}
         </div>
 
         {/* Body */}

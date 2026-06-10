@@ -4,6 +4,13 @@ export type StarterSlot = Position;
 export type BenchSlot = "BENCH1";
 export type RosterSlot = StarterSlot | BenchSlot;
 
+export type DraftMode = "draft" | "sandbox";
+
+export interface SandboxConfig {
+  teamFilter: string;   // "Random" or NBA abbreviation e.g. "SAS"
+  seasonFilter: string; // "Random" or season e.g. "2015-16"
+}
+
 export interface Player {
   id: string;
   nba_player_id: string;

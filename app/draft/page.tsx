@@ -13,6 +13,7 @@ import RosterSlotView from "@/components/draft/RosterSlotView";
 import BudgetBar from "@/components/draft/BudgetBar";
 import PositionSelectModal from "@/components/draft/PositionSelectModal";
 import TeamLoadingScreen from "@/components/draft/TeamLoadingScreen";
+import SandboxFilterBar from "@/components/sandbox/SandboxFilterBar";
 
 export default function DraftPage() {
   const router = useRouter();
@@ -51,7 +52,13 @@ export default function DraftPage() {
       const MAX_SKIPS = 15;
       for (let i = 0; i < MAX_SKIPS; i++) {
         const excludeParam = useDraftStore.getState().appearedTeamIds.join(",");
-        const res = await fetch(`/api/teams?exclude=${excludeParam}`);
+        const s = useDraftStore.getState();
+        const params = new URLSearchParams({ exclude: excludeParam });
+        if (s.mode === "sandbox") {
+          if (s.sandboxConfig.teamFilter !== "Random") params.set("teamAbbr", s.sandboxConfig.teamFilter);
+          if (s.sandboxConfig.seasonFilter !== "Random") params.set("season", s.sandboxConfig.seasonFilter);
+        }
+        const res = await fetch(`/api/teams?${params.toString()}`);
         if (!res.ok) throw new Error("No teams available");
         const team: Team = await res.json();
 
@@ -76,12 +83,12 @@ export default function DraftPage() {
     }
   }, [store]);
 
-  // Load first team on mount
+  // Load first team on mount, and re-fetch when sandbox filter clears current team
   useEffect(() => {
     if (!store.currentTeam) {
       fetchNextTeam();
     }
-  }, []);
+  }, [store.currentTeam]);
 
   const handleDraftAttempt = (player: PlayerSeason, positions: Position[]) => {
     if (positions.length === 1) {
@@ -156,6 +163,8 @@ export default function DraftPage() {
           </div>
         </div>
       </header>
+
+      {store.mode === "sandbox" && <SandboxFilterBar />}
 
       <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col lg:flex-row gap-4">
         {/* Left: Team + Players */}
