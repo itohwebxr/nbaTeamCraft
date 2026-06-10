@@ -29,40 +29,10 @@ body {
     /* Center ambient glow */
     radial-gradient(ellipse 80% 50% at 50% 50%, rgba(249,115,22,0.1) 0%, transparent 70%),
     /* Top dark vignette */
-    radial-gradient(ellipse 140% 50% at 50% -5%, rgba(0,0,0,0.75) 0%, transparent 60%),
-    /* Diagonal speed lines */
-    repeating-linear-gradient(
-      -55deg,
-      transparent,
-      transparent 56px,
-      rgba(249,115,22,0.055) 56px,
-      rgba(249,115,22,0.055) 57px
-    );
+    radial-gradient(ellipse 140% 50% at 50% -5%, rgba(0,0,0,0.75) 0%, transparent 60%);
   position: relative;
 }
 
-/* Animated conic shimmer */
-.court-bg::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: conic-gradient(
-    from 0deg at 50% 40%,
-    transparent 0deg,
-    rgba(249,115,22,0.1) 35deg,
-    transparent 70deg,
-    transparent 175deg,
-    rgba(249,115,22,0.1) 210deg,
-    transparent 245deg
-  );
-  animation: conic-spin 10s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes conic-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
 
 /* Pulse glow for CTA */
 @keyframes pulse-glow {

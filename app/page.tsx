@@ -4,7 +4,61 @@ import Image from "next/image";
 export default function Home() {
   return (
     <div className="min-h-screen court-bg text-white flex flex-col items-center justify-center px-4 overflow-hidden relative">
-      <div className="max-w-md w-full text-center space-y-8">
+
+      {/* Basketball court SVG — NBA full court, landscape */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+        <svg
+          viewBox="0 0 940 500"
+          xmlns="http://www.w3.org/2000/svg"
+          className="w-full max-w-5xl opacity-[0.13]"
+          fill="none"
+          stroke="white"
+          strokeWidth="3"
+          strokeLinecap="round"
+        >
+          {/* Court boundary */}
+          <rect x="2" y="2" width="936" height="496" />
+
+          {/* Half-court line */}
+          <line x1="470" y1="2" x2="470" y2="498" />
+
+          {/* Center circle (r=60ft×10=60) */}
+          <circle cx="470" cy="250" r="60" />
+          {/* Center tip-off smaller circle */}
+          <circle cx="470" cy="250" r="20" />
+
+          {/* ── LEFT SIDE ── */}
+          {/* Paint / key: 19ft deep=190px, 16ft wide=160px, centered */}
+          <rect x="2" y="170" width="190" height="160" />
+          {/* Free throw line top arc (upper half, dashed look via strokeDasharray) */}
+          <path d="M 2 170 Q 120 170 190 170" stroke="none" />
+          {/* Free throw circle */}
+          <circle cx="190" cy="250" r="60" />
+          {/* Basket (4.75ft from baseline = 47.5px, centered) */}
+          <circle cx="52" cy="250" r="9" strokeWidth="2.5" />
+          {/* Backboard (6ft = 60px wide, 4ft from baseline) */}
+          <line x1="43" y1="219" x2="43" y2="281" strokeWidth="4" />
+          {/* Restricted area arc (4ft radius = 40px) */}
+          <path d="M 52 210 A 40 40 0 0 1 52 290" />
+          {/* Three-point corner lines (3ft from sideline = 30px) */}
+          <line x1="2" y1="30" x2="142" y2="30" />
+          <line x1="2" y1="470" x2="142" y2="470" />
+          {/* Three-point arc (23.75ft = 237.5px radius, basket center x=52,y=250) */}
+          <path d="M 142 30 A 237.5 237.5 0 0 1 142 470" />
+
+          {/* ── RIGHT SIDE ── */}
+          <rect x="748" y="170" width="190" height="160" />
+          <circle cx="750" cy="250" r="60" />
+          <circle cx="888" cy="250" r="9" strokeWidth="2.5" />
+          <line x1="897" y1="219" x2="897" y2="281" strokeWidth="4" />
+          <path d="M 888 210 A 40 40 0 0 0 888 290" />
+          <line x1="938" y1="30" x2="798" y2="30" />
+          <line x1="938" y1="470" x2="798" y2="470" />
+          <path d="M 798 30 A 237.5 237.5 0 0 0 798 470" />
+        </svg>
+      </div>
+
+      <div className="max-w-md w-full text-center space-y-8 relative z-10">
 
         {/* Logo */}
         <div className="fade-up fade-up-1">
@@ -60,3 +114,4 @@ export default function Home() {
     </div>
   );
 }
+
