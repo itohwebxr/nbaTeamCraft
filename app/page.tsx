@@ -13,7 +13,7 @@ export default function Home() {
           className="w-full max-w-5xl opacity-[0.13]"
           fill="none"
           stroke="white"
-          strokeWidth="3"
+          strokeWidth="1.5"
           strokeLinecap="round"
         >
           {/* Court boundary */}
@@ -35,9 +35,9 @@ export default function Home() {
           {/* Free throw circle */}
           <circle cx="190" cy="250" r="60" />
           {/* Basket (4.75ft from baseline = 47.5px, centered) */}
-          <circle cx="52" cy="250" r="9" strokeWidth="2.5" />
+          <circle cx="52" cy="250" r="9" strokeWidth="2" />
           {/* Backboard (6ft = 60px wide, 4ft from baseline) */}
-          <line x1="43" y1="219" x2="43" y2="281" strokeWidth="4" />
+          <line x1="43" y1="219" x2="43" y2="281" strokeWidth="2" />
           {/* Restricted area arc (4ft radius = 40px) */}
           <path d="M 52 210 A 40 40 0 0 1 52 290" />
           {/* Three-point corner lines (3ft from sideline = 30px) */}
@@ -49,8 +49,8 @@ export default function Home() {
           {/* ── RIGHT SIDE ── */}
           <rect x="748" y="170" width="190" height="160" />
           <circle cx="750" cy="250" r="60" />
-          <circle cx="888" cy="250" r="9" strokeWidth="2.5" />
-          <line x1="897" y1="219" x2="897" y2="281" strokeWidth="4" />
+          <circle cx="888" cy="250" r="9" strokeWidth="2" />
+          <line x1="897" y1="219" x2="897" y2="281" strokeWidth="2" />
           <path d="M 888 210 A 40 40 0 0 0 888 290" />
           <line x1="938" y1="30" x2="798" y2="30" />
           <line x1="938" y1="470" x2="798" y2="470" />
