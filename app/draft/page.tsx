@@ -30,11 +30,13 @@ export default function DraftPage() {
   // (position available AND budget allows finishing the roster)
   const hasDraftablePlayer = (players: PlayerSeason[]): boolean => {
     const s = useDraftStore.getState();
+    const isSandbox = s.mode === "sandbox";
     const remaining = TOTAL_BUDGET - s.usedBudget;
     const filled = s.roster.length;
     return players.some((player) => {
       if (s.isPlayerDrafted(player.nba_player_id)) return false;
       if (s.getDraftablePositions(player).length === 0) return false;
+      if (isSandbox) return true;
       const displaced = s.roster.find((e) => e.playerSeason.team_id === player.team_id);
       const refund = displaced?.playerSeason.cost ?? 0;
       const budgetAfter = remaining - player.cost + refund;
@@ -155,7 +157,8 @@ export default function DraftPage() {
     setPendingDraft(null);
   };
 
-  const { currentTeam, currentPlayers, roster, usedBudget } = store;
+  const { currentTeam, currentPlayers, roster, usedBudget, mode } = store;
+  const isSandbox = mode === "sandbox";
   const budgetRemaining = TOTAL_BUDGET - usedBudget;
   const filledSlots = roster.length;
   const draftedFromCurrentTeam = currentPlayers.some((p) => store.isPlayerDrafted(p.nba_player_id));
@@ -202,7 +205,7 @@ export default function DraftPage() {
                   const slotsAfter = isReplaceable
                     ? (TOTAL_ROSTER_SIZE - filledSlots)
                     : Math.max(0, TOTAL_ROSTER_SIZE - filledSlots - 1);
-                  const budgetOk = budgetAfter >= 0 && budgetAfter >= slotsAfter;
+                  const budgetOk = isSandbox || (budgetAfter >= 0 && budgetAfter >= slotsAfter);
                   return (
                     <PlayerCard
                       key={player.id}
