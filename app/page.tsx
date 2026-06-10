@@ -7,46 +7,53 @@ import TeamCraftCupTeaser from "@/components/home/TeamCraftCupTeaser";
 
 export default function Home() {
   return (
-    <div className="min-h-screen court-bg text-white overflow-hidden relative">
+    <div className="bg-zinc-950 text-white">
 
-      {/* Basketball court SVG */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-        <svg
-          viewBox="0 0 940 500"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-full max-w-5xl opacity-[0.13]"
-          fill="none"
-          stroke="white"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        >
-          <rect x="2" y="2" width="936" height="496" />
-          <line x1="470" y1="2" x2="470" y2="498" />
-          <circle cx="470" cy="250" r="60" />
-          <circle cx="470" cy="250" r="20" />
-          <rect x="2" y="170" width="190" height="160" />
-          <circle cx="190" cy="250" r="60" />
-          <circle cx="52" cy="250" r="9" strokeWidth="2" />
-          <line x1="43" y1="219" x2="43" y2="281" strokeWidth="2" />
-          <path d="M 52 210 A 40 40 0 0 1 52 290" />
-          <line x1="2" y1="30" x2="142" y2="30" />
-          <line x1="2" y1="470" x2="142" y2="470" />
-          <path d="M 142 30 A 237.5 237.5 0 0 1 142 470" />
-          <rect x="748" y="170" width="190" height="160" />
-          <circle cx="750" cy="250" r="60" />
-          <circle cx="888" cy="250" r="9" strokeWidth="2" />
-          <line x1="897" y1="219" x2="897" y2="281" strokeWidth="2" />
-          <path d="M 888 210 A 40 40 0 0 0 888 290" />
-          <line x1="938" y1="30" x2="798" y2="30" />
-          <line x1="938" y1="470" x2="798" y2="470" />
-          <path d="M 798 30 A 237.5 237.5 0 0 0 798 470" />
-        </svg>
-      </div>
+      {/* ── Hero (court-bg: single viewport, original design) ── */}
+      <div className="min-h-screen court-bg text-white flex flex-col items-center justify-center px-4 overflow-hidden relative">
 
-      <div className="relative z-10 flex flex-col items-center px-4 py-12 gap-10">
+        {/* Basketball court SVG — NBA full court, landscape */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+          <svg
+            viewBox="0 0 940 500"
+            xmlns="http://www.w3.org/2000/svg"
+            className="w-full max-w-5xl opacity-[0.13]"
+            fill="none"
+            stroke="white"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          >
+            {/* Court boundary */}
+            <rect x="2" y="2" width="936" height="496" />
+            {/* Half-court line */}
+            <line x1="470" y1="2" x2="470" y2="498" />
+            {/* Center circle */}
+            <circle cx="470" cy="250" r="60" />
+            <circle cx="470" cy="250" r="20" />
+            {/* ── LEFT SIDE ── */}
+            <rect x="2" y="170" width="190" height="160" />
+            <circle cx="190" cy="250" r="60" />
+            <circle cx="52" cy="250" r="9" strokeWidth="2" />
+            <line x1="43" y1="219" x2="43" y2="281" strokeWidth="2" />
+            <path d="M 52 210 A 40 40 0 0 1 52 290" />
+            <line x1="2" y1="30" x2="142" y2="30" />
+            <line x1="2" y1="470" x2="142" y2="470" />
+            <path d="M 142 30 A 237.5 237.5 0 0 1 142 470" />
+            {/* ── RIGHT SIDE ── */}
+            <rect x="748" y="170" width="190" height="160" />
+            <circle cx="750" cy="250" r="60" />
+            <circle cx="888" cy="250" r="9" strokeWidth="2" />
+            <line x1="897" y1="219" x2="897" y2="281" strokeWidth="2" />
+            <path d="M 888 210 A 40 40 0 0 0 888 290" />
+            <line x1="938" y1="30" x2="798" y2="30" />
+            <line x1="938" y1="470" x2="798" y2="470" />
+            <path d="M 798 30 A 237.5 237.5 0 0 0 798 470" />
+          </svg>
+        </div>
 
-        {/* ── Hero ── */}
-        <div className="max-w-md w-full text-center space-y-8">
+        <div className="max-w-md w-full text-center space-y-8 relative z-10">
+
+          {/* Logo */}
           <div className="fade-up fade-up-1">
             <Image
               src="/logo.png"
@@ -61,6 +68,7 @@ export default function Home() {
             </p>
           </div>
 
+          {/* Rules */}
           <div className="fade-up fade-up-2 bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 text-left space-y-3 backdrop-blur-sm">
             <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.2em]">How to Play</p>
             <ul className="space-y-2.5 text-sm text-zinc-300">
@@ -80,6 +88,7 @@ export default function Home() {
             </ul>
           </div>
 
+          {/* CTA */}
           <div className="fade-up fade-up-3">
             <Link
               href="/draft"
@@ -95,18 +104,22 @@ export default function Home() {
             DATA: NBA SEASONS 2001–2026
           </p>
         </div>
+      </div>
 
-        {/* ── Ranking Preview ── */}
+      {/* ── Sections below hero (bg-zinc-950 base) ── */}
+      <div className="bg-zinc-950 flex flex-col items-center px-4 py-10 gap-10">
+
+        {/* Ranking Preview */}
         <Suspense fallback={null}>
           <RankingPreview />
         </Suspense>
 
-        {/* ── Latest Teams ── */}
+        {/* Latest Teams */}
         <Suspense fallback={null}>
           <LatestTeams />
         </Suspense>
 
-        {/* ── TeamCraft Cup Teaser ── */}
+        {/* TeamCraft Cup Teaser */}
         <TeamCraftCupTeaser />
 
       </div>
