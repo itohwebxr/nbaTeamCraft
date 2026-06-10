@@ -16,6 +16,43 @@ function SlotLabel({ slot }: { slot: string }) {
   return slot;
 }
 
+// Rank card with count-down reveal (#99 → #12) and staggered flip-in
+function RankCard({ label, rank, index }: { label: string; rank: number; index: number }) {
+  const [display, setDisplay] = useState(Math.min(rank + 60, 99));
+
+  useEffect(() => {
+    const delay = 400 + index * 180; // wait for flip-in
+    const duration = 700;
+    let raf = 0;
+    const timer = setTimeout(() => {
+      const from = Math.min(rank + 60, 99);
+      let start: number | null = null;
+      const step = (ts: number) => {
+        if (!start) start = ts;
+        const progress = Math.min((ts - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        setDisplay(Math.round(from - eased * (from - rank)));
+        if (progress < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    }, delay);
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(raf);
+    };
+  }, [rank, index]);
+
+  return (
+    <div
+      className="flip-in bg-zinc-800 rounded-xl p-3 text-center"
+      style={{ animationDelay: `${index * 180}ms` }}
+    >
+      <p className="font-display text-xl font-black text-white tabular-nums">#{display}</p>
+      <p className="text-xs text-zinc-500 mt-0.5">{label}</p>
+    </div>
+  );
+}
+
 export default function ResultPage() {
   const router = useRouter();
   const { roster, usedBudget, reset } = useDraftStore();
@@ -219,10 +256,10 @@ export default function ResultPage() {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+      <div className="fade-up fade-up-1 max-w-lg mx-auto px-4 py-6 space-y-5">
         {/* Published panel — shown at top after entering rankings */}
         {publishedId && publishedRank && (
-          <div className="bg-zinc-900 border border-amber-700/50 rounded-2xl p-5">
+          <div className="slide-in-down bg-zinc-900 border border-amber-700/50 rounded-2xl p-5">
             <p className="font-display text-xs font-bold text-amber-400 tracking-[0.2em] mb-3">🏆 PUBLISHED SUCCESSFULLY</p>
             <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2">Your Ranking</p>
             <div className="grid grid-cols-3 gap-2 mb-4">
@@ -230,11 +267,8 @@ export default function ResultPage() {
                 ["Overall", publishedRank.overall],
                 ["Offense", publishedRank.offense],
                 ["Defense", publishedRank.defense],
-              ] as [string, number][]).map(([label, rank]) => (
-                <div key={label} className="bg-zinc-800 rounded-xl p-3 text-center">
-                  <p className="font-display text-xl font-black text-white">#{rank}</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">{label}</p>
-                </div>
+              ] as [string, number][]).map(([label, rank], i) => (
+                <RankCard key={label} label={label} rank={rank} index={i} />
               ))}
             </div>
             <div className="flex gap-2">

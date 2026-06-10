@@ -64,9 +64,16 @@ body {
 .fade-up-3 { animation-delay: 0.4s; }
 .fade-up-4 { animation-delay: 0.55s; }
 
-/* Card draft glow on hover */
+/* Card draft glow + lift on hover, press-down on tap */
+.card-draftable {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
 .card-draftable:hover {
-  box-shadow: 0 0 0 1px rgba(249,115,22,0.5), 0 4px 24px rgba(249,115,22,0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(249,115,22,0.5), 0 8px 28px rgba(249,115,22,0.18);
+}
+.card-draftable:active {
+  transform: translateY(0) scale(0.98);
 }
 
 /* Result overall count-up */
@@ -76,6 +83,102 @@ body {
 }
 .scale-in {
   animation: scale-in 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+/* ── Reveal & celebration animations ── */
+
+/* Tier badge stamps in after the count-up finishes */
+@keyframes stamp-in {
+  0%   { transform: scale(1.8) rotate(-10deg); opacity: 0; }
+  60%  { transform: scale(0.92) rotate(2deg);  opacity: 1; }
+  100% { transform: scale(1) rotate(0deg);     opacity: 1; }
+}
+.stamp-in {
+  animation: stamp-in 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+
+/* Overall number pops when the final value lands */
+@keyframes value-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.value-pop {
+  animation: value-pop 0.45s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* Published panel slides in from above */
+@keyframes slide-in-down {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.slide-in-down {
+  animation: slide-in-down 0.4s ease forwards;
+}
+
+/* Rank cards flip in one by one */
+@keyframes flip-in {
+  from { opacity: 0; transform: perspective(400px) rotateX(-70deg); }
+  to   { opacity: 1; transform: perspective(400px) rotateX(0deg); }
+}
+.flip-in {
+  opacity: 0;
+  animation: flip-in 0.5s cubic-bezier(0.34,1.4,0.64,1) forwards;
+}
+
+/* Roster slot flashes orange when it receives a player */
+@keyframes slot-flash {
+  0%   { box-shadow: 0 0 0 0 rgba(249,115,22,0.7); background-color: rgba(249,115,22,0.25); }
+  100% { box-shadow: 0 0 0 8px rgba(249,115,22,0); }
+}
+.slot-flash {
+  animation: slot-flash 0.7s ease-out;
+}
+
+/* Heart pops with a spring when liked */
+@keyframes heart-pop {
+  0%   { transform: scale(0.4); }
+  55%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.heart-pop {
+  animation: heart-pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+/* Trophy floats gently */
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+.float-y {
+  animation: float-y 3s ease-in-out infinite;
+}
+
+/* Cup glow slowly breathes */
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 1; }
+}
+.glow-breathe {
+  animation: glow-breathe 4s ease-in-out infinite;
+}
+
+/* Ranking rows cascade in */
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.row-in {
+  opacity: 0;
+  animation: row-in 0.35s ease forwards;
+}
+
+/* Stat bars on team detail grow on load */
+@keyframes bar-grow {
+  from { width: 0; }
+}
+.bar-grow {
+  animation: bar-grow 0.8s cubic-bezier(0.25,0.8,0.35,1) forwards;
 }
 
 /* Tier glow colors */

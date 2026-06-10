@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import confetti from "canvas-confetti";
 import { overallColor } from "@/lib/overallColor";
 import { TeamEvaluation } from "@/types";
 import TierBadge from "./TierBadge";
@@ -11,8 +12,9 @@ interface TeamStatsProps {
   teamName: string;
 }
 
-function useCountUp(target: number, duration = 900) {
+function useCountUp(target: number, duration = 1100) {
   const [value, setValue] = useState(0);
+  const [done, setDone] = useState(false);
   useEffect(() => {
     let start: number | null = null;
     const step = (ts: number) => {
@@ -20,11 +22,15 @@ function useCountUp(target: number, duration = 900) {
       const progress = Math.min((ts - start) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(Math.round(eased * target));
-      if (progress < 1) requestAnimationFrame(step);
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        setDone(true);
+      }
     };
     requestAnimationFrame(step);
   }, [target, duration]);
-  return value;
+  return { value, done };
 }
 
 const STAT_ITEMS = [
@@ -62,17 +68,46 @@ function StatBar({ label, value }: { label: string; value: number }) {
   );
 }
 
+function fireCelebration(tier: string) {
+  if (tier !== "S" && tier !== "A") return;
+  const colors = tier === "S"
+    ? ["#facc15", "#fbbf24", "#ffffff"]   // gold
+    : ["#f97316", "#fb923c", "#ffffff"];  // orange
+  confetti({
+    particleCount: tier === "S" ? 120 : 70,
+    spread: 75,
+    startVelocity: 38,
+    origin: { y: 0.35 },
+    colors,
+    disableForReducedMotion: true,
+  });
+}
+
 export default function TeamStats({ evaluation, teamName }: TeamStatsProps) {
-  const displayOverall = useCountUp(evaluation.overall);
+  const { value: displayOverall, done } = useCountUp(evaluation.overall);
+
+  useEffect(() => {
+    if (done) fireCelebration(evaluation.tier);
+  }, [done, evaluation.tier]);
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
       {/* Overall hero */}
       <div className="flex items-center gap-4 mb-5">
-        <TierBadge tier={evaluation.tier} />
+        {/* Tier badge stamps in only after the count-up lands */}
+        <div className="w-16 h-16 shrink-0">
+          {done && (
+            <div className="stamp-in">
+              <TierBadge tier={evaluation.tier} />
+            </div>
+          )}
+        </div>
         <div className="flex-1">
           <p className="font-display text-xs font-bold text-zinc-500 tracking-[0.2em]">TEAM RATING</p>
-          <p className="font-display text-5xl font-black text-white leading-none scale-in">
+          <p
+            className={`font-display text-5xl font-black leading-none transition-colors duration-300
+              ${done ? `${overallColor(evaluation.overall)} value-pop` : "text-zinc-500"}`}
+          >
             {displayOverall}
           </p>
           {teamName && (

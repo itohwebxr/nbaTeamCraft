@@ -221,20 +221,22 @@ export default function DraftPage() {
           </div>
           <div className="space-y-1.5">
             <p className="hidden lg:block text-xs text-zinc-600 mb-2">STARTERS</p>
-            {STARTER_SLOTS.map((slot) => (
+            {STARTER_SLOTS.map((slot, i) => (
               <RosterSlotView
                 key={slot}
                 slot={slot}
                 entry={roster.find((e) => e.slot === slot)}
+                waveIndex={filledSlots === TOTAL_ROSTER_SIZE ? i : null}
               />
             ))}
             <div className="mt-3">
               <p className="hidden lg:block text-xs text-zinc-600 mb-2">6TH MAN</p>
-              {BENCH_SLOTS.map((slot) => (
+              {BENCH_SLOTS.map((slot, i) => (
                 <RosterSlotView
                   key={slot}
                   slot={slot}
                   entry={roster.find((e) => e.slot === slot)}
+                  waveIndex={filledSlots === TOTAL_ROSTER_SIZE ? STARTER_SLOTS.length + i : null}
                 />
               ))}
             </div>
