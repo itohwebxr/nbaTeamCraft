@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import {
   Team,
   PlayerSeason,
@@ -81,7 +82,9 @@ function rebalanceSlots(roster: RosterEntry[]): RosterEntry[] {
   return result;
 }
 
-export const useDraftStore = create<DraftStore>((set, get) => ({
+export const useDraftStore = create<DraftStore>()(
+  persist(
+    (set, get) => ({
   ...initialState,
 
   setCurrentTeam: (team, players) => {
@@ -196,4 +199,13 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
   isRosterComplete: () => {
     return get().roster.length === TOTAL_ROSTER_SIZE;
   },
-}));
+    }),
+    {
+      name: "nba-tc-draft-mode",
+      partialize: (state) => ({
+        mode: state.mode,
+        sandboxConfig: state.sandboxConfig,
+      }),
+    }
+  )
+);
