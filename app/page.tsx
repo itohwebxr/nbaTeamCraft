@@ -67,7 +67,7 @@ export default function Home() {
             alt="NBA TeamCraft"
             width={280}
             height={94}
-            className="mx-auto object-contain drop-shadow-[0_0_48px_rgba(249,115,22,0.45)] drop-shadow-[0_0_96px_rgba(249,115,22,0.2)]"
+            className="mx-auto object-contain w-40 md:w-[280px] drop-shadow-[0_0_48px_rgba(249,115,22,0.45)] drop-shadow-[0_0_96px_rgba(249,115,22,0.2)]"
           />
           <p className="mt-4 text-zinc-400 text-sm leading-relaxed font-display tracking-wide">
             Draft 6 players from historic NBA rosters.<br />

@@ -111,7 +111,7 @@ export default function ResultPage() {
     <div className="min-h-screen bg-zinc-950 text-white">
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
+          <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain w-10 md:w-[60px]" />
           <span className="text-xs text-zinc-500">Budget used: {usedBudget}/{TOTAL_BUDGET}</span>
         </div>
       </header>
