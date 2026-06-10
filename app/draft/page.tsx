@@ -109,10 +109,11 @@ export default function DraftPage() {
   };
 
   const commitDraft = (player: PlayerSeason, position: Position) => {
-    // If a player from the same team is already drafted, their slot becomes available
-    const displaced = store.roster.find(
-      (e) => e.playerSeason.team_id === player.team_id
-    );
+    // In sandbox mode multiple players from the same team are allowed — no displacement.
+    const displaced =
+      store.mode === "sandbox"
+        ? undefined
+        : store.roster.find((e) => e.playerSeason.team_id === player.team_id);
 
     const vacantStarters = store.getVacantStarterSlots();
     const effectiveVacantStarters =
@@ -195,7 +196,8 @@ export default function DraftPage() {
                 {currentPlayers.map((player) => {
                   const draftablePositions = store.getDraftablePositions(player);
                   const isDrafted = store.isPlayerDrafted(player.nba_player_id);
-                  const displaced = !isDrafted
+                  // In sandbox mode, same-team players don't displace each other
+                  const displaced = !isDrafted && !isSandbox
                     ? store.roster.find((e) => e.playerSeason.team_id === player.team_id)
                     : undefined;
                   const isReplaceable = displaced != null;

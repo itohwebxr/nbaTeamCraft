@@ -130,9 +130,11 @@ export const useDraftStore = create<DraftStore>()(
 
   draftPlayer: (playerSeason, slot, assignedPosition) => {
     set((state) => {
-      const displaced = state.roster.find(
-        (e) => e.playerSeason.team_id === playerSeason.team_id
-      );
+      // In sandbox mode allow multiple players from the same team — no displacement.
+      const displaced =
+        state.mode === "sandbox"
+          ? undefined
+          : state.roster.find((e) => e.playerSeason.team_id === playerSeason.team_id);
       const baseRoster = displaced
         ? state.roster.filter((e) => e.playerSeason.team_id !== playerSeason.team_id)
         : state.roster;
@@ -179,8 +181,12 @@ export const useDraftStore = create<DraftStore>()(
   },
 
   getDraftablePositions: (player) => {
-    const { roster } = get();
-    const displaced = roster.find((e) => e.playerSeason.team_id === player.team_id);
+    const { roster, mode } = get();
+    // In sandbox mode, multiple players from the same team are allowed — no displacement.
+    const displaced =
+      mode === "sandbox"
+        ? undefined
+        : roster.find((e) => e.playerSeason.team_id === player.team_id);
 
     const vacantStarters = get().getVacantStarterSlots();
     const effectiveVacantStarters =
