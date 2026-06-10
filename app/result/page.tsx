@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { overallColor } from "@/lib/overallColor";
 import { useDraftStore } from "@/stores/draftStore";
 import { TeamEvaluation, STARTER_SLOTS, BENCH_SLOTS, TOTAL_BUDGET } from "@/types";
 import TeamStats from "@/components/result/TeamStats";
@@ -145,7 +146,7 @@ export default function ResultPage() {
                     <span className="text-xs text-zinc-500 shrink-0">
                       {entry.playerSeason.season}
                     </span>
-                    <span className="text-xs font-bold text-zinc-300 w-6 text-right shrink-0">
+                    <span className={`font-display text-xs font-black w-6 text-right shrink-0 ${overallColor(entry.playerSeason.overall)}`}>
                       {entry.playerSeason.overall}
                     </span>
                   </>
@@ -172,7 +173,7 @@ export default function ResultPage() {
                     <span className="text-xs text-zinc-500 shrink-0">
                       {entry.playerSeason.season}
                     </span>
-                    <span className="text-xs font-bold text-zinc-300 w-6 text-right shrink-0">
+                    <span className={`font-display text-xs font-black w-6 text-right shrink-0 ${overallColor(entry.playerSeason.overall)}`}>
                       {entry.playerSeason.overall}
                     </span>
                   </>

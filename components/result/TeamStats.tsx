@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { overallColor } from "@/lib/overallColor";
 import { TeamEvaluation } from "@/types";
 import TierBadge from "./TierBadge";
 import RadarChart from "./RadarChart";
@@ -42,8 +43,9 @@ function StatBar({ label, value }: { label: string; value: number }) {
   }, [value]);
 
   const color =
-    value >= 80 ? "bg-orange-400" :
-    value >= 65 ? "bg-blue-400" :
+    value >= 88 ? "bg-yellow-400" :
+    value >= 76 ? "bg-emerald-400" :
+    value >= 65 ? "bg-sky-400" :
     "bg-zinc-500";
 
   return (
