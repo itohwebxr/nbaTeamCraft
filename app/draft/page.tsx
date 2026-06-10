@@ -132,10 +132,19 @@ export default function DraftPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col lg:flex-row gap-4">
         {/* Left: Team + Players */}
-        <div className="flex-1 min-w-0 order-2 lg:order-1">
-          {loading ? (
-            <TeamLoadingScreen />
-          ) : currentTeam ? (
+        <div className="flex-1 min-w-0 order-2 lg:order-1 relative">
+          {/* Overlay + loader on top of previous team content */}
+          {loading && currentTeam && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center rounded-2xl overflow-hidden">
+              <div className="absolute inset-0 bg-zinc-950/70 backdrop-blur-sm" />
+              <div className="relative z-10">
+                <TeamLoadingScreen />
+              </div>
+            </div>
+          )}
+          {/* Initial load (no previous team yet) */}
+          {loading && !currentTeam && <TeamLoadingScreen />}
+          {currentTeam ? (
             <>
               <div className="mb-4">
                 <TeamCard team={currentTeam} playerCount={currentPlayers.length} />
