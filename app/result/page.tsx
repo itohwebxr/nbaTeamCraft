@@ -293,7 +293,7 @@ export default function ResultPage() {
           <button
             onClick={() => setShowEnterModal(true)}
             disabled={!evaluation || loading}
-            className="w-full py-3.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors"
+            className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors"
           >
             🏆 Enter Rankings
           </button>
@@ -356,7 +356,7 @@ export default function ResultPage() {
               reset();
               router.push("/draft");
             }}
-            className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+            className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
           >
             Draft Again
           </button>
