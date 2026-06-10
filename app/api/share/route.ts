@@ -27,7 +27,12 @@ export async function POST(req: NextRequest) {
         .from("shares")
         .insert({ id, data: body });
       if (!error) break;
-      if (attempts++ > 5) throw new Error("Failed to create share");
+      // Retry only on duplicate ID; surface any other error immediately
+      if (error.code !== "23505") {
+        console.error("Supabase insert error:", error);
+        throw new Error(`Failed to create share: ${error.message}`);
+      }
+      if (attempts++ > 5) throw new Error("Failed to create share: too many ID collisions");
     }
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? req.nextUrl.origin;
