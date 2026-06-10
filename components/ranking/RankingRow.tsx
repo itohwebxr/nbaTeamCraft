@@ -20,6 +20,12 @@ const TIER_COLORS: Record<string, string> = {
   D: "text-zinc-500 border-zinc-700 bg-zinc-900",
 };
 
+const TOP_BORDERS: Record<number, string> = {
+  1: "border-yellow-400/50 bg-gradient-to-r from-yellow-400/10 to-zinc-900",
+  2: "border-zinc-400/50 bg-gradient-to-r from-zinc-400/10 to-zinc-900",
+  3: "border-amber-700/60 bg-gradient-to-r from-amber-700/15 to-zinc-900",
+};
+
 export default function RankingRow({ team, rank, sortKey, highlightStat = false }: RankingRowProps) {
   const router = useRouter();
   const tierColor = TIER_COLORS[team.tier] ?? TIER_COLORS.D;
@@ -29,6 +35,10 @@ export default function RankingRow({ team, rank, sortKey, highlightStat = false 
   const rankDisplay =
     rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`;
 
+  const rowStyle = topThree
+    ? `${TOP_BORDERS[rank]} hover:bg-zinc-800`
+    : "bg-zinc-900 hover:bg-zinc-800 border-zinc-800 hover:border-zinc-700";
+
   return (
     <div
       onClick={() => router.push(`/team/${team.id}`)}
@@ -37,7 +47,8 @@ export default function RankingRow({ team, rank, sortKey, highlightStat = false 
       onKeyDown={(e) => {
         if (e.key === "Enter") router.push(`/team/${team.id}`);
       }}
-      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 transition-colors text-left cursor-pointer"
+      className={`row-in w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors text-left cursor-pointer ${rowStyle}`}
+      style={{ animationDelay: `${Math.min(rank - 1, 19) * 50}ms` }}
     >
       {/* Rank */}
       <span className={`font-display font-black w-8 shrink-0 text-center ${topThree ? "text-lg" : "text-sm text-zinc-500"}`}>

@@ -7,6 +7,7 @@ import { createServerClient } from "@/lib/supabase";
 import { overallColor } from "@/lib/overallColor";
 import { PublicTeam, STARTER_SLOTS } from "@/types";
 import LikeButton from "@/components/common/LikeButton";
+import RadarChart from "@/components/result/RadarChart";
 
 export const dynamic = "force-dynamic";
 
@@ -107,7 +108,7 @@ export default async function TeamDetailPage({
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
+      <div className="fade-up fade-up-1 max-w-lg mx-auto px-4 py-6 space-y-4">
 
         {/* Hero */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
@@ -115,12 +116,19 @@ export default async function TeamDetailPage({
             <div className="flex-1 min-w-0">
               <p className="font-display text-xs font-bold text-zinc-500 tracking-[0.2em] mb-1">TEAM</p>
               <h1 className="font-display text-2xl font-black text-white leading-tight truncate">{team.name}</h1>
-            </div>
-            <div className="text-right shrink-0">
-              <p className={`font-display text-5xl font-black leading-none ${overallColor(team.overall)}`}>
+              <p className={`font-display text-5xl font-black leading-none mt-3 ${overallColor(team.overall)}`}>
                 {team.overall}
               </p>
               <p className={`font-display text-sm font-bold mt-1 ${tierColor}`}>{team.tier} Tier</p>
+            </div>
+            <div className="shrink-0">
+              <RadarChart
+                offense={team.offense}
+                defense={team.defense}
+                rebound={team.rebound}
+                playmaking={team.playmaking}
+                size={120}
+              />
             </div>
           </div>
 
@@ -139,7 +147,7 @@ export default async function TeamDetailPage({
                     {label.toUpperCase()}
                   </span>
                   <div className="flex-1 h-2 bg-zinc-800 rounded-full overflow-hidden">
-                    <div className={`h-full rounded-full ${color}`} style={{ width: `${value}%` }} />
+                    <div className={`bar-grow h-full rounded-full ${color}`} style={{ width: `${value}%` }} />
                   </div>
                   <span className="font-display text-sm font-black text-white w-8 text-right">{value}</span>
                 </div>

@@ -24,7 +24,7 @@ export default function RankingPage() {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto px-4 py-6">
+      <div className="fade-up fade-up-1 max-w-lg mx-auto px-4 py-6">
         <div className="mb-6">
           <h1 className="font-display text-3xl font-black text-white tracking-wide">🏆 Rankings</h1>
           <p className="text-sm text-zinc-500 mt-1">The greatest teams ever assembled.</p>

@@ -9,10 +9,17 @@ interface LikeButtonProps {
   size?: "sm" | "md";
 }
 
+const PARTICLES = [
+  { px: "-14px", py: "-18px", delay: "0ms" },
+  { px: "4px",   py: "-24px", delay: "60ms" },
+  { px: "16px",  py: "-14px", delay: "120ms" },
+];
+
 export default function LikeButton({ teamId, initialCount, size = "md" }: LikeButtonProps) {
   const [liked, setLiked] = useState(false);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
+  const [burst, setBurst] = useState(0); // increments to retrigger particles
 
   useEffect(() => {
     setLiked(getLikedTeams().has(teamId));
@@ -27,6 +34,7 @@ export default function LikeButton({ teamId, initialCount, size = "md" }: LikeBu
     setLiked(next);
     setCount((c) => c + (next ? 1 : -1));
     setLikedTeam(teamId, next);
+    if (next) setBurst((b) => b + 1);
     setLoading(true);
 
     try {
@@ -53,7 +61,7 @@ export default function LikeButton({ teamId, initialCount, size = "md" }: LikeBu
     <button
       onClick={toggle}
       disabled={loading}
-      className={`flex items-center gap-1.5 rounded-full border transition-all active:scale-90 disabled:opacity-60
+      className={`relative flex items-center gap-1.5 rounded-full border transition-all active:scale-90 disabled:opacity-60
         ${liked
           ? "text-red-400 border-red-400/40 bg-red-400/10 hover:bg-red-400/20"
           : "text-zinc-500 border-zinc-700 bg-zinc-800/50 hover:text-red-400 hover:border-red-400/30"
@@ -62,9 +70,25 @@ export default function LikeButton({ teamId, initialCount, size = "md" }: LikeBu
       `}
       aria-label={liked ? "Unlike" : "Like"}
     >
+      {/* Particle burst on like */}
+      {burst > 0 && liked && (
+        <span key={burst} className="absolute left-2 top-0" aria-hidden>
+          {PARTICLES.map((p, i) => (
+            <span
+              key={i}
+              className="heart-particle text-red-400"
+              style={{ "--px": p.px, "--py": p.py, animationDelay: p.delay } as React.CSSProperties}
+            >
+              ♥
+            </span>
+          ))}
+        </span>
+      )}
+
       <svg
+        key={liked ? `on-${burst}` : "off"}
         viewBox="0 0 24 24"
-        className={`shrink-0 transition-transform ${liked ? "scale-110" : "scale-100"} ${isSmall ? "w-3.5 h-3.5" : "w-4 h-4"}`}
+        className={`shrink-0 ${liked ? "heart-pop" : ""} ${isSmall ? "w-3.5 h-3.5" : "w-4 h-4"}`}
         fill={liked ? "currentColor" : "none"}
         stroke="currentColor"
         strokeWidth={2}
