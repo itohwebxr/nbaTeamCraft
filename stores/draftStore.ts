@@ -22,6 +22,7 @@ interface DraftStore {
   totalBudget: number;
   usedBudget: number;
   setCurrentTeam: (team: Team, players: PlayerSeason[]) => void;
+  markTeamAppeared: (teamId: string) => void;
   draftPlayer: (playerSeason: PlayerSeason, slot: RosterSlot, assignedPosition: Position) => void;
   reset: () => void;
   getVacantStarterSlots: () => StarterSlot[];
@@ -71,6 +72,14 @@ export const useDraftStore = create<DraftStore>((set, get) => ({
       currentTeam: team,
       currentPlayers: players,
       appearedTeamIds: [...state.appearedTeamIds, team.id],
+    }));
+  },
+
+  markTeamAppeared: (teamId) => {
+    set((state) => ({
+      appearedTeamIds: state.appearedTeamIds.includes(teamId)
+        ? state.appearedTeamIds
+        : [...state.appearedTeamIds, teamId],
     }));
   },
 

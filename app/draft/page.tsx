@@ -24,20 +24,50 @@ export default function DraftPage() {
   } | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
 
+  // True if at least one player on this team can actually be drafted
+  // (position available AND budget allows finishing the roster)
+  const hasDraftablePlayer = (players: PlayerSeason[]): boolean => {
+    const s = useDraftStore.getState();
+    const remaining = TOTAL_BUDGET - s.usedBudget;
+    const filled = s.roster.length;
+    return players.some((player) => {
+      if (s.isPlayerDrafted(player.nba_player_id)) return false;
+      if (s.getDraftablePositions(player).length === 0) return false;
+      const displaced = s.roster.find((e) => e.playerSeason.team_id === player.team_id);
+      const refund = displaced?.playerSeason.cost ?? 0;
+      const budgetAfter = remaining - player.cost + refund;
+      const slotsAfter = displaced
+        ? TOTAL_ROSTER_SIZE - filled
+        : Math.max(0, TOTAL_ROSTER_SIZE - filled - 1);
+      return budgetAfter >= 0 && budgetAfter >= slotsAfter;
+    });
+  };
+
   const fetchNextTeam = useCallback(async () => {
     setLoading(true);
     try {
-      const excludeParam = store.appearedTeamIds.join(",");
-      const res = await fetch(`/api/teams?exclude=${excludeParam}`);
-      if (!res.ok) throw new Error("No teams available");
-      const team: Team = await res.json();
+      // Skip teams with no draftable players (cost/position constraints)
+      const MAX_SKIPS = 15;
+      for (let i = 0; i < MAX_SKIPS; i++) {
+        const excludeParam = useDraftStore.getState().appearedTeamIds.join(",");
+        const res = await fetch(`/api/teams?exclude=${excludeParam}`);
+        if (!res.ok) throw new Error("No teams available");
+        const team: Team = await res.json();
 
-      const playersRes = await fetch(`/api/players?teamId=${team.id}`);
-      if (!playersRes.ok) throw new Error("Failed to load players");
-      const players: PlayerSeason[] = await playersRes.json();
+        const playersRes = await fetch(`/api/players?teamId=${team.id}`);
+        if (!playersRes.ok) throw new Error("Failed to load players");
+        const players: PlayerSeason[] = await playersRes.json();
 
-      store.setCurrentTeam(team, players);
-      gtm.nextTeam(store.appearedTeamIds.length + 1);
+        if (!hasDraftablePlayer(players)) {
+          store.markTeamAppeared(team.id);
+          continue;
+        }
+
+        store.setCurrentTeam(team, players);
+        gtm.nextTeam(useDraftStore.getState().appearedTeamIds.length);
+        return;
+      }
+      throw new Error("No draftable teams found");
     } catch (e) {
       console.error(e);
     } finally {
