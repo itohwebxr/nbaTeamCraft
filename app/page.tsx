@@ -1,6 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
+
+// Latest teams / ranking preview must refresh — regenerate at most every 60s
+export const revalidate = 60;
 import RankingPreview from "@/components/home/RankingPreview";
 import LatestTeams from "@/components/home/LatestTeams";
 import TeamCraftCupTeaser from "@/components/home/TeamCraftCupTeaser";
