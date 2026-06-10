@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { overallColor } from "@/lib/overallColor";
 import { PublicTeam } from "@/types";
+import LikeButton from "@/components/common/LikeButton";
 
 interface RankingRowProps {
   team: PublicTeam;
@@ -62,9 +63,8 @@ export default function RankingRow({ team, rank, sortKey }: RankingRowProps) {
       </div>
 
       {/* Likes */}
-      <div className="flex items-center gap-1 shrink-0 w-12 justify-end">
-        <span className="text-xs text-zinc-500">❤️</span>
-        <span className="text-xs text-zinc-500">{team.like_count}</span>
+      <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+        <LikeButton teamId={team.id} initialCount={team.like_count} size="sm" />
       </div>
     </button>
   );
