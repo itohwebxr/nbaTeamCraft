@@ -9,6 +9,7 @@ interface RankingRowProps {
   team: PublicTeam;
   rank: number;
   sortKey: string;
+  highlightStat?: boolean;
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -19,7 +20,7 @@ const TIER_COLORS: Record<string, string> = {
   D: "text-zinc-500 border-zinc-700 bg-zinc-900",
 };
 
-export default function RankingRow({ team, rank, sortKey }: RankingRowProps) {
+export default function RankingRow({ team, rank, sortKey, highlightStat = false }: RankingRowProps) {
   const router = useRouter();
   const tierColor = TIER_COLORS[team.tier] ?? TIER_COLORS.D;
   const sortValue = team[sortKey as keyof PublicTeam] as number;
@@ -46,11 +47,11 @@ export default function RankingRow({ team, rank, sortKey }: RankingRowProps) {
         </p>
       </div>
 
-      {/* Sort key value */}
-      {sortKey !== "overall" && (
+      {/* Highlighted stat for non-overall tabs */}
+      {highlightStat && (
         <div className="text-right shrink-0">
-          <p className={`font-display text-xs font-black ${overallColor(sortValue)}`}>{sortValue}</p>
-          <p className="text-xs text-zinc-600">{sortKey}</p>
+          <p className={`font-display text-sm font-black ${overallColor(sortValue)}`}>{sortValue}</p>
+          <p className="text-xs text-zinc-600 capitalize">{sortKey}</p>
         </div>
       )}
 

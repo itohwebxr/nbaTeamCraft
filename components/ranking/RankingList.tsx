@@ -5,8 +5,12 @@ import { PublicTeam } from "@/types";
 import RankingRow from "./RankingRow";
 
 const TABS = [
-  { key: "trending", label: "Trending" },
-  { key: "overall",  label: "Overall"  },
+  { key: "trending",   label: "Trending"   },
+  { key: "overall",    label: "Overall"    },
+  { key: "offense",    label: "Offense"    },
+  { key: "defense",    label: "Defense"    },
+  { key: "rebound",    label: "Rebound"    },
+  { key: "playmaking", label: "Playmaking" },
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];
@@ -54,15 +58,15 @@ export default function RankingList() {
   return (
     <div>
       {/* Tabs */}
-      <div className="flex gap-1 mb-4 bg-zinc-900 border border-zinc-800 rounded-xl p-1">
+      <div className="flex gap-1 mb-4 overflow-x-auto scrollbar-none pb-0.5">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setActiveTab(key)}
-            className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
+            className={`shrink-0 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
               activeTab === key
                 ? "bg-orange-500 text-white"
-                : "text-zinc-400 hover:text-white"
+                : "bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
             }`}
           >
             {label}
@@ -90,6 +94,7 @@ export default function RankingList() {
               team={team}
               rank={i + 1}
               sortKey={activeTab === "trending" ? "overall" : activeTab}
+              highlightStat={activeTab !== "trending" && activeTab !== "overall"}
             />
           ))}
         </div>
