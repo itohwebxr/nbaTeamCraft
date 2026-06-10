@@ -93,6 +93,10 @@ export default function ResultPage() {
   const handleShare = async () => {
     if (sharing) return;
     setSharing(true);
+
+    // Open the window synchronously within the tap gesture — mobile browsers
+    // only hand off to the X app when navigation starts from a user gesture.
+    const shareWindow = window.open("about:blank", "_blank");
     const label = teamName || "My NBA Team";
     const formatName = (name: string) => {
       const parts = name.trim().split(/\s+/);
@@ -144,7 +148,12 @@ export default function ResultPage() {
     }
 
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(sharePageUrl)}`;
-    window.open(tweetUrl, "_blank", "noopener");
+    if (shareWindow) {
+      shareWindow.location.href = tweetUrl;
+    } else {
+      // Popup blocked — navigate in place as a fallback
+      window.location.href = tweetUrl;
+    }
   };
 
   const getBrowserId = (): string => {
