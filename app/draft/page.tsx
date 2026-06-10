@@ -109,10 +109,12 @@ export default function DraftPage() {
   };
 
   const commitDraft = (player: PlayerSeason, position: Position) => {
-    // In sandbox mode multiple players from the same team are allowed — no displacement.
     const displaced =
       store.mode === "sandbox"
-        ? undefined
+        // Sandbox: only the current-visit pick is displaceable
+        ? (store.currentVisitDraftedId
+            ? store.roster.find((e) => e.playerSeason.nba_player_id === store.currentVisitDraftedId)
+            : undefined)
         : store.roster.find((e) => e.playerSeason.team_id === player.team_id);
 
     const vacantStarters = store.getVacantStarterSlots();
@@ -196,10 +198,12 @@ export default function DraftPage() {
                 {currentPlayers.map((player) => {
                   const draftablePositions = store.getDraftablePositions(player);
                   const isDrafted = store.isPlayerDrafted(player.nba_player_id);
-                  // In sandbox mode, same-team players don't displace each other
-                  const displaced = !isDrafted && !isSandbox
-                    ? store.roster.find((e) => e.playerSeason.team_id === player.team_id)
-                    : undefined;
+                  const displaced = isDrafted ? undefined : isSandbox
+                    // Sandbox: only the current-visit pick can be replaced
+                    ? (store.currentVisitDraftedId
+                        ? store.roster.find((e) => e.playerSeason.nba_player_id === store.currentVisitDraftedId)
+                        : undefined)
+                    : store.roster.find((e) => e.playerSeason.team_id === player.team_id);
                   const isReplaceable = displaced != null;
                   const refund = displaced?.playerSeason.cost ?? 0;
                   const budgetAfter = budgetRemaining - player.cost + refund;
@@ -273,7 +277,7 @@ export default function DraftPage() {
                 disabled:opacity-40 disabled:cursor-not-allowed
                 text-white font-bold text-sm transition-colors"
             >
-              Next Team →
+              Next Pick →
             </button>
           )}
           {filledSlots === TOTAL_ROSTER_SIZE && (

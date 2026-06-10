@@ -20,6 +20,8 @@ interface DraftStore {
   // Game state
   appearedTeamIds: string[];
   draftedPlayerIds: string[];
+  // Sandbox: tracks the player drafted in the current screen visit (overwritable)
+  currentVisitDraftedId: string | null;
   currentTeam: Team | null;
   currentPlayers: PlayerSeason[];
   roster: RosterEntry[];
@@ -46,6 +48,7 @@ interface DraftStore {
 const initialGameState = {
   appearedTeamIds: [] as string[],
   draftedPlayerIds: [] as string[],
+  currentVisitDraftedId: null as string | null,
   currentTeam: null as Team | null,
   currentPlayers: [] as PlayerSeason[],
   roster: [] as RosterEntry[],
@@ -92,6 +95,8 @@ export const useDraftStore = create<DraftStore>()(
       currentTeam: team,
       currentPlayers: players,
       appearedTeamIds: [...state.appearedTeamIds, team.id],
+      // New screen visit — reset the overwritable pick slot
+      currentVisitDraftedId: null,
     }));
   },
 
@@ -105,41 +110,55 @@ export const useDraftStore = create<DraftStore>()(
 
   clearCurrentTeam: () => {
     set((state) => {
-      // Remove any roster entries drafted from the current candidate team
-      const currentTeamId = state.currentTeam?.id;
-      const evicted = currentTeamId
-        ? state.roster.filter((e) => e.playerSeason.team_id === currentTeamId)
+      // Evict only the current-visit pick (if any); confirmed picks from previous visits stay.
+      const evictId = state.currentVisitDraftedId;
+      const evicted = evictId
+        ? state.roster.filter((e) => e.playerSeason.nba_player_id === evictId)
         : [];
-      const newRoster = currentTeamId
-        ? state.roster.filter((e) => e.playerSeason.team_id !== currentTeamId)
+      const newRoster = evictId
+        ? state.roster.filter((e) => e.playerSeason.nba_player_id !== evictId)
         : state.roster;
-      const evictedIds = evicted.map((e) => e.playerSeason.nba_player_id);
       const evictedCost = evicted.reduce((sum, e) => sum + e.playerSeason.cost, 0);
 
       return {
         currentTeam: null,
         currentPlayers: [],
         appearedTeamIds: [],
+        currentVisitDraftedId: null,
         roster: newRoster,
-        draftedPlayerIds: state.draftedPlayerIds.filter((id) => !evictedIds.includes(id)),
+        draftedPlayerIds: evictId
+          ? state.draftedPlayerIds.filter((id) => id !== evictId)
+          : state.draftedPlayerIds,
         usedBudget: state.usedBudget - evictedCost,
       };
     });
   },
 
-
   draftPlayer: (playerSeason, slot, assignedPosition) => {
     set((state) => {
-      // In sandbox mode allow multiple players from the same team — no displacement.
-      const displaced =
-        state.mode === "sandbox"
-          ? undefined
-          : state.roster.find((e) => e.playerSeason.team_id === playerSeason.team_id);
+      let displaced: RosterEntry | undefined;
+      if (state.mode === "sandbox") {
+        // In sandbox: only displace the current-visit pick (overwrite within same screen).
+        // Confirmed picks from previous visits are never displaced.
+        displaced = state.currentVisitDraftedId
+          ? state.roster.find(
+              (e) => e.playerSeason.nba_player_id === state.currentVisitDraftedId
+            )
+          : undefined;
+      } else {
+        // Draft mode: one player per team rule.
+        displaced = state.roster.find(
+          (e) => e.playerSeason.team_id === playerSeason.team_id
+        );
+      }
+
       const baseRoster = displaced
-        ? state.roster.filter((e) => e.playerSeason.team_id !== playerSeason.team_id)
+        ? state.roster.filter(
+            (e) => e.playerSeason.nba_player_id !== displaced!.playerSeason.nba_player_id
+          )
         : state.roster;
       const baseDraftedIds = displaced
-        ? state.draftedPlayerIds.filter((id) => id !== displaced.playerSeason.nba_player_id)
+        ? state.draftedPlayerIds.filter((id) => id !== displaced!.playerSeason.nba_player_id)
         : state.draftedPlayerIds;
       const budgetRefund = displaced ? displaced.playerSeason.cost : 0;
 
@@ -151,6 +170,9 @@ export const useDraftStore = create<DraftStore>()(
         roster: newRoster,
         draftedPlayerIds: [...baseDraftedIds, playerSeason.nba_player_id],
         usedBudget: state.usedBudget - budgetRefund + playerSeason.cost,
+        // Track the current-visit pick (sandbox only)
+        currentVisitDraftedId:
+          state.mode === "sandbox" ? playerSeason.nba_player_id : state.currentVisitDraftedId,
       };
     });
   },
@@ -181,12 +203,17 @@ export const useDraftStore = create<DraftStore>()(
   },
 
   getDraftablePositions: (player) => {
-    const { roster, mode } = get();
-    // In sandbox mode, multiple players from the same team are allowed — no displacement.
-    const displaced =
-      mode === "sandbox"
-        ? undefined
-        : roster.find((e) => e.playerSeason.team_id === player.team_id);
+    const { roster, mode, currentVisitDraftedId } = get();
+
+    let displaced: RosterEntry | undefined;
+    if (mode === "sandbox") {
+      // Only the current-visit pick counts as displaceable
+      displaced = currentVisitDraftedId
+        ? roster.find((e) => e.playerSeason.nba_player_id === currentVisitDraftedId)
+        : undefined;
+    } else {
+      displaced = roster.find((e) => e.playerSeason.team_id === player.team_id);
+    }
 
     const vacantStarters = get().getVacantStarterSlots();
     const effectiveVacantStarters =
