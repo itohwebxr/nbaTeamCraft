@@ -197,16 +197,6 @@ export default function ResultPage() {
     }
   };
 
-  const handleShareRanking = () => {
-    if (!evaluation || !publishedRank) return;
-    const label = teamName || "My NBA Team";
-    const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\n#NBATeamCraft\n`;
-    const url = sharePageUrl ?? `${window.location.origin}/`;
-    gtm.shareRanking({ team_name: label, overall: evaluation.overall, rank_overall: publishedRank.overall });
-    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(tweetUrl, "_blank", "noopener");
-  };
-
   const starters = STARTER_SLOTS.map((slot) => roster.find((e) => e.slot === slot));
   const bench = BENCH_SLOTS.map((slot) => roster.find((e) => e.slot === slot));
 
@@ -315,20 +305,12 @@ export default function ResultPage() {
                 </div>
               ))}
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleShareRanking}
-                className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
-              >
-                <span>𝕏</span> Share Ranking
-              </button>
-              <button
-                onClick={() => router.push("/ranking")}
-                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
-              >
-                View Ranking →
-              </button>
-            </div>
+            <button
+              onClick={() => router.push("/ranking")}
+              className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+            >
+              View Ranking →
+            </button>
           </div>
         ) : null}
 
@@ -337,7 +319,7 @@ export default function ResultPage() {
           <button
             onClick={handleShare}
             disabled={sharing}
-            className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+            className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
           >
             {sharing ? (
               <>
