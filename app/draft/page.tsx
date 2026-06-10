@@ -51,9 +51,17 @@ export default function DraftPage() {
       // Skip teams with no draftable players (cost/position constraints)
       const MAX_SKIPS = 15;
       for (let i = 0; i < MAX_SKIPS; i++) {
-        const excludeParam = useDraftStore.getState().appearedTeamIds.join(",");
         const s = useDraftStore.getState();
-        const params = new URLSearchParams({ exclude: excludeParam });
+        const isSandboxFixed =
+          s.mode === "sandbox" &&
+          s.sandboxConfig.teamFilter !== "Random" &&
+          s.sandboxConfig.seasonFilter !== "Random";
+        const params = new URLSearchParams();
+        // In sandbox mode with both filters fixed there is only one matching team,
+        // so exclude would make it disappear — skip exclude in that case.
+        if (!isSandboxFixed) {
+          params.set("exclude", s.appearedTeamIds.join(","));
+        }
         if (s.mode === "sandbox") {
           if (s.sandboxConfig.teamFilter !== "Random") params.set("teamAbbr", s.sandboxConfig.teamFilter);
           if (s.sandboxConfig.seasonFilter !== "Random") params.set("season", s.sandboxConfig.seasonFilter);
