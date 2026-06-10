@@ -3,28 +3,60 @@
 import { useEffect, useState } from "react";
 import { useDraftStore } from "@/stores/draftStore";
 
+type Pair = { abbreviation: string; season: string };
+
 export default function SandboxFilterBar() {
   const { sandboxConfig, setSandboxConfig, clearCurrentTeam } = useDraftStore();
-  const [teams, setTeams] = useState<string[]>([]);
-  const [seasons, setSeasons] = useState<string[]>([]);
+  const [pairs, setPairs] = useState<Pair[]>([]);
 
   useEffect(() => {
     fetch("/api/filter-options")
       .then((r) => r.json())
-      .then((data) => {
-        setTeams(data.teams ?? []);
-        setSeasons(data.seasons ?? []);
-      })
+      .then((data) => setPairs(data.pairs ?? []))
       .catch(console.error);
   }, []);
 
+  // Available teams: if a season is selected, only teams that exist in that season
+  const availableTeams = (() => {
+    const filtered =
+      sandboxConfig.seasonFilter === "Random"
+        ? pairs
+        : pairs.filter((p) => p.season === sandboxConfig.seasonFilter);
+    return [...new Set(filtered.map((p) => p.abbreviation))].sort();
+  })();
+
+  // Available seasons: if a team is selected, only seasons that team exists in
+  const availableSeasons = (() => {
+    const filtered =
+      sandboxConfig.teamFilter === "Random"
+        ? pairs
+        : pairs.filter((p) => p.abbreviation === sandboxConfig.teamFilter);
+    return [...new Set(filtered.map((p) => p.season))].sort().reverse();
+  })();
+
   const handleTeamChange = (value: string) => {
-    setSandboxConfig({ teamFilter: value });
+    const updates: { teamFilter: string; seasonFilter?: string } = { teamFilter: value };
+    // If current season is no longer valid for the new team, reset it
+    if (value !== "Random" && sandboxConfig.seasonFilter !== "Random") {
+      const valid = pairs.some(
+        (p) => p.abbreviation === value && p.season === sandboxConfig.seasonFilter
+      );
+      if (!valid) updates.seasonFilter = "Random";
+    }
+    setSandboxConfig(updates);
     clearCurrentTeam();
   };
 
   const handleSeasonChange = (value: string) => {
-    setSandboxConfig({ seasonFilter: value });
+    const updates: { seasonFilter: string; teamFilter?: string } = { seasonFilter: value };
+    // If current team is no longer valid for the new season, reset it
+    if (value !== "Random" && sandboxConfig.teamFilter !== "Random") {
+      const valid = pairs.some(
+        (p) => p.season === value && p.abbreviation === sandboxConfig.teamFilter
+      );
+      if (!valid) updates.teamFilter = "Random";
+    }
+    setSandboxConfig(updates);
     clearCurrentTeam();
   };
 
@@ -43,7 +75,7 @@ export default function SandboxFilterBar() {
               text-white text-sm focus:outline-none focus:border-orange-500 transition-colors"
           >
             <option value="Random">Random</option>
-            {teams.map((t) => (
+            {availableTeams.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}
           </select>
@@ -57,7 +89,7 @@ export default function SandboxFilterBar() {
               text-white text-sm focus:outline-none focus:border-orange-500 transition-colors"
           >
             <option value="Random">Random</option>
-            {seasons.map((s) => (
+            {availableSeasons.map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
           </select>

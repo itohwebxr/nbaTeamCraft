@@ -12,8 +12,6 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const teams = [...new Set(data.map((t) => t.abbreviation))].sort();
-  const seasons = [...new Set(data.map((t) => t.season))].sort().reverse();
-
-  return NextResponse.json({ teams, seasons });
+  // Return all pairs so the client can cross-filter
+  return NextResponse.json({ pairs: data as { abbreviation: string; season: string }[] });
 }
