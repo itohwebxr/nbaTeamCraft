@@ -1,5 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Suspense } from "react";
+import RankingPreview from "@/components/home/RankingPreview";
 
 export default function Home() {
   return (
@@ -110,6 +112,13 @@ export default function Home() {
         <p className="fade-up fade-up-4 text-xs text-zinc-600 font-display tracking-widest">
           DATA: NBA SEASONS 2001–2026
         </p>
+
+        {/* Ranking Preview */}
+        <div className="fade-up fade-up-4 w-full">
+          <Suspense fallback={null}>
+            <RankingPreview />
+          </Suspense>
+        </div>
       </div>
     </div>
   );
