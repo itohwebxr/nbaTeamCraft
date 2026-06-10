@@ -7,7 +7,12 @@ export const metadata = {
   description: "See the greatest teams ever assembled by NBA TeamCraft players.",
 };
 
-export default function RankingPage() {
+export default async function RankingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const { tab } = await searchParams;
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
@@ -30,7 +35,7 @@ export default function RankingPage() {
           <p className="text-sm text-zinc-500 mt-1">The greatest teams ever assembled.</p>
         </div>
 
-        <RankingList />
+        <RankingList initialTab={tab} />
       </div>
     </div>
   );
