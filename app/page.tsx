@@ -17,7 +17,7 @@ export default function Home() {
           <svg
             viewBox="0 0 940 500"
             xmlns="http://www.w3.org/2000/svg"
-            className="w-full max-w-5xl opacity-[0.13]"
+            className="w-full max-w-5xl opacity-[0.13] -translate-y-[18vh] md:translate-y-0"
             fill="none"
             stroke="white"
             strokeWidth="1.5"
