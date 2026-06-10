@@ -141,7 +141,6 @@ export default function DraftPage() {
 
   const { currentTeam, currentPlayers, roster, usedBudget } = store;
   const budgetRemaining = TOTAL_BUDGET - usedBudget;
-  const totalSlots = TOTAL_ROSTER_SIZE;
   const filledSlots = roster.length;
   const draftedFromCurrentTeam = currentPlayers.some((p) => store.isPlayerDrafted(p.nba_player_id));
 
@@ -154,9 +153,6 @@ export default function DraftPage() {
           <div className="flex-1">
             <BudgetBar used={usedBudget} />
           </div>
-          <span className="text-xs text-zinc-400 shrink-0">
-            {filledSlots}/{totalSlots}
-          </span>
         </div>
       </header>
 

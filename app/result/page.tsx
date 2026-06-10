@@ -220,6 +220,40 @@ export default function ResultPage() {
       </header>
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+        {/* Published panel — shown at top after entering rankings */}
+        {publishedId && publishedRank && (
+          <div className="bg-zinc-900 border border-amber-700/50 rounded-2xl p-5">
+            <p className="font-display text-xs font-bold text-amber-400 tracking-[0.2em] mb-3">🏆 PUBLISHED SUCCESSFULLY</p>
+            <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2">Your Ranking</p>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {([
+                ["Overall", publishedRank.overall],
+                ["Offense", publishedRank.offense],
+                ["Defense", publishedRank.defense],
+              ] as [string, number][]).map(([label, rank]) => (
+                <div key={label} className="bg-zinc-800 rounded-xl p-3 text-center">
+                  <p className="font-display text-xl font-black text-white">#{rank}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => router.push("/ranking")}
+                className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+              >
+                View Ranking →
+              </button>
+              <button
+                onClick={handleShareRanking}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <span>𝕏</span> Share Ranking
+              </button>
+            </div>
+          </div>
+        )}
+
         <TeamNameInput value={teamName} onChange={setTeamName} />
 
         {loading ? (
@@ -289,7 +323,7 @@ export default function ResultPage() {
         </div>
 
         {/* Enter Rankings */}
-        {!publishedId ? (
+        {!publishedId && (
           <button
             onClick={() => setShowEnterModal(true)}
             disabled={!evaluation || loading}
@@ -297,57 +331,10 @@ export default function ResultPage() {
           >
             🏆 Enter Rankings
           </button>
-        ) : publishedRank ? (
-          <div className="bg-zinc-900 border border-amber-700/50 rounded-2xl p-5">
-            <p className="font-display text-xs font-bold text-amber-400 tracking-[0.2em] mb-3">🏆 PUBLISHED SUCCESSFULLY</p>
-            <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2">Your Ranking</p>
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {([
-                ["Overall", publishedRank.overall],
-                ["Offense", publishedRank.offense],
-                ["Defense", publishedRank.defense],
-                ["Rebound", publishedRank.rebound],
-                ["Playmaking", publishedRank.playmaking],
-              ] as [string, number][]).slice(0, 3).map(([label, rank]) => (
-                <div key={label} className="bg-zinc-800 rounded-xl p-3 text-center">
-                  <p className="font-display text-xl font-black text-white">#{rank}</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleShareRanking}
-                className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
-              >
-                <span>𝕏</span> Share Ranking
-              </button>
-              <button
-                onClick={() => router.push("/ranking")}
-                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
-              >
-                View Ranking →
-              </button>
-            </div>
-          </div>
-        ) : null}
+        )}
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button
-            onClick={handleShare}
-            disabled={sharing}
-            className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
-          >
-            {sharing ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Sharing...
-              </>
-            ) : (
-              <><span>𝕏</span> Share</>
-            )}
-          </button>
           <button
             onClick={() => {
               if (evaluation) {
@@ -359,6 +346,20 @@ export default function ResultPage() {
             className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
           >
             Draft Again
+          </button>
+          <button
+            onClick={handleShare}
+            disabled={sharing}
+            className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+          >
+            {sharing ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Sharing...
+              </>
+            ) : (
+              <><span>𝕏</span> Share</>
+            )}
           </button>
         </div>
       </div>

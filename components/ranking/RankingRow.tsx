@@ -30,9 +30,14 @@ export default function RankingRow({ team, rank, sortKey, highlightStat = false 
     rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`;
 
   return (
-    <button
+    <div
       onClick={() => router.push(`/team/${team.id}`)}
-      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 transition-colors text-left"
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") router.push(`/team/${team.id}`);
+      }}
+      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 transition-colors text-left cursor-pointer"
     >
       {/* Rank */}
       <span className={`font-display font-black w-8 shrink-0 text-center ${topThree ? "text-lg" : "text-sm text-zinc-500"}`}>
@@ -67,6 +72,6 @@ export default function RankingRow({ team, rank, sortKey, highlightStat = false 
       <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
         <LikeButton teamId={team.id} initialCount={team.like_count} size="sm" />
       </div>
-    </button>
+    </div>
   );
 }
