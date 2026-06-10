@@ -1,5 +1,6 @@
-import { PlayerSeason, RosterEntry, TeamEvaluation, Tier } from "@/types";
+import { PlayerSeason, Position, RosterEntry, TeamEvaluation, Tier } from "@/types";
 import { percentileRank } from "./overall";
+import { positionPenaltyMultiplier } from "./positionPenalty";
 
 const STARTER_WEIGHT = 1.0;
 const BENCH_WEIGHT = 0.7;
@@ -16,6 +17,13 @@ interface PopulationStats {
   rpg: number[];
 }
 
+function posMultiplier(entry: RosterEntry): number {
+  // Bench players are not evaluated on positional fit
+  if (!isStarter(entry.slot)) return 1.0;
+  const natives = entry.playerSeason.positions.map((p) => p.position as Position);
+  return positionPenaltyMultiplier(natives, entry.assignedPosition as Position);
+}
+
 function weightedAvg(
   roster: RosterEntry[],
   fn: (ps: PlayerSeason) => number
@@ -24,10 +32,14 @@ function weightedAvg(
   let totalWeight = 0;
   for (const entry of roster) {
     const w = isStarter(entry.slot) ? STARTER_WEIGHT : BENCH_WEIGHT;
-    sum += fn(entry.playerSeason) * w;
+    sum += fn(entry.playerSeason) * w * posMultiplier(entry);
     totalWeight += w;
   }
   return totalWeight > 0 ? sum / totalWeight : 0;
+}
+
+function effectiveOverall(entry: RosterEntry): number {
+  return entry.playerSeason.overall * posMultiplier(entry);
 }
 
 function toRating(score: number): number {
@@ -39,7 +51,7 @@ export function calcTeamEvaluation(
   population: PopulationStats
 ): TeamEvaluation {
   const avgOverall = weightedAvg(roster, (ps) => ps.overall);
-  const maxOverall = Math.max(...roster.map((e) => e.playerSeason.overall));
+  const maxOverall = Math.max(...roster.map((e) => effectiveOverall(e)));
 
   // Superstar bonus: exponential curve from overall 90→100, max ~+15
   const superstarBonus = maxOverall >= 90
@@ -48,7 +60,7 @@ export function calcTeamEvaluation(
 
   // Penalize weak starters: exponential curve from overall 75→60, max ~-15
   const starterEntries = roster.filter((e) => isStarter(e.slot));
-  const starterOveralls = starterEntries.map((e) => e.playerSeason.overall);
+  const starterOveralls = starterEntries.map((e) => effectiveOverall(e));
   const minStarterOverall = starterOveralls.length > 0 ? Math.min(...starterOveralls) : 0;
   const weakStarterPenalty = Math.pow(Math.max(0, 75 - minStarterOverall) / 15, 2) * 15;
 
@@ -69,12 +81,14 @@ export function calcTeamEvaluation(
   }
 
   // Multi-star bonus: each additional player with overall >= 87 adds +3 (max +9)
-  const starCount = roster.filter((e) => e.playerSeason.overall >= 87).length;
+  const starCount = roster.filter((e) => effectiveOverall(e) >= 87).length;
   const multiStarBonus = Math.max(0, starCount - 1) * 3;
 
   // Roster imbalance penalty: penalize when outside (PG/SG) and inside (PF/C) strength gap is large
-  const getStarterOverall = (pos: string) =>
-    starterEntries.find((e) => e.slot === pos)?.playerSeason.overall ?? 0;
+  const getStarterOverall = (pos: string) => {
+    const e = starterEntries.find((en) => en.slot === pos);
+    return e ? effectiveOverall(e) : 0;
+  };
   const outsideStrength = Math.max(getStarterOverall("PG"), getStarterOverall("SG"));
   const insideStrength = Math.max(getStarterOverall("PF"), getStarterOverall("C"));
   const imbalanceDiff = Math.abs(outsideStrength - insideStrength);

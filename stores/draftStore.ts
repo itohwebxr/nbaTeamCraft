@@ -43,6 +43,7 @@ interface DraftStore {
   getDraftablePositions: (player: PlayerSeason) => Position[];
   isPlayerDrafted: (nbaPlayerId: string) => boolean;
   isRosterComplete: () => boolean;
+  swapRosterSlots: (slotA: RosterSlot, slotB: RosterSlot) => void;
 }
 
 const initialGameState = {
@@ -251,6 +252,47 @@ export const useDraftStore = create<DraftStore>()(
 
   isRosterComplete: () => {
     return get().roster.length === TOTAL_ROSTER_SIZE;
+  },
+
+  swapRosterSlots: (slotA, slotB) => {
+    set((state) => {
+      const entryA = state.roster.find((e) => e.slot === slotA);
+      const entryB = state.roster.find((e) => e.slot === slotB);
+      if (!entryA && !entryB) return {};
+
+      const newRoster = state.roster.map((e) => {
+        if (e.slot === slotA && entryB) {
+          // entryB moves into slotA; assignedPosition follows the slot for starters
+          const newAssigned = STARTER_SLOTS.includes(slotA as StarterSlot)
+            ? (slotA as Position)
+            : e.assignedPosition;
+          return { ...entryB, slot: slotA, assignedPosition: newAssigned };
+        }
+        if (e.slot === slotB && entryA) {
+          const newAssigned = STARTER_SLOTS.includes(slotB as StarterSlot)
+            ? (slotB as Position)
+            : e.assignedPosition;
+          return { ...entryA, slot: slotB, assignedPosition: newAssigned };
+        }
+        return e;
+      });
+
+      // If one slot was empty, move the existing entry to the empty slot
+      if (entryA && !entryB) {
+        const moved = newRoster.map((e) => {
+          if (e.slot === slotA && e.playerSeason.nba_player_id === entryA.playerSeason.nba_player_id) {
+            const newAssigned = STARTER_SLOTS.includes(slotB as StarterSlot)
+              ? (slotB as Position)
+              : e.assignedPosition;
+            return { ...e, slot: slotB, assignedPosition: newAssigned };
+          }
+          return e;
+        });
+        return { roster: moved };
+      }
+
+      return { roster: newRoster };
+    });
   },
     }),
     {

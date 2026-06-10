@@ -9,7 +9,7 @@ import { gtm } from "@/lib/gtm";
 import { useDraftStore } from "@/stores/draftStore";
 import TeamCard from "@/components/draft/TeamCard";
 import PlayerCard from "@/components/draft/PlayerCard";
-import RosterSlotView from "@/components/draft/RosterSlotView";
+import DraggableRoster from "@/components/draft/DraggableRoster";
 import BudgetBar from "@/components/draft/BudgetBar";
 import PositionSelectModal from "@/components/draft/PositionSelectModal";
 import TeamLoadingScreen from "@/components/draft/TeamLoadingScreen";
@@ -246,28 +246,14 @@ export default function DraftPage() {
               Reset Draft
             </button>
           </div>
-          <div className="space-y-1.5">
-            <p className="hidden lg:block text-xs text-zinc-600 mb-2">STARTERS</p>
-            {STARTER_SLOTS.map((slot, i) => (
-              <RosterSlotView
-                key={slot}
-                slot={slot}
-                entry={roster.find((e) => e.slot === slot)}
-                waveIndex={filledSlots === TOTAL_ROSTER_SIZE ? i : null}
-              />
-            ))}
-            <div className="mt-3">
-              <p className="hidden lg:block text-xs text-zinc-600 mb-2">6TH MAN</p>
-              {BENCH_SLOTS.map((slot, i) => (
-                <RosterSlotView
-                  key={slot}
-                  slot={slot}
-                  entry={roster.find((e) => e.slot === slot)}
-                  waveIndex={filledSlots === TOTAL_ROSTER_SIZE ? STARTER_SLOTS.length + i : null}
-                />
-              ))}
-            </div>
-          </div>
+          <DraggableRoster
+            slots={[...STARTER_SLOTS, ...BENCH_SLOTS]}
+            roster={roster}
+            label="STARTERS"
+            filledSlots={filledSlots}
+            totalSlots={TOTAL_ROSTER_SIZE}
+            onSwap={(a, b) => store.swapRosterSlots(a, b)}
+          />
 
           {filledSlots < TOTAL_ROSTER_SIZE && (
             <button
