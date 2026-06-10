@@ -104,7 +104,27 @@ export const useDraftStore = create<DraftStore>()(
   },
 
   clearCurrentTeam: () => {
-    set({ currentTeam: null, currentPlayers: [], appearedTeamIds: [] });
+    set((state) => {
+      // Remove any roster entries drafted from the current candidate team
+      const currentTeamId = state.currentTeam?.id;
+      const evicted = currentTeamId
+        ? state.roster.filter((e) => e.playerSeason.team_id === currentTeamId)
+        : [];
+      const newRoster = currentTeamId
+        ? state.roster.filter((e) => e.playerSeason.team_id !== currentTeamId)
+        : state.roster;
+      const evictedIds = evicted.map((e) => e.playerSeason.nba_player_id);
+      const evictedCost = evicted.reduce((sum, e) => sum + e.playerSeason.cost, 0);
+
+      return {
+        currentTeam: null,
+        currentPlayers: [],
+        appearedTeamIds: [],
+        roster: newRoster,
+        draftedPlayerIds: state.draftedPlayerIds.filter((id) => !evictedIds.includes(id)),
+        usedBudget: state.usedBudget - evictedCost,
+      };
+    });
   },
 
 
