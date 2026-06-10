@@ -10,13 +10,10 @@ import TeamCraftCupTeaser from "@/components/home/TeamCraftCupTeaser";
 
 export default function Home() {
   return (
-    <div className="bg-zinc-950 text-white">
+    <div className="court-bg text-white relative overflow-hidden">
 
-      {/* ── Hero (court-bg: single viewport, original design) ── */}
-      <div className="min-h-screen court-bg text-white flex flex-col items-center justify-center px-4 overflow-hidden relative">
-
-        {/* Basketball court SVG — NBA full court, landscape */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+      {/* Basketball court SVG — anchored to top of page, behind hero */}
+      <div className="absolute top-0 left-0 right-0 h-screen flex items-center justify-center pointer-events-none select-none">
           <svg
             viewBox="0 0 940 500"
             xmlns="http://www.w3.org/2000/svg"
@@ -54,6 +51,8 @@ export default function Home() {
           </svg>
         </div>
 
+      {/* ── Hero (single viewport, centered) ── */}
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 relative">
         <div className="max-w-md w-full text-center space-y-8 relative z-10">
 
           {/* Logo */}
@@ -115,8 +114,8 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Sections below hero (bg-zinc-950 base) ── */}
-      <div className="bg-zinc-950 flex flex-col items-center px-4 py-10 gap-10">
+      {/* ── Sections below hero ── */}
+      <div className="relative z-10 flex flex-col items-center px-4 py-10 gap-10">
 
         {/* Ranking Preview */}
         <Suspense fallback={null}>
