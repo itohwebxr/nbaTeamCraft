@@ -139,22 +139,10 @@ body {
 @keyframes heart-pop {
   0%   { transform: scale(0.4); }
   55%  { transform: scale(1.35); }
-  100% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }
 .heart-pop {
-  animation: heart-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
-}
-
-/* Tiny hearts fly out on like */
-@keyframes heart-particle {
-  0%   { opacity: 1; transform: translate(0, 0) scale(0.6); }
-  100% { opacity: 0; transform: translate(var(--px), var(--py)) scale(1); }
-}
-.heart-particle {
-  position: absolute;
-  pointer-events: none;
-  font-size: 10px;
-  animation: heart-particle 0.7s ease-out forwards;
+  animation: heart-pop 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
 
 /* Trophy floats gently */
