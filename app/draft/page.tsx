@@ -11,6 +11,7 @@ import PlayerCard from "@/components/draft/PlayerCard";
 import RosterSlotView from "@/components/draft/RosterSlotView";
 import BudgetBar from "@/components/draft/BudgetBar";
 import PositionSelectModal from "@/components/draft/PositionSelectModal";
+import TeamLoadingScreen from "@/components/draft/TeamLoadingScreen";
 
 export default function DraftPage() {
   const router = useRouter();
@@ -133,9 +134,7 @@ export default function DraftPage() {
         {/* Left: Team + Players */}
         <div className="flex-1 min-w-0 order-2 lg:order-1">
           {loading ? (
-            <div className="flex items-center justify-center h-48 text-zinc-500">
-              Loading team...
-            </div>
+            <TeamLoadingScreen />
           ) : currentTeam ? (
             <>
               <div className="mb-4">
