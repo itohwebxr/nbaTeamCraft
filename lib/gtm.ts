@@ -61,4 +61,17 @@ export const gtm = {
     budget_remaining: number;
     roster_size: number;
   }) => push({ event: "budget_block", ...params }),
+
+  enterRankings: (params: {
+    team_name: string;
+    overall: number;
+    tier: string;
+    rank_overall: number;
+  }) => push({ event: "enter_rankings", ...params }),
+
+  shareRanking: (params: {
+    team_name: string;
+    overall: number;
+    rank_overall: number;
+  }) => push({ event: "share_ranking", ...params }),
 };

@@ -64,3 +64,43 @@ export const ALL_SLOTS: RosterSlot[] = [...STARTER_SLOTS, ...BENCH_SLOTS];
 
 export const TOTAL_ROSTER_SIZE = 6;
 export const TOTAL_BUDGET = 17;
+
+export interface PublicTeamRosterItem {
+  slot: RosterSlot;
+  name: string;
+  season: string;
+  overall: number;
+  assignedPosition: Position;
+}
+
+export interface PublicTeamMetadataPlayer {
+  playerId: string;
+  name: string;
+  season: string;
+  team: string;
+}
+
+export interface PublicTeam {
+  id: string;
+  share_id: string;
+  name: string;
+  overall: number;
+  tier: Tier;
+  offense: number;
+  defense: number;
+  rebound: number;
+  playmaking: number;
+  roster_json: PublicTeamRosterItem[];
+  metadata: { players: PublicTeamMetadataPlayer[] };
+  like_count: number;
+  created_by_browser_id: string | null;
+  created_at: string;
+}
+
+export interface PublicTeamRank {
+  overall: number;
+  offense: number;
+  defense: number;
+  rebound: number;
+  playmaking: number;
+}
