@@ -58,14 +58,6 @@ export default async function RankingPreview() {
         ))}
       </div>
 
-      <div className="mt-3">
-        <Link
-          href="/ranking"
-          className="block w-full py-3 rounded-xl border border-zinc-800 hover:border-zinc-600 text-zinc-400 hover:text-white text-sm font-bold text-center transition-colors"
-        >
-          See Full Ranking →
-        </Link>
-      </div>
     </div>
   );
 }
