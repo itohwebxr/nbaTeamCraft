@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { overallColor } from "@/lib/overallColor";
 import { useDraftStore } from "@/stores/draftStore";
-import { TeamEvaluation, STARTER_SLOTS, BENCH_SLOTS, TOTAL_BUDGET } from "@/types";
+import { TeamEvaluation, STARTER_SLOTS, BENCH_SLOTS, TOTAL_BUDGET, PublicTeamRank } from "@/types";
 import TeamStats from "@/components/result/TeamStats";
 import TeamNameInput from "@/components/result/TeamNameInput";
+import EnterRankingsModal from "@/components/result/EnterRankingsModal";
 import { gtm } from "@/lib/gtm";
 
 function SlotLabel({ slot }: { slot: string }) {
@@ -21,6 +23,11 @@ export default function ResultPage() {
   const [teamName, setTeamName] = useState("");
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
+  const [showEnterModal, setShowEnterModal] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishedId, setPublishedId] = useState<string | null>(null);
+  const [publishedRank, setPublishedRank] = useState<PublicTeamRank | null>(null);
+  const [sharePageUrl, setSharePageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (roster.length === 0) {
@@ -103,6 +110,103 @@ export default function ResultPage() {
     window.open(tweetUrl, "_blank", "noopener");
   };
 
+  const getBrowserId = (): string => {
+    const key = "nba_tc_browser_id";
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem(key, id);
+    }
+    return id;
+  };
+
+  const handleEnterRankings = async (name: string) => {
+    if (isPublishing || !evaluation) return;
+    setIsPublishing(true);
+
+    // Ensure share URL exists first
+    let resolvedShareId: string | null = null;
+    try {
+      const formatName = (n: string) => {
+        const parts = n.trim().split(/\s+/);
+        if (parts.length === 1) return n;
+        return `${parts[0][0]} ${parts[parts.length - 1]}`;
+      };
+      const slotKey = (slot: string) => slot === "BENCH1" ? "6th" : slot.toLowerCase();
+      const shareData: Record<string, string> = { name };
+      shareData.overall = String(evaluation.overall);
+      shareData.tier = evaluation.tier;
+      [...starters, ...bench].forEach((e) => {
+        if (e) {
+          const key = slotKey(e.slot);
+          shareData[key] = formatName(e.playerSeason.name);
+          shareData[`${key}_s`] = e.playerSeason.season;
+        }
+      });
+
+      const shareRes = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(shareData),
+      });
+      const shareJson = await shareRes.json();
+      if (shareJson.url) {
+        setSharePageUrl(shareJson.url);
+        // Extract share ID from URL path /share/{id}
+        const parts = shareJson.url.split("/");
+        resolvedShareId = parts[parts.length - 1];
+      }
+    } catch {
+      // continue without share_id — will fail validation
+    }
+
+    if (!resolvedShareId) {
+      setIsPublishing(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/public-teams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          share_id: resolvedShareId,
+          name,
+          evaluation,
+          roster,
+          created_by_browser_id: getBrowserId(),
+        }),
+      });
+      const json = await res.json();
+      if (json.id) {
+        setPublishedId(json.id);
+        setPublishedRank(json.rank);
+        setTeamName(name);
+        gtm.enterRankings({
+          team_name: name,
+          overall: evaluation.overall,
+          tier: evaluation.tier,
+          rank_overall: json.rank.overall,
+        });
+      }
+    } catch {
+      // silently fail — user can retry
+    } finally {
+      setIsPublishing(false);
+      setShowEnterModal(false);
+    }
+  };
+
+  const handleShareRanking = () => {
+    if (!evaluation || !publishedRank) return;
+    const label = teamName || "My NBA Team";
+    const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\n#NBATeamCraft\n`;
+    const url = sharePageUrl ?? `${window.location.origin}/`;
+    gtm.shareRanking({ team_name: label, overall: evaluation.overall, rank_overall: publishedRank.overall });
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(tweetUrl, "_blank", "noopener");
+  };
+
   const starters = STARTER_SLOTS.map((slot) => roster.find((e) => e.slot === slot));
   const bench = BENCH_SLOTS.map((slot) => roster.find((e) => e.slot === slot));
 
@@ -145,7 +249,7 @@ export default function ResultPage() {
                     <span className="text-xs text-zinc-500 shrink-0">
                       {entry.playerSeason.season}
                     </span>
-                    <span className="text-xs font-bold text-zinc-300 w-6 text-right shrink-0">
+                    <span className={`font-display text-xs font-black w-6 text-right shrink-0 ${overallColor(entry.playerSeason.overall)}`}>
                       {entry.playerSeason.overall}
                     </span>
                   </>
@@ -172,7 +276,7 @@ export default function ResultPage() {
                     <span className="text-xs text-zinc-500 shrink-0">
                       {entry.playerSeason.season}
                     </span>
-                    <span className="text-xs font-bold text-zinc-300 w-6 text-right shrink-0">
+                    <span className={`font-display text-xs font-black w-6 text-right shrink-0 ${overallColor(entry.playerSeason.overall)}`}>
                       {entry.playerSeason.overall}
                     </span>
                   </>
@@ -183,6 +287,50 @@ export default function ResultPage() {
             ))}
           </div>
         </div>
+
+        {/* Enter Rankings */}
+        {!publishedId ? (
+          <button
+            onClick={() => setShowEnterModal(true)}
+            disabled={!evaluation || loading}
+            className="w-full py-3.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors"
+          >
+            🏆 Enter Rankings
+          </button>
+        ) : publishedRank ? (
+          <div className="bg-zinc-900 border border-amber-700/50 rounded-2xl p-5">
+            <p className="font-display text-xs font-bold text-amber-400 tracking-[0.2em] mb-3">🏆 PUBLISHED SUCCESSFULLY</p>
+            <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2">Your Ranking</p>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {([
+                ["Overall", publishedRank.overall],
+                ["Offense", publishedRank.offense],
+                ["Defense", publishedRank.defense],
+                ["Rebound", publishedRank.rebound],
+                ["Playmaking", publishedRank.playmaking],
+              ] as [string, number][]).slice(0, 3).map(([label, rank]) => (
+                <div key={label} className="bg-zinc-800 rounded-xl p-3 text-center">
+                  <p className="font-display text-xl font-black text-white">#{rank}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleShareRanking}
+                className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <span>𝕏</span> Share Ranking
+              </button>
+              <button
+                onClick={() => router.push("/ranking")}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+              >
+                View Ranking →
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         {/* Actions */}
         <div className="flex gap-3">
@@ -214,6 +362,14 @@ export default function ResultPage() {
           </button>
         </div>
       </div>
+      {showEnterModal && (
+        <EnterRankingsModal
+          initialName={teamName}
+          onConfirm={handleEnterRankings}
+          onCancel={() => setShowEnterModal(false)}
+          isSubmitting={isPublishing}
+        />
+      )}
     </div>
   );
 }

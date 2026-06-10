@@ -11,6 +11,7 @@ import PlayerCard from "@/components/draft/PlayerCard";
 import RosterSlotView from "@/components/draft/RosterSlotView";
 import BudgetBar from "@/components/draft/BudgetBar";
 import PositionSelectModal from "@/components/draft/PositionSelectModal";
+import TeamLoadingScreen from "@/components/draft/TeamLoadingScreen";
 
 export default function DraftPage() {
   const router = useRouter();
@@ -132,11 +133,8 @@ export default function DraftPage() {
       <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col lg:flex-row gap-4">
         {/* Left: Team + Players */}
         <div className="flex-1 min-w-0 order-2 lg:order-1">
-          {loading ? (
-            <div className="flex items-center justify-center h-48 text-zinc-500">
-              Loading team...
-            </div>
-          ) : currentTeam ? (
+          {loading && <TeamLoadingScreen />}
+          {currentTeam ? (
             <>
               <div className="mb-4">
                 <TeamCard team={currentTeam} playerCount={currentPlayers.length} />
@@ -237,10 +235,11 @@ export default function DraftPage() {
                 });
                 router.push("/result");
               }}
-              className="w-full mt-4 py-3 rounded-xl bg-green-500 hover:bg-green-400
-                text-white font-bold text-sm transition-colors"
+              className="pulse-glow w-full mt-4 py-3.5 rounded-xl font-display font-black text-lg tracking-widest uppercase
+                bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400
+                text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              View Results →
+              🏆 View Results
             </button>
           )}
         </div>
