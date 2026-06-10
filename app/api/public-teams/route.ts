@@ -116,6 +116,9 @@ export async function GET(req: NextRequest) {
       // Supabase doesn't support ORDER BY computed expressions directly,
       // so we fetch recent records and sort client-side for MVP
       query = query.order("created_at", { ascending: false }).limit(200);
+    } else if (sort === "latest") {
+      if (cursor) query = query.lt("created_at", cursor);
+      query = query.order("created_at", { ascending: false }).limit(limit);
     } else {
       const col = ["overall", "offense", "defense", "rebound", "playmaking"].includes(sort)
         ? sort
@@ -142,7 +145,9 @@ export async function GET(req: NextRequest) {
 
     const nextCursor =
       sort !== "trending" && teams.length === limit
-        ? String(teams[teams.length - 1][sort as keyof typeof teams[0]])
+        ? sort === "latest"
+          ? String(teams[teams.length - 1].created_at)
+          : String(teams[teams.length - 1][sort as keyof typeof teams[0]])
         : null;
 
     return NextResponse.json({ teams, nextCursor });

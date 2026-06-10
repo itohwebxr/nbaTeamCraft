@@ -11,12 +11,15 @@ const TABS = [
   { key: "defense",    label: "Defense"    },
   { key: "rebound",    label: "Rebound"    },
   { key: "playmaking", label: "Playmaking" },
+  { key: "latest",     label: "Latest"     },
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];
 
-export default function RankingList() {
-  const [activeTab, setActiveTab] = useState<TabKey>("trending");
+export default function RankingList({ initialTab }: { initialTab?: string }) {
+  const [activeTab, setActiveTab] = useState<TabKey>(
+    (TABS.find((t) => t.key === initialTab)?.key ?? "trending") as TabKey
+  );
   const [teams, setTeams] = useState<PublicTeam[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,8 +96,8 @@ export default function RankingList() {
               key={team.id}
               team={team}
               rank={i + 1}
-              sortKey={activeTab === "trending" ? "overall" : activeTab}
-              highlightStat={activeTab !== "trending" && activeTab !== "overall"}
+              sortKey={activeTab === "trending" || activeTab === "latest" ? "overall" : activeTab}
+              highlightStat={activeTab !== "trending" && activeTab !== "overall" && activeTab !== "latest"}
             />
           ))}
         </div>
