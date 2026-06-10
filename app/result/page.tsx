@@ -197,6 +197,16 @@ export default function ResultPage() {
     }
   };
 
+  const handleShareRanking = () => {
+    if (!evaluation || !publishedRank) return;
+    const label = teamName || "My NBA Team";
+    const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\n#NBATeamCraft\n`;
+    const url = sharePageUrl ?? `${window.location.origin}/`;
+    gtm.shareRanking({ team_name: label, overall: evaluation.overall, rank_overall: publishedRank.overall });
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    window.open(tweetUrl, "_blank", "noopener");
+  };
+
   const starters = STARTER_SLOTS.map((slot) => roster.find((e) => e.slot === slot));
   const bench = BENCH_SLOTS.map((slot) => roster.find((e) => e.slot === slot));
 
@@ -210,6 +220,40 @@ export default function ResultPage() {
       </header>
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
+        {/* Published panel — shown at top after entering rankings */}
+        {publishedId && publishedRank && (
+          <div className="bg-zinc-900 border border-amber-700/50 rounded-2xl p-5">
+            <p className="font-display text-xs font-bold text-amber-400 tracking-[0.2em] mb-3">🏆 PUBLISHED SUCCESSFULLY</p>
+            <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2">Your Ranking</p>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {([
+                ["Overall", publishedRank.overall],
+                ["Offense", publishedRank.offense],
+                ["Defense", publishedRank.defense],
+              ] as [string, number][]).map(([label, rank]) => (
+                <div key={label} className="bg-zinc-800 rounded-xl p-3 text-center">
+                  <p className="font-display text-xl font-black text-white">#{rank}</p>
+                  <p className="text-xs text-zinc-500 mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => router.push("/ranking")}
+                className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+              >
+                View Ranking →
+              </button>
+              <button
+                onClick={handleShareRanking}
+                className="flex-1 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <span>𝕏</span> Share Ranking
+              </button>
+            </div>
+          </div>
+        )}
+
         <TeamNameInput value={teamName} onChange={setTeamName} />
 
         {loading ? (
@@ -279,7 +323,7 @@ export default function ResultPage() {
         </div>
 
         {/* Enter Rankings */}
-        {!publishedId ? (
+        {!publishedId && (
           <button
             onClick={() => setShowEnterModal(true)}
             disabled={!evaluation || loading}
@@ -287,32 +331,7 @@ export default function ResultPage() {
           >
             🏆 Enter Rankings
           </button>
-        ) : publishedRank ? (
-          <div className="bg-zinc-900 border border-amber-700/50 rounded-2xl p-5">
-            <p className="font-display text-xs font-bold text-amber-400 tracking-[0.2em] mb-3">🏆 PUBLISHED SUCCESSFULLY</p>
-            <p className="text-xs text-zinc-400 uppercase tracking-widest mb-2">Your Ranking</p>
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {([
-                ["Overall", publishedRank.overall],
-                ["Offense", publishedRank.offense],
-                ["Defense", publishedRank.defense],
-                ["Rebound", publishedRank.rebound],
-                ["Playmaking", publishedRank.playmaking],
-              ] as [string, number][]).slice(0, 3).map(([label, rank]) => (
-                <div key={label} className="bg-zinc-800 rounded-xl p-3 text-center">
-                  <p className="font-display text-xl font-black text-white">#{rank}</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => router.push("/ranking")}
-              className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
-            >
-              View Ranking →
-            </button>
-          </div>
-        ) : null}
+        )}
 
         {/* Actions */}
         <div className="flex gap-3">
