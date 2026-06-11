@@ -101,7 +101,12 @@ function DraggableSlot({
       )
     : 1.0;
 
-  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
+  // touch-action: none is required for mobile — without it the browser
+  // intercepts touchmove as scroll before dnd-kit can take over.
+  const style: React.CSSProperties = {
+    ...(transform ? { transform: CSS.Translate.toString(transform) } : {}),
+    ...(entry ? { touchAction: "none" } : {}),
+  };
 
   const baseClass = `
     flex items-center gap-2 px-3 py-2 rounded-lg select-none transition-colors
@@ -112,7 +117,7 @@ function DraggableSlot({
     ${entry ? "cursor-grab active:cursor-grabbing" : ""}
   `;
 
-  const animStyle = waveIndex != null
+  const animStyle: React.CSSProperties = waveIndex != null
     ? { ...style, animationDelay: `${waveIndex * 120}ms` }
     : style;
 
@@ -200,8 +205,8 @@ export default function DraggableRoster({
   const [isDraggingAny, setIsDraggingAny] = useState(false);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } })
   );
 
   const activeEntry = activeSlot
