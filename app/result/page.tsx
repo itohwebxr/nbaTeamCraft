@@ -85,6 +85,7 @@ export default function ResultPage() {
           overall: data.overall,
           tier: data.tier,
           used_budget: usedBudget,
+          mode,
         });
       })
       .catch(console.error)
@@ -134,7 +135,7 @@ export default function ResultPage() {
       : `🏀 ${label}\n${rosterLines}\n#NBATeamCraft\n`;
 
     if (evaluation) {
-      gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier });
+      gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier, mode });
     }
 
     const fallbackUrl = `${window.location.origin}/share?${new URLSearchParams(shareData).toString()}`;
@@ -404,7 +405,7 @@ export default function ResultPage() {
           <button
             onClick={() => {
               if (evaluation) {
-                gtm.draftAgain({ previous_overall: evaluation.overall, previous_tier: evaluation.tier });
+                gtm.draftAgain({ previous_overall: evaluation.overall, previous_tier: evaluation.tier, mode });
               }
               reset();
               router.push("/draft");
