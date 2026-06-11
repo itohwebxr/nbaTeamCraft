@@ -172,9 +172,11 @@ export default function DraftPage() {
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center gap-4">
           <Link href="/"><Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" /></Link>
-          <div className="flex-1">
-            <BudgetBar used={usedBudget} />
-          </div>
+          {!isSandbox && (
+            <div className="flex-1">
+              <BudgetBar used={usedBudget} />
+            </div>
+          )}
         </div>
       </header>
 
