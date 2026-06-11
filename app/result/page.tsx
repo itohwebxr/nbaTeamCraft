@@ -55,7 +55,8 @@ function RankCard({ label, rank, index }: { label: string; rank: number; index: 
 
 export default function ResultPage() {
   const router = useRouter();
-  const { roster, usedBudget, reset } = useDraftStore();
+  const { roster, usedBudget, reset, mode, sandboxConfig } = useDraftStore();
+  const isSandbox = mode === "sandbox";
   const [evaluation, setEvaluation] = useState<TeamEvaluation | null>(null);
   const [teamName, setTeamName] = useState("");
   const [loading, setLoading] = useState(true);
@@ -110,6 +111,11 @@ export default function ResultPage() {
     if (evaluation) {
       shareData.overall = String(evaluation.overall);
       shareData.tier = evaluation.tier;
+    }
+    if (isSandbox) {
+      shareData.mode = "sandbox";
+      if (sandboxConfig.teamFilter !== "Random") shareData.sandbox_team = sandboxConfig.teamFilter;
+      if (sandboxConfig.seasonFilter !== "Random") shareData.sandbox_season = sandboxConfig.seasonFilter;
     }
     [...starters, ...bench].forEach((e) => {
       if (e) {
@@ -261,11 +267,23 @@ export default function ResultPage() {
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
-          <span className="text-xs text-zinc-500">Budget used: {usedBudget}/{TOTAL_BUDGET}</span>
+          {!isSandbox && (
+            <span className="text-xs text-zinc-500">Budget used: {usedBudget}/{TOTAL_BUDGET}</span>
+          )}
         </div>
       </header>
 
       <div className="fade-up fade-up-1 max-w-lg mx-auto px-4 py-6 space-y-5">
+        {isSandbox && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-xl">
+            <span className="text-xs font-black text-orange-400 uppercase tracking-widest">🎨 Sandbox Mode</span>
+            <span className="text-xs text-zinc-500">
+              {sandboxConfig.teamFilter !== "Random" ? sandboxConfig.teamFilter : "Any team"}{" · "}
+              {sandboxConfig.seasonFilter !== "Random" ? sandboxConfig.seasonFilter : "Any season"}
+            </span>
+          </div>
+        )}
+
         {/* Published panel — shown at top after entering rankings */}
         {publishedId && publishedRank && (
           <div className="slide-in-down bg-zinc-900 border border-amber-700/50 rounded-2xl p-5">
@@ -365,8 +383,8 @@ export default function ResultPage() {
           </div>
         </div>
 
-        {/* Enter Rankings */}
-        {!publishedId && (
+        {/* Enter Rankings — hidden in sandbox mode */}
+        {!isSandbox && !publishedId && (
           <button
             onClick={() => setShowEnterModal(true)}
             disabled={!evaluation || loading}
@@ -374,6 +392,11 @@ export default function ResultPage() {
           >
             🏆 Enter Rankings
           </button>
+        )}
+        {isSandbox && (
+          <p className="text-center text-xs text-zinc-600">
+            Sandbox Mode teams cannot enter the rankings.
+          </p>
         )}
 
         {/* Actions */}

@@ -1,12 +1,13 @@
-import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
+import Link from "next/link";
 
 // Latest teams / ranking preview must refresh — regenerate at most every 60s
 export const revalidate = 60;
 import RankingPreview from "@/components/home/RankingPreview";
 import LatestTeams from "@/components/home/LatestTeams";
 import TeamCraftCupTeaser from "@/components/home/TeamCraftCupTeaser";
+import ModeSelector from "@/components/home/ModeSelector";
 
 export default function Home() {
   return (
@@ -101,14 +102,7 @@ export default function Home() {
 
           {/* CTA */}
           <div className="fade-up fade-up-3">
-            <Link
-              href="/draft"
-              className="pulse-glow block w-full py-5 rounded-2xl bg-gradient-to-r from-orange-500 to-orange-400
-                text-white font-display font-black text-2xl tracking-widest uppercase transition-all
-                hover:from-orange-400 hover:to-amber-400 hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Start Drafting →
-            </Link>
+            <ModeSelector />
           </div>
 
           <p className="fade-up fade-up-4 text-xs text-zinc-600 font-display tracking-widest">

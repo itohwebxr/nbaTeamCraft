@@ -9,10 +9,11 @@ import { gtm } from "@/lib/gtm";
 import { useDraftStore } from "@/stores/draftStore";
 import TeamCard from "@/components/draft/TeamCard";
 import PlayerCard from "@/components/draft/PlayerCard";
-import RosterSlotView from "@/components/draft/RosterSlotView";
+import DraggableRoster from "@/components/draft/DraggableRoster";
 import BudgetBar from "@/components/draft/BudgetBar";
 import PositionSelectModal from "@/components/draft/PositionSelectModal";
 import TeamLoadingScreen from "@/components/draft/TeamLoadingScreen";
+import SandboxFilterBar from "@/components/sandbox/SandboxFilterBar";
 
 export default function DraftPage() {
   const router = useRouter();
@@ -29,11 +30,13 @@ export default function DraftPage() {
   // (position available AND budget allows finishing the roster)
   const hasDraftablePlayer = (players: PlayerSeason[]): boolean => {
     const s = useDraftStore.getState();
+    const isSandbox = s.mode === "sandbox";
     const remaining = TOTAL_BUDGET - s.usedBudget;
     const filled = s.roster.length;
     return players.some((player) => {
       if (s.isPlayerDrafted(player.nba_player_id)) return false;
       if (s.getDraftablePositions(player).length === 0) return false;
+      if (isSandbox) return true;
       const displaced = s.roster.find((e) => e.playerSeason.team_id === player.team_id);
       const refund = displaced?.playerSeason.cost ?? 0;
       const budgetAfter = remaining - player.cost + refund;
@@ -50,8 +53,22 @@ export default function DraftPage() {
       // Skip teams with no draftable players (cost/position constraints)
       const MAX_SKIPS = 15;
       for (let i = 0; i < MAX_SKIPS; i++) {
-        const excludeParam = useDraftStore.getState().appearedTeamIds.join(",");
-        const res = await fetch(`/api/teams?exclude=${excludeParam}`);
+        const s = useDraftStore.getState();
+        const isSandboxFixed =
+          s.mode === "sandbox" &&
+          s.sandboxConfig.teamFilter !== "Random" &&
+          s.sandboxConfig.seasonFilter !== "Random";
+        const params = new URLSearchParams();
+        // In sandbox mode with both filters fixed there is only one matching team,
+        // so exclude would make it disappear — skip exclude in that case.
+        if (!isSandboxFixed) {
+          params.set("exclude", s.appearedTeamIds.join(","));
+        }
+        if (s.mode === "sandbox") {
+          if (s.sandboxConfig.teamFilter !== "Random") params.set("teamAbbr", s.sandboxConfig.teamFilter);
+          if (s.sandboxConfig.seasonFilter !== "Random") params.set("season", s.sandboxConfig.seasonFilter);
+        }
+        const res = await fetch(`/api/teams?${params.toString()}`);
         if (!res.ok) throw new Error("No teams available");
         const team: Team = await res.json();
 
@@ -76,12 +93,12 @@ export default function DraftPage() {
     }
   }, [store]);
 
-  // Load first team on mount
+  // Load first team on mount, and re-fetch when sandbox filter clears current team
   useEffect(() => {
     if (!store.currentTeam) {
       fetchNextTeam();
     }
-  }, []);
+  }, [store.currentTeam]);
 
   const handleDraftAttempt = (player: PlayerSeason, positions: Position[]) => {
     if (positions.length === 1) {
@@ -92,10 +109,13 @@ export default function DraftPage() {
   };
 
   const commitDraft = (player: PlayerSeason, position: Position) => {
-    // If a player from the same team is already drafted, their slot becomes available
-    const displaced = store.roster.find(
-      (e) => e.playerSeason.team_id === player.team_id
-    );
+    const displaced =
+      store.mode === "sandbox"
+        // Sandbox: only the current-visit pick is displaceable
+        ? (store.currentVisitDraftedId
+            ? store.roster.find((e) => e.playerSeason.nba_player_id === store.currentVisitDraftedId)
+            : undefined)
+        : store.roster.find((e) => e.playerSeason.team_id === player.team_id);
 
     const vacantStarters = store.getVacantStarterSlots();
     const effectiveVacantStarters =
@@ -140,7 +160,8 @@ export default function DraftPage() {
     setPendingDraft(null);
   };
 
-  const { currentTeam, currentPlayers, roster, usedBudget } = store;
+  const { currentTeam, currentPlayers, roster, usedBudget, mode } = store;
+  const isSandbox = mode === "sandbox";
   const budgetRemaining = TOTAL_BUDGET - usedBudget;
   const filledSlots = roster.length;
   const draftedFromCurrentTeam = currentPlayers.some((p) => store.isPlayerDrafted(p.nba_player_id));
@@ -151,11 +172,15 @@ export default function DraftPage() {
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-6xl mx-auto flex items-center gap-4">
           <Link href="/"><Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" /></Link>
-          <div className="flex-1">
-            <BudgetBar used={usedBudget} />
-          </div>
+          {!isSandbox && (
+            <div className="flex-1">
+              <BudgetBar used={usedBudget} />
+            </div>
+          )}
         </div>
       </header>
+
+      {store.mode === "sandbox" && <SandboxFilterBar />}
 
       <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col lg:flex-row gap-4">
         {/* Left: Team + Players */}
@@ -175,9 +200,12 @@ export default function DraftPage() {
                 {currentPlayers.map((player) => {
                   const draftablePositions = store.getDraftablePositions(player);
                   const isDrafted = store.isPlayerDrafted(player.nba_player_id);
-                  const displaced = !isDrafted
-                    ? store.roster.find((e) => e.playerSeason.team_id === player.team_id)
-                    : undefined;
+                  const displaced = isDrafted ? undefined : isSandbox
+                    // Sandbox: only the current-visit pick can be replaced
+                    ? (store.currentVisitDraftedId
+                        ? store.roster.find((e) => e.playerSeason.nba_player_id === store.currentVisitDraftedId)
+                        : undefined)
+                    : store.roster.find((e) => e.playerSeason.team_id === player.team_id);
                   const isReplaceable = displaced != null;
                   const refund = displaced?.playerSeason.cost ?? 0;
                   const budgetAfter = budgetRemaining - player.cost + refund;
@@ -185,7 +213,7 @@ export default function DraftPage() {
                   const slotsAfter = isReplaceable
                     ? (TOTAL_ROSTER_SIZE - filledSlots)
                     : Math.max(0, TOTAL_ROSTER_SIZE - filledSlots - 1);
-                  const budgetOk = budgetAfter >= 0 && budgetAfter >= slotsAfter;
+                  const budgetOk = isSandbox || (budgetAfter >= 0 && budgetAfter >= slotsAfter);
                   return (
                     <PlayerCard
                       key={player.id}
@@ -220,28 +248,14 @@ export default function DraftPage() {
               Reset Draft
             </button>
           </div>
-          <div className="space-y-1.5">
-            <p className="hidden lg:block text-xs text-zinc-600 mb-2">STARTERS</p>
-            {STARTER_SLOTS.map((slot, i) => (
-              <RosterSlotView
-                key={slot}
-                slot={slot}
-                entry={roster.find((e) => e.slot === slot)}
-                waveIndex={filledSlots === TOTAL_ROSTER_SIZE ? i : null}
-              />
-            ))}
-            <div className="mt-3">
-              <p className="hidden lg:block text-xs text-zinc-600 mb-2">6TH MAN</p>
-              {BENCH_SLOTS.map((slot, i) => (
-                <RosterSlotView
-                  key={slot}
-                  slot={slot}
-                  entry={roster.find((e) => e.slot === slot)}
-                  waveIndex={filledSlots === TOTAL_ROSTER_SIZE ? STARTER_SLOTS.length + i : null}
-                />
-              ))}
-            </div>
-          </div>
+          <DraggableRoster
+            slots={[...STARTER_SLOTS, ...BENCH_SLOTS]}
+            roster={roster}
+            label="STARTERS"
+            filledSlots={filledSlots}
+            totalSlots={TOTAL_ROSTER_SIZE}
+            onSwap={(a, b) => store.swapRosterSlots(a, b)}
+          />
 
           {filledSlots < TOTAL_ROSTER_SIZE && (
             <button
@@ -251,7 +265,7 @@ export default function DraftPage() {
                 disabled:opacity-40 disabled:cursor-not-allowed
                 text-white font-bold text-sm transition-colors"
             >
-              Next Team →
+              Next Pick →
             </button>
           )}
           {filledSlots === TOTAL_ROSTER_SIZE && (

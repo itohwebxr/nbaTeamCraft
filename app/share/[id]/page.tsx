@@ -11,6 +11,9 @@ type ShareData = {
   name?: string;
   overall?: string;
   tier?: string;
+  mode?: string;
+  sandbox_team?: string;
+  sandbox_season?: string;
   pg?: string; pg_s?: string;
   sg?: string; sg_s?: string;
   sf?: string; sf_s?: string;
@@ -109,6 +112,7 @@ export default async function ShareIdPage({
   const name = share.name || "My NBA Team";
   const overall = share.overall || "";
   const tier = share.tier || "";
+  const isSandbox = share.mode === "sandbox";
 
   const players = SLOT_ORDER.map((key) => ({
     slot: SLOT_LABEL[key] ?? key.toUpperCase(),
@@ -124,6 +128,16 @@ export default async function ShareIdPage({
       </header>
 
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-5">
+        {isSandbox && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black text-orange-400 uppercase tracking-widest">🎨 Sandbox Mode</span>
+            {(share.sandbox_team || share.sandbox_season) && (
+              <span className="text-xs text-zinc-500">
+                {share.sandbox_team ?? "Any team"}{" · "}{share.sandbox_season ?? "Any season"}
+              </span>
+            )}
+          </div>
+        )}
         <div>
           <p className="text-zinc-500 text-xs uppercase tracking-widest mb-1">Team</p>
           <h1 className="text-xl font-black text-white truncate">{name}</h1>
