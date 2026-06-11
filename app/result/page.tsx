@@ -76,7 +76,7 @@ export default function ResultPage() {
     fetch("/api/evaluate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ roster }),
+      body: JSON.stringify({ roster, sandbox: isSandbox }),
     })
       .then((r) => r.json())
       .then((data) => {

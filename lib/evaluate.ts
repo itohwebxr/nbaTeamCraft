@@ -17,29 +17,30 @@ interface PopulationStats {
   rpg: number[];
 }
 
-function posMultiplier(entry: RosterEntry): number {
-  // Bench players are not evaluated on positional fit
-  if (!isStarter(entry.slot)) return 1.0;
+function posMultiplier(entry: RosterEntry, sandbox: boolean): number {
+  // Sandbox mode: no positional penalty. Bench players also exempt.
+  if (sandbox || !isStarter(entry.slot)) return 1.0;
   const natives = entry.playerSeason.positions.map((p) => p.position as Position);
   return positionPenaltyMultiplier(natives, entry.assignedPosition as Position);
 }
 
 function weightedAvg(
   roster: RosterEntry[],
-  fn: (ps: PlayerSeason) => number
+  fn: (ps: PlayerSeason) => number,
+  sandbox: boolean
 ): number {
   let sum = 0;
   let totalWeight = 0;
   for (const entry of roster) {
     const w = isStarter(entry.slot) ? STARTER_WEIGHT : BENCH_WEIGHT;
-    sum += fn(entry.playerSeason) * w * posMultiplier(entry);
+    sum += fn(entry.playerSeason) * w * posMultiplier(entry, sandbox);
     totalWeight += w;
   }
   return totalWeight > 0 ? sum / totalWeight : 0;
 }
 
-function effectiveOverall(entry: RosterEntry): number {
-  return entry.playerSeason.overall * posMultiplier(entry);
+function effectiveOverall(entry: RosterEntry, sandbox: boolean): number {
+  return entry.playerSeason.overall * posMultiplier(entry, sandbox);
 }
 
 function toRating(score: number): number {
@@ -48,10 +49,11 @@ function toRating(score: number): number {
 
 export function calcTeamEvaluation(
   roster: RosterEntry[],
-  population: PopulationStats
+  population: PopulationStats,
+  sandbox = false
 ): TeamEvaluation {
-  const avgOverall = weightedAvg(roster, (ps) => ps.overall);
-  const maxOverall = Math.max(...roster.map((e) => effectiveOverall(e)));
+  const avgOverall = weightedAvg(roster, (ps) => ps.overall, sandbox);
+  const maxOverall = Math.max(...roster.map((e) => effectiveOverall(e, sandbox)));
 
   // Superstar bonus: exponential curve from overall 90→100, max ~+15
   const superstarBonus = maxOverall >= 90
@@ -60,7 +62,7 @@ export function calcTeamEvaluation(
 
   // Penalize weak starters: exponential curve from overall 75→60, max ~-15
   const starterEntries = roster.filter((e) => isStarter(e.slot));
-  const starterOveralls = starterEntries.map((e) => effectiveOverall(e));
+  const starterOveralls = starterEntries.map((e) => effectiveOverall(e, sandbox));
   const minStarterOverall = starterOveralls.length > 0 ? Math.min(...starterOveralls) : 0;
   const weakStarterPenalty = Math.pow(Math.max(0, 75 - minStarterOverall) / 15, 2) * 15;
 
@@ -81,13 +83,13 @@ export function calcTeamEvaluation(
   }
 
   // Multi-star bonus: each additional player with overall >= 87 adds +3 (max +9)
-  const starCount = roster.filter((e) => effectiveOverall(e) >= 87).length;
+  const starCount = roster.filter((e) => effectiveOverall(e, sandbox) >= 87).length;
   const multiStarBonus = Math.max(0, starCount - 1) * 3;
 
   // Roster imbalance penalty: penalize when outside (PG/SG) and inside (PF/C) strength gap is large
   const getStarterOverall = (pos: string) => {
     const e = starterEntries.find((en) => en.slot === pos);
-    return e ? effectiveOverall(e) : 0;
+    return e ? effectiveOverall(e, sandbox) : 0;
   };
   const outsideStrength = Math.max(getStarterOverall("PG"), getStarterOverall("SG"));
   const insideStrength = Math.max(getStarterOverall("PF"), getStarterOverall("C"));
@@ -101,7 +103,7 @@ export function calcTeamEvaluation(
       const ppgPct = percentileRank(ps.ppg, population.ppg);
       const apgPct = percentileRank(ps.apg, population.apg);
       return ppgPct * 0.65 + apgPct * 0.35;
-    })
+    }, sandbox)
   );
 
   // Defense: SPG(0.40) + BPG(0.35) + RPG(0.25) — RPG captures defensive rebounding
@@ -111,15 +113,15 @@ export function calcTeamEvaluation(
       const bpgPct = percentileRank(ps.bpg, population.bpg);
       const rpgPct = percentileRank(ps.rpg, population.rpg);
       return spgPct * 0.40 + bpgPct * 0.35 + rpgPct * 0.25;
-    })
+    }, sandbox)
   );
 
   const rebound = toRating(
-    weightedAvg(roster, (ps) => percentileRank(ps.rpg, population.rpg))
+    weightedAvg(roster, (ps) => percentileRank(ps.rpg, population.rpg), sandbox)
   );
 
   const playmaking = toRating(
-    weightedAvg(roster, (ps) => percentileRank(ps.apg, population.apg))
+    weightedAvg(roster, (ps) => percentileRank(ps.apg, population.apg), sandbox)
   );
 
   return {

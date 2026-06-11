@@ -254,6 +254,7 @@ export default function DraftPage() {
             label="STARTERS"
             filledSlots={filledSlots}
             totalSlots={TOTAL_ROSTER_SIZE}
+            isSandbox={isSandbox}
             onSwap={(a, b) => store.swapRosterSlots(a, b)}
           />
 
