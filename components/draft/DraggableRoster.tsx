@@ -57,11 +57,13 @@ function DraggableSlot({
   entry,
   waveIndex,
   isDraggingAny,
+  isSandbox,
 }: {
   slot: RosterSlot;
   entry: RosterEntry | undefined;
   waveIndex?: number | null;
   isDraggingAny: boolean;
+  isSandbox: boolean;
 }) {
   const label = SLOT_LABELS[slot] ?? slot;
   const isBench = slot.startsWith("BENCH");
@@ -94,7 +96,7 @@ function DraggableSlot({
     prevId.current = cur;
   }, [entry?.playerSeason.id]);
 
-  const penalty = entry && STARTER_SLOTS.includes(slot as StarterSlot)
+  const penalty = !isSandbox && entry && STARTER_SLOTS.includes(slot as StarterSlot)
     ? positionPenaltyMultiplier(
         entry.playerSeason.positions.map((p) => p.position as Position),
         entry.assignedPosition as Position
@@ -154,8 +156,8 @@ function DraggableSlot({
       <span className="text-sm text-white font-medium truncate flex-1">
         {entry.playerSeason.name}
       </span>
-      <NativePosBadge entry={entry} />
-      <PenaltyBadge multiplier={penalty} />
+      {!isSandbox && <NativePosBadge entry={entry} />}
+      {!isSandbox && <PenaltyBadge multiplier={penalty} />}
       <span className={`font-display text-xs font-black shrink-0 ${overallColor(entry.playerSeason.overall)}`}>
         {entry.playerSeason.overall}
       </span>
@@ -189,6 +191,7 @@ interface DraggableRosterProps {
   filledSlots: number;
   totalSlots: number;
   waveOffset?: number;
+  isSandbox?: boolean;
   onSwap: (slotA: RosterSlot, slotB: RosterSlot) => void;
 }
 
@@ -199,6 +202,7 @@ export default function DraggableRoster({
   filledSlots,
   totalSlots,
   waveOffset = 0,
+  isSandbox = false,
   onSwap,
 }: DraggableRosterProps) {
   const [activeSlot, setActiveSlot] = useState<RosterSlot | null>(null);
@@ -240,6 +244,7 @@ export default function DraggableRoster({
             entry={roster.find((e) => e.slot === slot)}
             waveIndex={filledSlots === totalSlots ? waveOffset + i : null}
             isDraggingAny={isDraggingAny}
+            isSandbox={isSandbox}
           />
         ))}
       </div>

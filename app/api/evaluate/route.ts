@@ -10,9 +10,11 @@ export const dynamic = "force-dynamic";
 // Returns TeamEvaluation
 export async function POST(request: NextRequest) {
   let roster: RosterEntry[];
+  let sandbox = false;
   try {
     const body = await request.json();
     roster = body.roster;
+    sandbox = !!body.sandbox;
   } catch {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
@@ -42,6 +44,6 @@ export async function POST(request: NextRequest) {
     bpg: pop.map((p: any) => p.bpg),
   };
 
-  const evaluation: TeamEvaluation = calcTeamEvaluation(roster, populationStats);
+  const evaluation: TeamEvaluation = calcTeamEvaluation(roster, populationStats, sandbox);
   return NextResponse.json(evaluation);
 }
