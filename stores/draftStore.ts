@@ -227,21 +227,16 @@ export const useDraftStore = create<DraftStore>()(
       vacantBench.length > 0 ||
       (displaced != null && BENCH_SLOTS.includes(displaced.slot as BenchSlot));
 
-    const playerPositions = player.positions.map((p) => p.position);
+    // Any vacant starter slot is available regardless of the player's natural position.
+    // The user chooses which slot via the position-select modal when multiple are open.
+    if (effectiveVacantStarters.length > 0) return effectiveVacantStarters;
 
-    const matchingVacantStarters = playerPositions.filter((pos) =>
-      effectiveVacantStarters.includes(pos)
-    );
-    if (matchingVacantStarters.length > 0) return matchingVacantStarters;
-
-    const matchingOccupiedStarters = playerPositions.filter((pos) =>
-      STARTER_SLOTS.includes(pos) && !effectiveVacantStarters.includes(pos)
-    );
-    if (matchingOccupiedStarters.length > 0 && hasBenchVacancy) {
-      return matchingOccupiedStarters;
+    // No vacant starters — send to bench if available.
+    // Return natural positions so assignedPosition is preserved for cover-bonus tracking.
+    if (hasBenchVacancy) {
+      const playerPositions = player.positions.map((p) => p.position);
+      return playerPositions.length > 0 ? [playerPositions[0]] : [];
     }
-
-    if (hasBenchVacancy) return playerPositions.slice(0, 1);
 
     return [];
   },
