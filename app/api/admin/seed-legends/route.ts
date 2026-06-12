@@ -202,12 +202,33 @@ export async function POST(req: NextRequest) {
       })),
     };
 
-    // We don't need a real share entry — use a placeholder share_id.
-    // Legend teams are not user-shared pages, just opponents in the pool.
+    // public_teams.share_id has a FK to shares(id), so create a real
+    // shares row first. Legend share pages are harmless if visited.
     const id = generateId();
+    const shareId = `legend_${id}`;
+    // Match the flat ShareData shape used by /share/[id]
+    const shareData: Record<string, string> = {
+      name: legend.label,
+      overall: String(evaluation.overall),
+      tier: evaluation.tier,
+    };
+    for (const e of roster_json) {
+      const key = e.slot === "BENCH1" ? "6th" : e.slot.toLowerCase();
+      shareData[key] = e.name;
+      shareData[`${key}_s`] = e.season;
+    }
+    const { error: shareErr } = await supabase.from("shares").insert({
+      id: shareId,
+      data: shareData,
+    });
+    if (shareErr) {
+      results.push({ name: legend.label, status: `error: ${shareErr.message}` });
+      continue;
+    }
+
     const { error: insertErr } = await supabase.from("public_teams").insert({
       id,
-      share_id: `legend_${id}`,
+      share_id: shareId,
       name: legend.label,
       overall: evaluation.overall,
       tier: evaluation.tier,
@@ -221,6 +242,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (insertErr) {
+      await supabase.from("shares").delete().eq("id", shareId);
       results.push({ name: legend.label, status: `error: ${insertErr.message}` });
     } else {
       results.push({ name: legend.label, status: "seeded", overall: evaluation.overall, tier: evaluation.tier });
