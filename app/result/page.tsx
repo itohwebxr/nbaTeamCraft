@@ -80,8 +80,19 @@ export default function ResultPage() {
   // Cup state
   const [cupEntryId, setCupEntryId] = useState<string | null>(null);
   const [isEnteringCup, setIsEnteringCup] = useState(false);
+  // Wait for zustand persist rehydration before judging roster emptiness —
+  // on a full page load (e.g. returning from OAuth) roster is [] until then.
+  const [hydrated, setHydrated] = useState(useDraftStore.persist?.hasHydrated?.() ?? false);
 
   useEffect(() => {
+    if (hydrated) return;
+    const unsub = useDraftStore.persist.onFinishHydration(() => setHydrated(true));
+    if (useDraftStore.persist.hasHydrated()) setHydrated(true);
+    return unsub;
+  }, [hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
     if (roster.length === 0) {
       router.replace("/draft");
       return;
@@ -104,7 +115,8 @@ export default function ResultPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   const handleShare = async () => {
     if (sharing) return;
