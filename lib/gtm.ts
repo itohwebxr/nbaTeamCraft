@@ -109,4 +109,27 @@ export const gtm = {
     session_wins: number;
     session_losses: number;
   }) => push({ event: "exhibition_result", ...params }),
+
+  cupEnter: (params: {
+    team_overall: number;
+    tier: string;
+    cup_week: string;
+  }) => push({ event: "cup_enter", ...params }),
+
+  cupDailyMatch: (params: {
+    result: "win" | "loss";
+    score_for: number;
+    score_against: number;
+    opponent_name: string;
+    is_legend_opponent: boolean;
+    match_number: number;
+    cup_week: string;
+  }) => push({ event: "cup_daily_match", ...params }),
+
+  cupShare: (params: {
+    wins: number;
+    losses: number;
+    cup_week: string;
+    team_overall: number;
+  }) => push({ event: "cup_share", ...params }),
 };

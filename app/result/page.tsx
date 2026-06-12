@@ -236,7 +236,10 @@ export default function ResultPage() {
         body: JSON.stringify({ publicTeamId: publishedId, browserId: getBrowserId() }),
       });
       const json = await res.json();
-      if (json.entry?.id) setCupEntryId(json.entry.id);
+      if (json.entry?.id) {
+        setCupEntryId(json.entry.id);
+        gtm.cupEnter({ team_overall: evaluation?.overall ?? 0, tier: evaluation?.tier ?? "D", cup_week: json.cupWeek ?? "" });
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -414,6 +417,7 @@ export default function ResultPage() {
                 teamName={teamName || "My Team"}
                 teamOverall={evaluation?.overall ?? 0}
                 teamTier={evaluation?.tier ?? "D"}
+                sharePageUrl={sharePageUrl}
               />
             )}
           </div>
@@ -487,26 +491,44 @@ export default function ResultPage() {
           </div>
         </div>
 
-        {/* Exhibition Match */}
+        {/* PRIMARY CTA: Enter Rankings → unlock Cup */}
+        {!isSandbox && !publishedId && (
+          <div className="space-y-2">
+            <button
+              onClick={() => setShowEnterModal(true)}
+              disabled={!evaluation || loading}
+              className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-base transition-colors"
+            >
+              🏆 Enter Rankings & the Cup
+            </button>
+            <p className="text-center text-xs text-zinc-600">
+              Register your team to compete in the weekly Cup tournament
+            </p>
+          </div>
+        )}
+        {isSandbox && (
+          <p className="text-center text-xs text-zinc-600">
+            Sandbox Mode teams cannot enter the rankings.
+          </p>
+        )}
+
+        {/* Exhibition Match — try your team before committing to the Cup */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">⚔️ Exhibition</p>
             {(sessionRecord.wins > 0 || sessionRecord.losses > 0) && (
               <p className="text-xs text-zinc-500">
-                Record:{" "}
-                <span className="text-white font-bold">
-                  {sessionRecord.wins}W – {sessionRecord.losses}L
-                </span>
+                <span className="text-white font-bold">{sessionRecord.wins}W–{sessionRecord.losses}L</span>
               </p>
             )}
           </div>
-          <p className="text-xs text-zinc-500 mb-3">
-            Test your team against squads built by other players. Quarter-by-quarter scores and full box score.
+          <p className="text-xs text-zinc-600 mb-3">
+            Scrimmage against other rosters — quarter scores + box score. No stakes, unlimited.
           </p>
           <button
             onClick={handleExhibition}
             disabled={!evaluation || loading || matchLoading}
-            className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-orange-500/40 hover:border-orange-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+            className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-orange-500/60 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-300 hover:text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
           >
             {matchLoading ? (
               <>
@@ -518,22 +540,6 @@ export default function ResultPage() {
             )}
           </button>
         </div>
-
-        {/* Enter Rankings — hidden in sandbox mode */}
-        {!isSandbox && !publishedId && (
-          <button
-            onClick={() => setShowEnterModal(true)}
-            disabled={!evaluation || loading}
-            className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors"
-          >
-            🏆 Enter Rankings
-          </button>
-        )}
-        {isSandbox && (
-          <p className="text-center text-xs text-zinc-600">
-            Sandbox Mode teams cannot enter the rankings.
-          </p>
-        )}
 
         {/* Actions */}
         <div className="flex gap-3">

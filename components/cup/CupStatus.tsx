@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { gtm } from "@/lib/gtm";
 import { CupEntry, CupMatchSummary } from "@/types";
 import ExhibitionMatch from "./ExhibitionMatch";
 import { GameResult } from "@/lib/simulateGame";
@@ -11,11 +12,13 @@ interface Props {
   teamName: string;
   teamOverall: number;
   teamTier: string;
+  sharePageUrl?: string | null;
+  cupWeek?: string;
 }
 
 const MAX_MATCHES = 7;
 
-export default function CupStatus({ entryId, browserId, teamName, teamOverall, teamTier }: Props) {
+export default function CupStatus({ entryId, browserId, teamName, teamOverall, teamTier, sharePageUrl, cupWeek: cupWeekProp }: Props) {
   const [entry, setEntry] = useState<CupEntry | null>(null);
   const [matches, setMatches] = useState<CupMatchSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +53,15 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
         return;
       }
       if (json.result) {
+        gtm.cupDailyMatch({
+          result: json.result.won ? "win" : "loss",
+          score_for: json.result.userScore,
+          score_against: json.result.oppScore,
+          opponent_name: json.opponent.name,
+          is_legend_opponent: !!json.opponent.isLegend,
+          match_number: entry ? entry.wins + entry.losses + 1 : 1,
+          cup_week: entry?.cup_week ?? "",
+        });
         setLiveMatch({
           opponent: json.opponent,
           result: {
@@ -67,6 +79,28 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
     } finally {
       setPlaying(false);
     }
+  };
+
+  const shareCupResult = (wins: number, losses: number) => {
+    const week = cupWeekProp ?? entry?.cup_week ?? "";
+    const text = `🏀 ${teamName}\nTeamCraft Cup ${week}: ${wins}W–${losses}L\nOverall: ${teamOverall} (${teamTier} Tier)\n#NBATeamCraft\n`;
+    // Build OG URL for cup mode
+    const origin = window.location.origin;
+    const ogParams = new URLSearchParams({
+      name: teamName,
+      overall: String(teamOverall),
+      tier: teamTier,
+      mode: "cup",
+      cup_wins: String(wins),
+      cup_losses: String(losses),
+      cup_week: week,
+    });
+    const shareUrl = sharePageUrl ?? origin;
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
+    window.open(tweetUrl, "_blank", "noopener");
+    gtm.cupShare({ wins, losses, cup_week: week, team_overall: teamOverall });
+    // Preload OG image so Twitter card picks it up
+    void fetch(`${origin}/api/og?${ogParams.toString()}`);
   };
 
   if (loading) {
@@ -149,11 +183,21 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
 
           {/* CTA */}
           {cupFinished ? (
-            <div className="text-center py-2">
-              <p className="text-sm font-bold text-amber-400">Cup complete!</p>
-              <p className="text-xs text-zinc-500 mt-1">
-                Final record: {entry.wins}–{entry.losses} · Pts diff: {entry.points_for - entry.points_against > 0 ? "+" : ""}{entry.points_for - entry.points_against}
-              </p>
+            <div className="space-y-3">
+              <div className="text-center">
+                <p className="text-sm font-bold text-amber-400">
+                  {entry.wins >= 6 ? "🏆 Dominant performance!" : entry.wins >= 4 ? "💪 Solid Cup run!" : entry.wins >= 2 ? "Keep building!" : "Tough week — draft again!"}
+                </p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  Final: {entry.wins}–{entry.losses} · Pts diff: {entry.points_for - entry.points_against > 0 ? "+" : ""}{entry.points_for - entry.points_against}
+                </p>
+              </div>
+              <button
+                onClick={() => shareCupResult(entry.wins, entry.losses)}
+                className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                <span>𝕏</span> Share Cup Result
+              </button>
             </div>
           ) : alreadyPlayedToday ? (
             <p className="text-center text-xs text-zinc-500">
