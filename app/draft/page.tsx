@@ -144,6 +144,7 @@ export default function DraftPage() {
         new_player_name: player.name,
         old_player_name: displaced.playerSeason.name,
         cost_diff: player.cost - displaced.playerSeason.cost,
+        mode: store.mode,
       });
     }
 
@@ -154,6 +155,7 @@ export default function DraftPage() {
       position,
       slot: isStarterPos ? "starter" : "bench",
       roster_size: nextSize,
+      mode: store.mode,
     });
 
     store.draftPlayer(player, slot, position);
@@ -276,6 +278,7 @@ export default function DraftPage() {
                   used_budget: usedBudget,
                   remaining_budget: TOTAL_BUDGET - usedBudget,
                   teams_seen_count: store.appearedTeamIds.length,
+                  mode: store.mode,
                 });
                 router.push("/result");
               }}
@@ -319,6 +322,7 @@ export default function DraftPage() {
                   gtm.draftReset({
                     roster_size_at_reset: store.roster.length,
                     used_budget_at_reset: store.usedBudget,
+                    mode: store.mode,
                   });
                   store.reset();
                   setShowResetModal(false);

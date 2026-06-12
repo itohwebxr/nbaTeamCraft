@@ -9,6 +9,9 @@ import { TeamEvaluation, STARTER_SLOTS, BENCH_SLOTS, TOTAL_BUDGET, PublicTeamRan
 import TeamStats from "@/components/result/TeamStats";
 import TeamNameInput from "@/components/result/TeamNameInput";
 import EnterRankingsModal from "@/components/result/EnterRankingsModal";
+import ExhibitionMatch from "@/components/cup/ExhibitionMatch";
+import CupStatus from "@/components/cup/CupStatus";
+import { GameResult } from "@/lib/simulateGame";
 import { gtm } from "@/lib/gtm";
 
 function SlotLabel({ slot }: { slot: string }) {
@@ -66,6 +69,17 @@ export default function ResultPage() {
   const [publishedId, setPublishedId] = useState<string | null>(null);
   const [publishedRank, setPublishedRank] = useState<PublicTeamRank | null>(null);
   const [sharePageUrl, setSharePageUrl] = useState<string | null>(null);
+  // Exhibition match state
+  const [matchLoading, setMatchLoading] = useState(false);
+  const [match, setMatch] = useState<{
+    opponent: { id: string; name: string; overall: number; tier: string };
+    result: GameResult;
+  } | null>(null);
+  const [sessionRecord, setSessionRecord] = useState({ wins: 0, losses: 0 });
+  const [recentOpponentIds, setRecentOpponentIds] = useState<string[]>([]);
+  // Cup state
+  const [cupEntryId, setCupEntryId] = useState<string | null>(null);
+  const [isEnteringCup, setIsEnteringCup] = useState(false);
 
   useEffect(() => {
     if (roster.length === 0) {
@@ -85,6 +99,7 @@ export default function ResultPage() {
           overall: data.overall,
           tier: data.tier,
           used_budget: usedBudget,
+          mode,
         });
       })
       .catch(console.error)
@@ -134,7 +149,7 @@ export default function ResultPage() {
       : `🏀 ${label}\n${rosterLines}\n#NBATeamCraft\n`;
 
     if (evaluation) {
-      gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier });
+      gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier, mode });
     }
 
     const fallbackUrl = `${window.location.origin}/share?${new URLSearchParams(shareData).toString()}`;
@@ -159,6 +174,76 @@ export default function ResultPage() {
     } else {
       // Popup blocked — navigate in place as a fallback
       window.location.href = tweetUrl;
+    }
+  };
+
+  const handleExhibition = async () => {
+    if (matchLoading || !evaluation) return;
+    setMatchLoading(true);
+    setMatch(null);
+    gtm.exhibitionStart({
+      team_overall: evaluation.overall,
+      tier: evaluation.tier,
+      session_match_number: sessionRecord.wins + sessionRecord.losses + 1,
+    });
+    try {
+      const res = await fetch("/api/exhibition", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roster,
+          evaluation,
+          teamName: teamName || "My Team",
+          excludeOpponentIds: recentOpponentIds,
+        }),
+      });
+      const json = await res.json();
+      if (!json.result) throw new Error(json.error ?? "No result");
+
+      const won = json.result.winner === "home";
+      const newRecord = {
+        wins: sessionRecord.wins + (won ? 1 : 0),
+        losses: sessionRecord.losses + (won ? 0 : 1),
+      };
+      setSessionRecord(newRecord);
+      // Avoid repeating the last 3 opponents
+      setRecentOpponentIds((prev) => [...prev, json.opponent.id].slice(-3));
+      setMatch({ opponent: json.opponent, result: json.result });
+
+      gtm.exhibitionResult({
+        result: won ? "win" : "loss",
+        score_for: json.result.homeTotal,
+        score_against: json.result.awayTotal,
+        opponent_name: json.opponent.name,
+        opponent_overall: json.opponent.overall,
+        session_wins: newRecord.wins,
+        session_losses: newRecord.losses,
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setMatchLoading(false);
+    }
+  };
+
+  const handleEnterCup = async () => {
+    if (isEnteringCup || !publishedId) return;
+    setIsEnteringCup(true);
+    try {
+      const res = await fetch("/api/cup/enter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicTeamId: publishedId, browserId: getBrowserId() }),
+      });
+      const json = await res.json();
+      if (json.entry?.id) {
+        setCupEntryId(json.entry.id);
+        gtm.cupEnter({ team_overall: evaluation?.overall ?? 0, tier: evaluation?.tier ?? "D", cup_week: json.cupWeek ?? "" });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsEnteringCup(false);
     }
   };
 
@@ -298,7 +383,7 @@ export default function ResultPage() {
                 <RankCard key={label} label={label} rank={rank} index={i} />
               ))}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 mb-3">
               <button
                 onClick={() => router.push("/ranking")}
                 className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
@@ -312,6 +397,29 @@ export default function ResultPage() {
                 <span>𝕏</span> Share Ranking
               </button>
             </div>
+            {/* Enter the Cup */}
+            {!cupEntryId ? (
+              <button
+                onClick={handleEnterCup}
+                disabled={isEnteringCup}
+                className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {isEnteringCup ? (
+                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Entering Cup...</>
+                ) : (
+                  <>🏆 Enter the Cup — compete all week</>
+                )}
+              </button>
+            ) : (
+              <CupStatus
+                entryId={cupEntryId}
+                browserId={getBrowserId()}
+                teamName={teamName || "My Team"}
+                teamOverall={evaluation?.overall ?? 0}
+                teamTier={evaluation?.tier ?? "D"}
+                sharePageUrl={sharePageUrl}
+              />
+            )}
           </div>
         )}
 
@@ -383,15 +491,20 @@ export default function ResultPage() {
           </div>
         </div>
 
-        {/* Enter Rankings — hidden in sandbox mode */}
+        {/* PRIMARY CTA: Enter Rankings → unlock Cup */}
         {!isSandbox && !publishedId && (
-          <button
-            onClick={() => setShowEnterModal(true)}
-            disabled={!evaluation || loading}
-            className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors"
-          >
-            🏆 Enter Rankings
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={() => setShowEnterModal(true)}
+              disabled={!evaluation || loading}
+              className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-base transition-colors"
+            >
+              🏆 Enter Rankings & the Cup
+            </button>
+            <p className="text-center text-xs text-zinc-600">
+              Register your team to compete in the weekly Cup tournament
+            </p>
+          </div>
         )}
         {isSandbox && (
           <p className="text-center text-xs text-zinc-600">
@@ -399,12 +512,41 @@ export default function ResultPage() {
           </p>
         )}
 
+        {/* Exhibition Match — try your team before committing to the Cup */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">⚔️ Exhibition</p>
+            {(sessionRecord.wins > 0 || sessionRecord.losses > 0) && (
+              <p className="text-xs text-zinc-500">
+                <span className="text-white font-bold">{sessionRecord.wins}W–{sessionRecord.losses}L</span>
+              </p>
+            )}
+          </div>
+          <p className="text-xs text-zinc-600 mb-3">
+            Scrimmage against other rosters — quarter scores + box score. No stakes, unlimited.
+          </p>
+          <button
+            onClick={handleExhibition}
+            disabled={!evaluation || loading || matchLoading}
+            className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-orange-500/60 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-300 hover:text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+          >
+            {matchLoading ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Finding opponent...
+              </>
+            ) : (
+              <>⚔️ Play Exhibition Match</>
+            )}
+          </button>
+        </div>
+
         {/* Actions */}
         <div className="flex gap-3">
           <button
             onClick={() => {
               if (evaluation) {
-                gtm.draftAgain({ previous_overall: evaluation.overall, previous_tier: evaluation.tier });
+                gtm.draftAgain({ previous_overall: evaluation.overall, previous_tier: evaluation.tier, mode });
               }
               reset();
               router.push("/draft");
@@ -429,6 +571,21 @@ export default function ResultPage() {
           </button>
         </div>
       </div>
+      {match && evaluation && (
+        <ExhibitionMatch
+          userTeamName={teamName || "My Team"}
+          userOverall={evaluation.overall}
+          userTier={evaluation.tier}
+          opponent={match.opponent}
+          result={match.result}
+          sessionRecord={sessionRecord}
+          onRematch={() => {
+            setMatch(null);
+            handleExhibition();
+          }}
+          onClose={() => setMatch(null)}
+        />
+      )}
       {showEnterModal && (
         <EnterRankingsModal
           initialName={teamName}

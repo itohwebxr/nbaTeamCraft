@@ -58,7 +58,6 @@ export default function Home() {
 
           {/* Logo */}
           <div className="fade-up fade-up-1 relative">
-            {/* Orange glow behind logo */}
             <div
               aria-hidden
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none
@@ -74,30 +73,36 @@ export default function Home() {
               height={94}
               className="relative mx-auto object-contain w-40 md:w-[280px] drop-shadow-[0_0_48px_rgba(249,115,22,0.45)] drop-shadow-[0_0_96px_rgba(249,115,22,0.2)]"
             />
-            <p className="mt-4 text-zinc-400 text-sm leading-relaxed font-display tracking-wide">
-              Draft 6 players from historic NBA rosters.<br />
-              Build the greatest team ever assembled.
+            <p className="mt-4 text-zinc-300 text-base leading-relaxed font-display tracking-wide">
+              Draft your dream team.<br />
+              <span className="text-orange-400 font-bold">Battle it out.</span>
             </p>
           </div>
 
-          {/* Rules */}
-          <div className="fade-up fade-up-2 bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 text-left space-y-3 backdrop-blur-sm">
-            <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.2em]">How to Play</p>
-            <ul className="space-y-2.5 text-sm text-zinc-300">
+          {/* How to Play — 3-step condensed */}
+          <div className="fade-up fade-up-2 bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 text-left backdrop-blur-sm">
+            <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.2em] mb-4">How to Play</p>
+            <div className="flex items-start gap-0">
               {[
-                "Random historical NBA teams appear one by one",
-                "Draft players to fill 5 starter slots (PG/SG/SF/PF/C) + 1 bench",
-                <>Budget: <span className="font-bold text-white font-display text-base">17 pts</span> — star players cost more</>,
-                "Get your team rated and enter the rankings",
-              ].map((text, i) => (
-                <li key={i} className="flex gap-3 items-start">
-                  <span className="font-display text-orange-400 font-bold text-base leading-tight shrink-0 w-5">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="leading-relaxed">{text}</span>
-                </li>
+                { step: "Draft", icon: "🏀", desc: "Pick 6 players from any historic NBA roster within a 17-pt budget" },
+                { step: "Battle", icon: "⚔️", desc: "Play exhibition matches or enter the weekly Cup — quarter scores & full box score" },
+                { step: "Climb", icon: "🏆", desc: "Earn your spot on the leaderboard. 7 matches over 7 days decides the champion" },
+              ].map((item, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center text-center px-2">
+                  <span className="text-2xl mb-2">{item.icon}</span>
+                  <p className="font-display font-black text-white text-sm mb-1">{item.step}</p>
+                  <p className="text-xs text-zinc-500 leading-relaxed">{item.desc}</p>
+                  {i < 2 && (
+                    <span className="absolute" style={{ display: "none" }} />
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
+            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-zinc-800">
+              <div className="flex-1 h-px bg-orange-500/30 rounded" />
+              <span className="text-xs text-zinc-600 font-display tracking-widest">DRAFT → BATTLE → CLIMB</span>
+              <div className="flex-1 h-px bg-orange-500/30 rounded" />
+            </div>
           </div>
 
           {/* CTA */}
@@ -114,6 +119,9 @@ export default function Home() {
       {/* ── Sections below hero ── */}
       <div className="relative z-10 flex flex-col items-center px-4 py-10 gap-10">
 
+        {/* TeamCraft Cup — above the fold on first scroll */}
+        <TeamCraftCupTeaser />
+
         {/* Ranking Preview */}
         <Suspense fallback={null}>
           <RankingPreview />
@@ -123,9 +131,6 @@ export default function Home() {
         <Suspense fallback={null}>
           <LatestTeams />
         </Suspense>
-
-        {/* TeamCraft Cup Teaser */}
-        <TeamCraftCupTeaser />
 
       </div>
     </div>

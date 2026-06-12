@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useDraftStore } from "@/stores/draftStore";
+import { gtm } from "@/lib/gtm";
 
 type Pair = { abbreviation: string; season: string };
 
@@ -45,6 +46,12 @@ export default function SandboxFilterBar() {
     }
     setSandboxConfig(updates);
     clearCurrentTeam();
+    gtm.sandboxFilterChange({
+      filter_type: "team",
+      value,
+      team_filter: value,
+      season_filter: updates.seasonFilter ?? sandboxConfig.seasonFilter,
+    });
   };
 
   const handleSeasonChange = (value: string) => {
@@ -58,6 +65,12 @@ export default function SandboxFilterBar() {
     }
     setSandboxConfig(updates);
     clearCurrentTeam();
+    gtm.sandboxFilterChange({
+      filter_type: "season",
+      value,
+      team_filter: updates.teamFilter ?? sandboxConfig.teamFilter,
+      season_filter: value,
+    });
   };
 
   return (

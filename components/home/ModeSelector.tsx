@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useDraftStore } from "@/stores/draftStore";
+import { gtm } from "@/lib/gtm";
 
 export default function ModeSelector() {
   const router = useRouter();
-  const { setMode, reset } = useDraftStore();
+  const { setMode, reset, sandboxConfig } = useDraftStore();
 
   const startDraft = () => {
     reset();
@@ -16,6 +17,7 @@ export default function ModeSelector() {
   const startSandbox = () => {
     reset();
     setMode("sandbox");
+    gtm.sandboxStart({ team_filter: sandboxConfig.teamFilter, season_filter: sandboxConfig.seasonFilter });
     router.push("/draft");
   };
 

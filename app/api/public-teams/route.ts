@@ -109,7 +109,8 @@ export async function GET(req: NextRequest) {
     const cursor = searchParams.get("cursor");
 
     const supabase = createServerClient();
-    let query = supabase.from("public_teams").select("*");
+    let query = supabase.from("public_teams").select("*")
+      .neq("created_by_browser_id", "__legend__");
 
     if (sort === "trending") {
       // Computed in-query: (like_count + 1) / POWER(days_since_created + 2, 0.8)
