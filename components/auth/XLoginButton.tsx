@@ -19,7 +19,13 @@ export default function XLoginButton({ user, browserId, returnTo = "/result", on
   const handleLogin = async () => {
     setLoading(true);
     const supabase = createAuthClient();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    // Always use window.location.origin on non-production so OAuth
+    // returns to the same host (localhost vs production).
+    const isProd = typeof window !== "undefined" &&
+      window.location.hostname === new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://x").hostname;
+    const siteUrl = isProd
+      ? (process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin)
+      : window.location.origin;
     // Store returnTo and browserId in cookies before OAuth redirect,
     // because Supabase strips query params from the redirectTo URL.
     document.cookie = `auth_return_to=${encodeURIComponent(returnTo)}; path=/; max-age=600; SameSite=Lax`;
