@@ -111,3 +111,41 @@ export interface PublicTeamRank {
   rebound: number;
   playmaking: number;
 }
+
+// TeamCraft Cup types
+
+export interface CupEntry {
+  id: string;
+  cup_week: string;
+  public_team_id: string;
+  browser_id: string;
+  wins: number;
+  losses: number;
+  points_for: number;
+  points_against: number;
+  created_at: string;
+}
+
+export interface CupMatchSummary {
+  id: string;
+  played_on: string;
+  userScore: number;
+  oppScore: number;
+  won: boolean;
+  quarters: { home: number; away: number }[];
+  userBox: import("@/lib/simulateGame").BoxScoreLine[];
+  oppBox: import("@/lib/simulateGame").BoxScoreLine[];
+  opponent: { entryId?: string; name?: string; overall?: number; tier?: string };
+}
+
+export interface CupLeaderboardEntry {
+  entryId: string;
+  teamId: string;
+  name: string;
+  overall: number;
+  tier: Tier;
+  wins: number;
+  losses: number;
+  pointDiff: number;
+  matchesPlayed: number;
+}

@@ -10,6 +10,7 @@ import TeamStats from "@/components/result/TeamStats";
 import TeamNameInput from "@/components/result/TeamNameInput";
 import EnterRankingsModal from "@/components/result/EnterRankingsModal";
 import ExhibitionMatch from "@/components/cup/ExhibitionMatch";
+import CupStatus from "@/components/cup/CupStatus";
 import { GameResult } from "@/lib/simulateGame";
 import { gtm } from "@/lib/gtm";
 
@@ -76,6 +77,9 @@ export default function ResultPage() {
   } | null>(null);
   const [sessionRecord, setSessionRecord] = useState({ wins: 0, losses: 0 });
   const [recentOpponentIds, setRecentOpponentIds] = useState<string[]>([]);
+  // Cup state
+  const [cupEntryId, setCupEntryId] = useState<string | null>(null);
+  const [isEnteringCup, setIsEnteringCup] = useState(false);
 
   useEffect(() => {
     if (roster.length === 0) {
@@ -222,6 +226,24 @@ export default function ResultPage() {
     }
   };
 
+  const handleEnterCup = async () => {
+    if (isEnteringCup || !publishedId) return;
+    setIsEnteringCup(true);
+    try {
+      const res = await fetch("/api/cup/enter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicTeamId: publishedId, browserId: getBrowserId() }),
+      });
+      const json = await res.json();
+      if (json.entry?.id) setCupEntryId(json.entry.id);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsEnteringCup(false);
+    }
+  };
+
   const getBrowserId = (): string => {
     const key = "nba_tc_browser_id";
     let id = localStorage.getItem(key);
@@ -358,7 +380,7 @@ export default function ResultPage() {
                 <RankCard key={label} label={label} rank={rank} index={i} />
               ))}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 mb-3">
               <button
                 onClick={() => router.push("/ranking")}
                 className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
@@ -372,6 +394,28 @@ export default function ResultPage() {
                 <span>𝕏</span> Share Ranking
               </button>
             </div>
+            {/* Enter the Cup */}
+            {!cupEntryId ? (
+              <button
+                onClick={handleEnterCup}
+                disabled={isEnteringCup}
+                className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-sm transition-colors flex items-center justify-center gap-2"
+              >
+                {isEnteringCup ? (
+                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Entering Cup...</>
+                ) : (
+                  <>🏆 Enter the Cup — compete all week</>
+                )}
+              </button>
+            ) : (
+              <CupStatus
+                entryId={cupEntryId}
+                browserId={getBrowserId()}
+                teamName={teamName || "My Team"}
+                teamOverall={evaluation?.overall ?? 0}
+                teamTier={evaluation?.tier ?? "D"}
+              />
+            )}
           </div>
         )}
 
