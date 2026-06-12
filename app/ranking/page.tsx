@@ -20,12 +20,14 @@ export default async function RankingPage({
           <Link href="/">
             <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
-          <Link
-            href="/draft"
-            className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors"
-          >
-            Draft →
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/cup" className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors">
+              🏆 Cup
+            </Link>
+            <Link href="/draft" className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
+              Draft →
+            </Link>
+          </div>
         </div>
       </header>
 

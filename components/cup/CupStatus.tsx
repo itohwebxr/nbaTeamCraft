@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { gtm } from "@/lib/gtm";
+import { useAuth } from "@/hooks/useAuth";
+import XLoginButton from "@/components/auth/XLoginButton";
 import { CupEntry, CupMatchSummary } from "@/types";
 import ExhibitionMatch from "./ExhibitionMatch";
 import { GameResult } from "@/lib/simulateGame";
@@ -23,6 +25,7 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
   const [matches, setMatches] = useState<CupMatchSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
+  const { user } = useAuth();
   const [liveMatch, setLiveMatch] = useState<{
     opponent: { id: string; name: string; overall: number; tier: string; isLegend?: boolean };
     result: GameResult;
@@ -218,6 +221,16 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
                 <>🏆 Play Today's Match (Day {played + 1}/7)</>
               )}
             </button>
+          )}
+
+          {/* X login prompt — shown while cup is in progress and not logged in */}
+          {!cupFinished && !user && (
+            <div className="mt-3 pt-3 border-t border-zinc-800">
+              <XLoginButton user={null} browserId={browserId} returnTo="/result" />
+              <p className="text-[10px] text-zinc-600 text-center mt-1.5">
+                Sign in to show your X handle on the Cup leaderboard
+              </p>
+            </div>
           )}
         </div>
       </div>

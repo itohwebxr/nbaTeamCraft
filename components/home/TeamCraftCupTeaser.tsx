@@ -43,10 +43,10 @@ export default function TeamCraftCupTeaser() {
               )}
             </div>
             <a
-              href="/ranking"
-              className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+              href="/cup"
+              className="text-xs text-amber-400 hover:text-amber-300 font-bold transition-colors"
             >
-              Rankings →
+              View All →
             </a>
           </div>
 

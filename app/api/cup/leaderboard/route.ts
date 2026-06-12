@@ -24,27 +24,39 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ leaderboard: [], cupWeek });
     }
 
-    // Enrich with team names
+    // Enrich with team names + optional profile data
     const teamIds = [...new Set(entries.map((e) => e.public_team_id))];
-    const { data: teams } = await supabase
-      .from("public_teams")
-      .select("id, name, overall, tier")
-      .in("id", teamIds);
+    const userIds = [...new Set(entries.map((e) => (e as any).user_id).filter(Boolean))];
+    const [teamsRes, profilesRes] = await Promise.all([
+      supabase.from("public_teams").select("id, name, overall, tier").in("id", teamIds),
+      userIds.length > 0
+        ? supabase.from("profiles").select("id, x_handle, display_name, avatar_url").in("id", userIds)
+        : Promise.resolve({ data: [] }),
+    ]);
     const teamMap: Record<string, { name: string; overall: number; tier: string }> = {};
-    for (const t of (teams ?? [])) teamMap[t.id] = t;
+    for (const t of (teamsRes.data ?? [])) teamMap[t.id] = t;
+    const profileMap: Record<string, { xHandle: string | null; displayName: string | null; avatarUrl: string | null }> = {};
+    for (const p of ((profilesRes as any).data ?? [])) {
+      profileMap[p.id] = { xHandle: p.x_handle, displayName: p.display_name, avatarUrl: p.avatar_url };
+    }
 
     const leaderboard = entries
-      .map((e) => ({
-        entryId: e.id,
-        teamId: e.public_team_id,
-        name: teamMap[e.public_team_id]?.name ?? "—",
-        overall: teamMap[e.public_team_id]?.overall ?? 0,
-        tier: teamMap[e.public_team_id]?.tier ?? "D",
-        wins: e.wins,
-        losses: e.losses,
-        pointDiff: e.points_for - e.points_against,
-        matchesPlayed: e.wins + e.losses,
-      }))
+      .map((e: any) => {
+        const profile = e.user_id ? profileMap[e.user_id] : null;
+        return {
+          entryId: e.id,
+          teamId: e.public_team_id,
+          name: teamMap[e.public_team_id]?.name ?? "—",
+          overall: teamMap[e.public_team_id]?.overall ?? 0,
+          tier: teamMap[e.public_team_id]?.tier ?? "D",
+          wins: e.wins,
+          losses: e.losses,
+          pointDiff: e.points_for - e.points_against,
+          matchesPlayed: e.wins + e.losses,
+          xHandle: profile?.xHandle ?? null,
+          avatarUrl: profile?.avatarUrl ?? null,
+        };
+      })
       .sort((a, b) => b.wins - a.wins || b.pointDiff - a.pointDiff);
 
     return NextResponse.json({ leaderboard, cupWeek });
