@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import RankingList from "@/components/ranking/RankingList";
+import HeaderAuth from "@/components/auth/HeaderAuth";
 
 export const metadata = {
   title: "Rankings — NBA TeamCraft",
@@ -27,6 +28,7 @@ export default async function RankingPage({
             <Link href="/draft" className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
               Draft →
             </Link>
+            <HeaderAuth />
           </div>
         </div>
       </header>

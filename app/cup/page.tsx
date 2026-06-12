@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CupLeaderboardEntry, CupMatchSummary } from "@/types";
 import { currentCupWeek, isoWeekLabel, weekStart } from "@/lib/cupWeek";
+import HeaderAuth from "@/components/auth/HeaderAuth";
 
 type LeaderboardEntry = CupLeaderboardEntry & { avatarUrl?: string; xHandle?: string };
 
@@ -65,6 +66,7 @@ export default function CupPage() {
           </Link>
           <div className="flex-1" />
           <span className="text-sm font-black text-amber-400">🏆 CUP</span>
+          <HeaderAuth />
         </div>
       </header>
 
