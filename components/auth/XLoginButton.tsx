@@ -22,7 +22,8 @@ export default function XLoginButton({ user, browserId, returnTo = "/result", on
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
     const redirectUrl = `${siteUrl}/auth/callback?returnTo=${encodeURIComponent(returnTo)}&browserId=${encodeURIComponent(browserId)}`;
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: "twitter",
+      // "x" = X (OAuth 2.0) provider; "twitter" is the legacy OAuth 1.0a one
+      provider: "x" as "twitter",
       options: { redirectTo: redirectUrl },
     });
     if (error) {

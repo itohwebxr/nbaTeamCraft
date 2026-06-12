@@ -39,31 +39,39 @@ export async function GET(req: NextRequest) {
     }
 
     // Fetch match history (both home and away) and join opponent entry + team name
-    const { data: homeMatches } = await supabase
+    const { data: homeMatchesRaw } = await supabase
       .from("cup_matches")
       .select(`
-        id, cup_week, played_on, home_score, away_score, quarter_scores, home_box, away_box,
+        id, cup_week, played_on, home_score, away_score, quarter_scores, home_box, away_box, legend_team_id,
         away_entry:away_entry_id ( id, public_team_id, wins, losses )
       `)
       .eq("home_entry_id", entry.id)
       .order("played_on");
 
-    const { data: awayMatches } = await supabase
+    const { data: awayMatchesRaw } = await supabase
       .from("cup_matches")
       .select(`
-        id, cup_week, played_on, home_score, away_score, quarter_scores, home_box, away_box,
+        id, cup_week, played_on, home_score, away_score, quarter_scores, home_box, away_box, legend_team_id,
         home_entry:home_entry_id ( id, public_team_id, wins, losses )
       `)
       .eq("away_entry_id", entry.id)
       .order("played_on");
 
-    // Collect all opponent team IDs so we can enrich with names
+    // Legend matches are stored self-referencing (home = away = user's entry),
+    // so they show up in both queries — keep only the home-side copy.
+    const homeMatches = homeMatchesRaw ?? [];
+    const awayMatches = (awayMatchesRaw ?? []).filter(
+      (m: any) => m.home_entry?.id !== entry.id
+    );
+
+    // Collect all opponent team IDs (incl. legend teams) so we can enrich with names
     const oppTeamIds = new Set<string>();
-    for (const m of (homeMatches ?? [])) {
+    for (const m of homeMatches) {
       const away = (m as any).away_entry;
-      if (away?.public_team_id) oppTeamIds.add(away.public_team_id);
+      if ((m as any).legend_team_id) oppTeamIds.add((m as any).legend_team_id);
+      else if (away?.public_team_id) oppTeamIds.add(away.public_team_id);
     }
-    for (const m of (awayMatches ?? [])) {
+    for (const m of awayMatches) {
       const home = (m as any).home_entry;
       if (home?.public_team_id) oppTeamIds.add(home.public_team_id);
     }
@@ -81,7 +89,7 @@ export async function GET(req: NextRequest) {
 
     // Normalise to a unified match list from the user's perspective
     const matches = [
-      ...(homeMatches ?? []).map((m: any) => ({
+      ...homeMatches.map((m: any) => ({
         id: m.id,
         played_on: m.played_on,
         userScore: m.home_score,
@@ -90,12 +98,11 @@ export async function GET(req: NextRequest) {
         quarters: m.quarter_scores,
         userBox: m.home_box,
         oppBox: m.away_box,
-        opponent: {
-          entryId: m.away_entry?.id,
-          ...teamNamesMap[m.away_entry?.public_team_id],
-        },
+        opponent: m.legend_team_id
+          ? { entryId: null, isLegend: true, ...teamNamesMap[m.legend_team_id] }
+          : { entryId: m.away_entry?.id, ...teamNamesMap[m.away_entry?.public_team_id] },
       })),
-      ...(awayMatches ?? []).map((m: any) => ({
+      ...awayMatches.map((m: any) => ({
         id: m.id,
         played_on: m.played_on,
         userScore: m.away_score,

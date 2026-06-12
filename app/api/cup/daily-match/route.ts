@@ -189,16 +189,16 @@ export async function POST(req: NextRequest) {
         points_against: entry.points_against + result.awayTotal,
       }).eq("id", entryId);
 
-      // Insert with a self-referencing away_entry for the legend case,
-      // using user's entry as away (workaround for FK constraint).
-      // We store the legend's box in home_box and user in away_box.
-      // The status API normalises perspective from played_on side.
+      // Insert with a self-referencing away_entry for the legend case
+      // (workaround for the FK constraint — legends have no cup entry).
+      // legend_team_id records the actual opponent; user is always home.
       const { data: matchRow } = await supabase
         .from("cup_matches")
         .insert({
           cup_week: cupWeek,
           home_entry_id: entryId,
           away_entry_id: entryId,   // dummy — legend has no entry
+          legend_team_id: opponentTeamRow.id,
           home_score: result.homeTotal,
           away_score: result.awayTotal,
           quarter_scores: result.quarters,
