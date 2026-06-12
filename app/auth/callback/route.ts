@@ -13,8 +13,16 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = req.nextUrl;
   const code = searchParams.get("code");
-  const returnTo = searchParams.get("returnTo") ?? "/";
-  const browserId = searchParams.get("browserId");
+
+  // returnTo and browserId are stored in cookies because Supabase strips
+  // query params from the redirectTo URL during the OAuth flow.
+  const cookieHeader = req.headers.get("cookie") ?? "";
+  const parseCookie = (name: string) => {
+    const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : null;
+  };
+  const returnTo = parseCookie("auth_return_to") ?? searchParams.get("returnTo") ?? "/";
+  const browserId = parseCookie("auth_browser_id") ?? searchParams.get("browserId");
 
   if (!code) {
     return NextResponse.redirect(`${origin}${returnTo}`);

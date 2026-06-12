@@ -20,7 +20,11 @@ export default function XLoginButton({ user, browserId, returnTo = "/result", on
     setLoading(true);
     const supabase = createAuthClient();
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-    const redirectUrl = `${siteUrl}/auth/callback?returnTo=${encodeURIComponent(returnTo)}&browserId=${encodeURIComponent(browserId)}`;
+    // Store returnTo and browserId in cookies before OAuth redirect,
+    // because Supabase strips query params from the redirectTo URL.
+    document.cookie = `auth_return_to=${encodeURIComponent(returnTo)}; path=/; max-age=600; SameSite=Lax`;
+    document.cookie = `auth_browser_id=${encodeURIComponent(browserId)}; path=/; max-age=600; SameSite=Lax`;
+    const redirectUrl = `${siteUrl}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       // "x" = X (OAuth 2.0) provider; "twitter" is the legacy OAuth 1.0a one
       provider: "x" as "twitter",
