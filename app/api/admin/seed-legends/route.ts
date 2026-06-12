@@ -32,7 +32,7 @@ const LEGEND_TEAMS: { abbr: string; season: string; label: string }[] = [
   { abbr: "GSW", season: "2016-17", label: "16-17 Warriors" },
   { abbr: "HOU", season: "2017-18", label: "17-18 Rockets" },
   { abbr: "MIL", season: "2020-21", label: "20-21 Bucks" },
-  { abbr: "PHX", season: "2021-22", label: "21-22 Suns" },
+  { abbr: "PHO", season: "2021-22", label: "21-22 Suns" },
   { abbr: "DEN", season: "2022-23", label: "22-23 Nuggets" },
   { abbr: "BOS", season: "2023-24", label: "23-24 Celtics" },
 ];
