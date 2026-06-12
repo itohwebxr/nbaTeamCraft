@@ -93,4 +93,20 @@ export const gtm = {
     team_filter: string;
     season_filter: string;
   }) => push({ event: "sandbox_filter_change", ...params }),
+
+  exhibitionStart: (params: {
+    team_overall: number;
+    tier: string;
+    session_match_number: number;
+  }) => push({ event: "exhibition_start", ...params }),
+
+  exhibitionResult: (params: {
+    result: "win" | "loss";
+    score_for: number;
+    score_against: number;
+    opponent_name: string;
+    opponent_overall: number;
+    session_wins: number;
+    session_losses: number;
+  }) => push({ event: "exhibition_result", ...params }),
 };

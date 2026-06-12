@@ -64,6 +64,16 @@ body {
 .fade-up-3 { animation-delay: 0.4s; }
 .fade-up-4 { animation-delay: 0.55s; }
 
+/* Exhibition match VS pulse */
+@keyframes vs-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.15); opacity: 0.8; }
+}
+.vs-pulse {
+  display: inline-block;
+  animation: vs-pulse 1.2s ease-in-out infinite;
+}
+
 /* Card draft glow + lift on hover, press-down on tap */
 .card-draftable {
   transition: transform 0.18s ease, box-shadow 0.18s ease;
