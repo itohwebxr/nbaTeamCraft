@@ -8,6 +8,7 @@ interface OpponentInfo {
   name: string;
   overall: number;
   tier: string;
+  isLegend?: boolean;
 }
 
 interface Props {
@@ -126,7 +127,10 @@ export default function ExhibitionMatch({
               <span className="font-display text-2xl font-black text-orange-500 vs-pulse">VS</span>
             </div>
             <div className="flex-1 text-center">
-              <p className="text-sm font-black text-white truncate">{opponent.name}</p>
+              <p className="text-sm font-black text-white truncate">
+                {opponent.isLegend && <span className="mr-1">👑</span>}
+                {opponent.name}
+              </p>
               <p className="text-xs text-zinc-500 mt-0.5">
                 OVR {opponent.overall} · {opponent.tier} Tier
               </p>

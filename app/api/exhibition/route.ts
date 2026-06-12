@@ -29,15 +29,17 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Pick a random opponent from the ranked teams pool
-    const { data: candidates, error } = await supabase
-      .from("public_teams")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200);
-    if (error) throw error;
+    // Build opponent pool: legend teams + recent ranked teams (user-created)
+    const [legendRes, recentRes] = await Promise.all([
+      supabase.from("public_teams").select("*").eq("created_by_browser_id", "__legend__"),
+      supabase.from("public_teams").select("*")
+        .neq("created_by_browser_id", "__legend__")
+        .order("created_at", { ascending: false })
+        .limit(150),
+    ]);
+    if (legendRes.error) throw legendRes.error;
 
-    let pool = (candidates ?? []) as PublicTeam[];
+    let pool = ([...(legendRes.data ?? []), ...(recentRes.data ?? [])]) as PublicTeam[];
     const filtered = pool.filter((t) => !excludeOpponentIds.includes(t.id));
     if (filtered.length > 0) pool = filtered;
 
@@ -89,6 +91,7 @@ export async function POST(req: NextRequest) {
         name: opponent.name,
         overall: opponent.overall,
         tier: opponent.tier,
+        isLegend: opponent.created_by_browser_id === "__legend__",
       },
       result,
     });
