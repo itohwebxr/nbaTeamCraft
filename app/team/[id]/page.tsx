@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase";
 import { overallColor } from "@/lib/overallColor";
 import { PublicTeam, STARTER_SLOTS } from "@/types";
+import { currentCupWeek } from "@/lib/cupWeek";
 import LikeButton from "@/components/common/LikeButton";
 import RadarChart from "@/components/result/RadarChart";
 
@@ -17,6 +18,32 @@ async function getSiteUrl(): Promise<string> {
   const host = headersList.get("host") ?? "localhost:3000";
   const proto = host.startsWith("localhost") ? "http" : "https";
   return `${proto}://${host}`;
+}
+
+type CupRecord = { wins: number; losses: number; pointDiff: number; cupWeek: string } | null;
+
+async function getCupRecord(teamId: string): Promise<CupRecord> {
+  try {
+    const supabase = createServerClient();
+    const cupWeek = currentCupWeek();
+    const { data, error } = await supabase
+      .from("cup_entries")
+      .select("wins, losses, points_for, points_against, cup_week")
+      .eq("public_team_id", teamId)
+      .eq("cup_week", cupWeek)
+      .neq("browser_id", "__legend__")
+      .maybeSingle();
+    if (error) return null;
+    if (!data) return null;
+    return {
+      wins: data.wins,
+      losses: data.losses,
+      pointDiff: data.points_for - data.points_against,
+      cupWeek: data.cup_week,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function getTeam(id: string): Promise<PublicTeam | null> {
@@ -85,7 +112,7 @@ export default async function TeamDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const team = await getTeam(id);
+  const [team, cupRecord] = await Promise.all([getTeam(id), getCupRecord(id)]);
   if (!team) notFound();
 
   const starters = STARTER_SLOTS.map((slot) =>
@@ -155,6 +182,33 @@ export default async function TeamDetailPage({
             })}
           </div>
         </div>
+
+        {/* Cup Record */}
+        {cupRecord && (
+          <div className="bg-zinc-900 border border-amber-700/30 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">🏆 TeamCraft Cup · {cupRecord.cupWeek}</p>
+              <a href="/cup" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Standings →</a>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <p className="font-display text-3xl font-black text-white">{cupRecord.wins}</p>
+                <p className="text-xs text-zinc-500 uppercase tracking-wider">W</p>
+              </div>
+              <div className="text-zinc-600 text-xl font-thin">—</div>
+              <div className="text-center">
+                <p className="font-display text-3xl font-black text-zinc-400">{cupRecord.losses}</p>
+                <p className="text-xs text-zinc-500 uppercase tracking-wider">L</p>
+              </div>
+              <div className="ml-auto text-right">
+                <p className={`font-display text-xl font-black ${cupRecord.pointDiff > 0 ? "text-orange-400" : cupRecord.pointDiff < 0 ? "text-zinc-500" : "text-zinc-600"}`}>
+                  {cupRecord.pointDiff > 0 ? "+" : ""}{cupRecord.pointDiff}
+                </p>
+                <p className="text-xs text-zinc-500">Pt Diff</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Roster */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">

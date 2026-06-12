@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (entryErr) {
+      if (entryErr.code === "42P01") return NextResponse.json({ error: "Cup tables not yet available" }, { status: 503 });
       return NextResponse.json({ error: entryErr.message }, { status: 500 });
     }
 

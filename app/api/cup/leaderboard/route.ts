@@ -18,7 +18,10 @@ export async function GET(req: NextRequest) {
       .select("id, cup_week, public_team_id, wins, losses, points_for, points_against, browser_id, created_at")
       .eq("cup_week", cupWeek)
       .neq("browser_id", "__legend__"); // never include legend as a standings entry
-    if (error) throw error;
+    if (error) {
+      if (error.code === "42P01") return NextResponse.json({ leaderboard: [], cupWeek });
+      throw error;
+    }
 
     if (!entries?.length) {
       return NextResponse.json({ leaderboard: [], cupWeek });

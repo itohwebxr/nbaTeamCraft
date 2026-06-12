@@ -31,7 +31,11 @@ export async function POST(req: NextRequest) {
       .eq("browser_id", browserId)
       .eq("cup_week", cupWeek)
       .maybeSingle();
-    if (entryErr || !entry) {
+    if (entryErr) {
+      if (entryErr.code === "42P01") return NextResponse.json({ error: "Cup tables not yet available" }, { status: 503 });
+      return NextResponse.json({ error: entryErr.message }, { status: 500 });
+    }
+    if (!entry) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
 

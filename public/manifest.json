@@ -1,0 +1,39 @@
+{
+  "name": "NBA TeamCraft",
+  "short_name": "TeamCraft",
+  "description": "Draft your dream NBA team. Battle it out in the weekly Cup.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#f97316",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["games", "sports"],
+  "shortcuts": [
+    {
+      "name": "Start Drafting",
+      "short_name": "Draft",
+      "url": "/draft",
+      "description": "Draft a new team"
+    },
+    {
+      "name": "Cup Standings",
+      "short_name": "Cup",
+      "url": "/cup",
+      "description": "Weekly Cup leaderboard"
+    }
+  ]
+}

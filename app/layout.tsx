@@ -16,14 +16,34 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: "NBA TeamCraft",
-  description: "Build your ultimate historical NBA team",
-  icons: { icon: "/favicon.ico" },
+  description: "Draft your dream NBA team. Battle it out in the weekly Cup.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "TeamCraft",
+  },
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/logo.png",
+  },
+  openGraph: {
+    title: "NBA TeamCraft",
+    description: "Draft your dream NBA team. Battle it out in the weekly Cup.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NBA TeamCraft",
+    description: "Draft your dream NBA team. Battle it out in the weekly Cup.",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  themeColor: "#f97316",
 };
 
 export default function RootLayout({

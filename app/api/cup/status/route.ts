@@ -21,12 +21,17 @@ export async function GET(req: NextRequest) {
     const supabase = createServerClient();
 
     // Find the entry for this browser in this week
-    const { data: entries } = await supabase
+    const { data: entries, error: entriesErr } = await supabase
       .from("cup_entries")
       .select("*")
       .eq("cup_week", cupWeek)
       .eq("browser_id", browserId)
       .limit(1);
+
+    if (entriesErr) {
+      if (entriesErr.code === "42P01") return NextResponse.json({ entry: null, matches: [], cupWeek });
+      throw entriesErr;
+    }
 
     const entry = entries?.[0] ?? null;
     if (!entry) {
