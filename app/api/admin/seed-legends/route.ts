@@ -24,7 +24,7 @@ const LEGEND_TEAMS: { abbr: string; season: string; label: string }[] = [
   { abbr: "MIA", season: "2005-06", label: "05-06 Heat" },
   { abbr: "BOS", season: "2007-08", label: "07-08 Celtics" },
   { abbr: "HOU", season: "2007-08", label: "07-08 Rockets" },
-  { abbr: "GSW", season: "2008-09", label: "08-09 Cavaliers" },
+  { abbr: "CLE", season: "2008-09", label: "08-09 Cavaliers" },
   { abbr: "OKC", season: "2011-12", label: "11-12 Thunder" },
   { abbr: "MIA", season: "2012-13", label: "12-13 Heat" },
   { abbr: "SAS", season: "2013-14", label: "13-14 Spurs" },
