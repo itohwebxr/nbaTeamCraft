@@ -32,12 +32,12 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
   } | null>(null);
 
   const fetchStatus = useCallback(async () => {
-    const res = await fetch(`/api/cup/status?browserId=${encodeURIComponent(browserId)}`);
+    const res = await fetch(`/api/cup/status?entryId=${encodeURIComponent(entryId)}&browserId=${encodeURIComponent(browserId)}`);
     const json = await res.json();
     if (json.entry) setEntry(json.entry);
     if (json.matches) setMatches(json.matches);
     setLoading(false);
-  }, [browserId]);
+  }, [browserId, entryId]);
 
   useEffect(() => { fetchStatus(); }, [fetchStatus]);
 

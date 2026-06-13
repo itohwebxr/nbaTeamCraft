@@ -77,7 +77,8 @@ export async function POST(req: NextRequest) {
       .from("cup_entries")
       .select("id, public_team_id, wins, losses")
       .eq("cup_week", cupWeek)
-      .neq("id", entryId);
+      .neq("id", entryId)
+      .neq("browser_id", browserId); // never match a browser against its own other entries
 
     // Find cup entries that haven't played today either
     const availableWeekEntries = await Promise.all(
@@ -163,6 +164,15 @@ export async function POST(req: NextRequest) {
       }
       matchId = matchRow.id;
 
+      // Re-fetch the opponent's current record so we never read columns that
+      // weren't selected (which produced NaN and silently dropped the update),
+      // and so concurrent matches don't clobber each other.
+      const { data: oppEntry } = await supabase
+        .from("cup_entries")
+        .select("wins, losses, points_for, points_against")
+        .eq("id", opponentEntryId)
+        .single();
+
       // Update both entries' W/L records
       await Promise.all([
         supabase.from("cup_entries").update({
@@ -171,12 +181,14 @@ export async function POST(req: NextRequest) {
           points_for: entry.points_for + result.homeTotal,
           points_against: entry.points_against + result.awayTotal,
         }).eq("id", entryId),
-        supabase.from("cup_entries").update({
-          wins: weekEntries!.find(e => e.id === opponentEntryId)!.wins + (won ? 0 : 1),
-          losses: weekEntries!.find(e => e.id === opponentEntryId)!.losses + (won ? 1 : 0),
-          points_for: (weekEntries!.find(e => e.id === opponentEntryId) as any).points_for + result.awayTotal,
-          points_against: (weekEntries!.find(e => e.id === opponentEntryId) as any).points_against + result.homeTotal,
-        }).eq("id", opponentEntryId),
+        oppEntry
+          ? supabase.from("cup_entries").update({
+              wins: oppEntry.wins + (won ? 0 : 1),
+              losses: oppEntry.losses + (won ? 1 : 0),
+              points_for: oppEntry.points_for + result.awayTotal,
+              points_against: oppEntry.points_against + result.homeTotal,
+            }).eq("id", opponentEntryId)
+          : Promise.resolve(),
       ]);
     } else {
       // Legend opponent — no cup_matches row needed (legend has no entry_id)

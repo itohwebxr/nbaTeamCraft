@@ -12,21 +12,28 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
     const browserId = searchParams.get("browserId");
+    const entryId = searchParams.get("entryId");
     const cupWeek = searchParams.get("cupWeek") ?? currentCupWeek();
 
-    if (!browserId) {
-      return NextResponse.json({ error: "browserId is required" }, { status: 400 });
+    if (!browserId && !entryId) {
+      return NextResponse.json({ error: "browserId or entryId is required" }, { status: 400 });
     }
 
     const supabase = createServerClient();
 
-    // Find the entry for this browser in this week
-    const { data: entries, error: entriesErr } = await supabase
-      .from("cup_entries")
-      .select("*")
-      .eq("cup_week", cupWeek)
-      .eq("browser_id", browserId)
-      .limit(1);
+    // Resolve the entry. Prefer an explicit entryId — a browser can hold
+    // multiple entries in one week (one per published team), so selecting by
+    // browser_id alone is ambiguous and would surface the wrong team's record.
+    let entryQuery = supabase.from("cup_entries").select("*");
+    if (entryId) {
+      entryQuery = entryQuery.eq("id", entryId);
+    } else {
+      entryQuery = entryQuery
+        .eq("cup_week", cupWeek)
+        .eq("browser_id", browserId!)
+        .order("created_at", { ascending: false });
+    }
+    const { data: entries, error: entriesErr } = await entryQuery.limit(1);
 
     if (entriesErr) {
       if (entriesErr.code === "42P01") return NextResponse.json({ entry: null, matches: [], cupWeek });
