@@ -344,6 +344,8 @@ export default function ResultPage() {
     } finally {
       setIsPublishing(false);
       setShowEnterModal(false);
+      // Scroll to the top so the freshly published ranking panel is in view
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
