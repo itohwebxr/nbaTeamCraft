@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -41,6 +41,8 @@ export default function MyPage() {
   const [cupHistory, setCupHistory] = useState<CupHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const browserId = getBrowserId();
@@ -58,6 +60,25 @@ export default function MyPage() {
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+  }, [user]);
+
+  const handleDeleteTeam = useCallback(async (teamId: string) => {
+    setDeleting(true);
+    try {
+      const browserId = getBrowserId();
+      const params = new URLSearchParams();
+      if (browserId) params.set("browserId", browserId);
+      if (user) params.set("userId", user.id);
+      const res = await fetch(`/api/public-teams/${teamId}?${params.toString()}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("delete failed");
+      setTeams((prev) => prev.filter((t) => t.id !== teamId));
+      setCupHistory((prev) => prev.filter((c) => c.teamId !== teamId));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDeleting(false);
+      setConfirmDeleteId(null);
+    }
   }, [user]);
 
   const handleSignOut = async () => {
@@ -136,20 +157,29 @@ export default function MyPage() {
           ) : (
             <div className="divide-y divide-zinc-800">
               {cupHistory.map((c) => (
-                <Link key={c.entryId} href={`/team/${c.teamId}`} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/50 transition-colors">
-                  <span className="text-xs text-zinc-500 font-bold w-20 shrink-0">{c.cupWeek}</span>
-                  <span className="flex-1 text-sm font-semibold text-white truncate">{c.teamName}</span>
-                  <span className="font-display text-sm font-black tabular-nums shrink-0">
-                    <span className="text-white">{c.wins}</span>
-                    <span className="text-zinc-600">–</span>
-                    <span className="text-zinc-400">{c.losses}</span>
-                  </span>
-                  <span className={`text-xs font-bold tabular-nums w-12 text-right shrink-0 ${
-                    c.pointDiff > 0 ? "text-orange-400" : c.pointDiff < 0 ? "text-zinc-500" : "text-zinc-600"
-                  }`}>
-                    {c.pointDiff > 0 ? "+" : ""}{c.pointDiff}
-                  </span>
-                </Link>
+                <div key={c.entryId} className="flex items-center gap-3 px-4 py-3 group">
+                  <Link href={`/team/${c.teamId}`} className="flex items-center gap-3 flex-1 min-w-0 hover:bg-zinc-800/50 transition-colors rounded-lg -mx-2 px-2">
+                    <span className="text-xs text-zinc-500 font-bold w-20 shrink-0">{c.cupWeek}</span>
+                    <span className="flex-1 text-sm font-semibold text-white truncate">{c.teamName}</span>
+                    <span className="font-display text-sm font-black tabular-nums shrink-0">
+                      <span className="text-white">{c.wins}</span>
+                      <span className="text-zinc-600">–</span>
+                      <span className="text-zinc-400">{c.losses}</span>
+                    </span>
+                    <span className={`text-xs font-bold tabular-nums w-12 text-right shrink-0 ${
+                      c.pointDiff > 0 ? "text-orange-400" : c.pointDiff < 0 ? "text-zinc-500" : "text-zinc-600"
+                    }`}>
+                      {c.pointDiff > 0 ? "+" : ""}{c.pointDiff}
+                    </span>
+                  </Link>
+                  <button
+                    onClick={() => setConfirmDeleteId(c.teamId)}
+                    className="ml-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
+                    title="Delete team"
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
           )}
@@ -175,21 +205,56 @@ export default function MyPage() {
           ) : (
             <div className="divide-y divide-zinc-800">
               {teams.map((t) => (
-                <Link key={t.id} href={`/team/${t.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/50 transition-colors">
-                  <span className={`font-display text-lg font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
-                    {t.overall}
-                  </span>
-                  <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
-                  <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
-                  <span className="text-xs text-zinc-600 shrink-0">❤️ {t.like_count}</span>
-                  <span className="text-xs text-zinc-600 shrink-0">{t.created_at.slice(5, 10)}</span>
-                </Link>
+                <div key={t.id} className="flex items-center gap-3 px-4 py-3 group">
+                  <Link href={`/team/${t.id}`} className="flex items-center gap-3 flex-1 min-w-0 hover:bg-zinc-800/50 transition-colors rounded-lg -mx-2 px-2">
+                    <span className={`font-display text-lg font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
+                      {t.overall}
+                    </span>
+                    <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
+                    <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
+                    <span className="text-xs text-zinc-600 shrink-0">❤️ {t.like_count}</span>
+                    <span className="text-xs text-zinc-600 shrink-0">{t.created_at.slice(5, 10)}</span>
+                  </Link>
+                  <button
+                    onClick={() => setConfirmDeleteId(t.id)}
+                    className="ml-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
+                    title="Delete team"
+                  >
+                    ×
+                  </button>
+                </div>
               ))}
             </div>
           )}
         </div>
 
       </div>
+
+      {/* Delete confirmation modal */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 max-w-xs w-full space-y-4 shadow-2xl">
+            <p className="font-display text-base font-black text-white">Delete this team?</p>
+            <p className="text-sm text-zinc-400">This will also remove all Cup entries for this team. This action cannot be undone.</p>
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-sm transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteTeam(confirmDeleteId)}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-400 text-white font-bold text-sm transition-colors disabled:opacity-50"
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
