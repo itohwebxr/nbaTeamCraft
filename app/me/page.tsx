@@ -9,6 +9,7 @@ import { getBrowserId } from "@/lib/browserId";
 import { createAuthClient } from "@/lib/supabaseAuth";
 import { overallColor } from "@/lib/overallColor";
 import { gtm } from "@/lib/gtm";
+import { useDraftStore } from "@/stores/draftStore";
 
 type MyTeam = {
   id: string;
@@ -37,6 +38,8 @@ const TIER_COLORS: Record<string, string> = {
 export default function MyPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const resetDraft = useDraftStore((s) => s.reset);
+  const setMode = useDraftStore((s) => s.setMode);
   const [teams, setTeams] = useState<MyTeam[]>([]);
   const [cupHistory, setCupHistory] = useState<CupHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +84,12 @@ export default function MyPage() {
     }
   }, [user]);
 
+  const startNewDraft = () => {
+    resetDraft();
+    setMode("draft");
+    router.push("/draft");
+  };
+
   const handleSignOut = async () => {
     setSigningOut(true);
     await createAuthClient().auth.signOut();
@@ -94,9 +103,9 @@ export default function MyPage() {
           <Link href="/">
             <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
-          <Link href="/draft" className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
+          <button onClick={startNewDraft} className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
             Draft →
-          </Link>
+          </button>
         </div>
       </header>
 
@@ -195,12 +204,12 @@ export default function MyPage() {
           ) : teams.length === 0 ? (
             <div className="text-center py-6 px-4 space-y-3">
               <p className="text-sm text-zinc-500">No published teams yet.</p>
-              <Link
-                href="/draft"
+              <button
+                onClick={startNewDraft}
                 className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
               >
                 Start Drafting →
-              </Link>
+              </button>
             </div>
           ) : (
             <div className="divide-y divide-zinc-800">
