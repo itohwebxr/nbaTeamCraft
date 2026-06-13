@@ -132,4 +132,13 @@ export const gtm = {
     cup_week: string;
     team_overall: number;
   }) => push({ event: "cup_share", ...params }),
+
+  headerLoginClick: (params: {
+    page_path: string;
+  }) => push({ event: "header_login_click", ...params }),
+
+  mypageView: (params: {
+    teams_count: number;
+    cup_entries_count: number;
+  }) => push({ event: "mypage_view", ...params }),
 };

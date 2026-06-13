@@ -14,6 +14,7 @@ import BudgetBar from "@/components/draft/BudgetBar";
 import PositionSelectModal from "@/components/draft/PositionSelectModal";
 import TeamLoadingScreen from "@/components/draft/TeamLoadingScreen";
 import SandboxFilterBar from "@/components/sandbox/SandboxFilterBar";
+import HeaderAuth from "@/components/auth/HeaderAuth";
 
 export default function DraftPage() {
   const router = useRouter();
@@ -179,6 +180,8 @@ export default function DraftPage() {
               <BudgetBar used={usedBudget} />
             </div>
           )}
+          {isSandbox && <div className="flex-1" />}
+          <HeaderAuth />
         </div>
       </header>
 

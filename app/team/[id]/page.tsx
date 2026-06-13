@@ -9,6 +9,7 @@ import { PublicTeam, STARTER_SLOTS } from "@/types";
 import { currentCupWeek } from "@/lib/cupWeek";
 import LikeButton from "@/components/common/LikeButton";
 import RadarChart from "@/components/result/RadarChart";
+import HeaderAuth from "@/components/auth/HeaderAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -129,9 +130,12 @@ export default async function TeamDetailPage({
           <Link href="/">
             <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
-          <Link href="/ranking" className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">
-            ← Rankings
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link href="/ranking" className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">
+              ← Rankings
+            </Link>
+            <HeaderAuth />
+          </div>
         </div>
       </header>
 

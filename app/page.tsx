@@ -8,10 +8,16 @@ import RankingPreview from "@/components/home/RankingPreview";
 import LatestTeams from "@/components/home/LatestTeams";
 import TeamCraftCupTeaser from "@/components/home/TeamCraftCupTeaser";
 import ModeSelector from "@/components/home/ModeSelector";
+import HeaderAuth from "@/components/auth/HeaderAuth";
 
 export default function Home() {
   return (
     <div className="court-bg text-white relative overflow-hidden">
+
+      {/* Floating auth — top right */}
+      <div className="absolute top-4 right-4 z-50">
+        <HeaderAuth />
+      </div>
 
       {/* Basketball court SVG — anchored to top of page, behind hero */}
       <div className="absolute top-0 left-0 right-0 h-screen flex items-center justify-center pointer-events-none select-none">

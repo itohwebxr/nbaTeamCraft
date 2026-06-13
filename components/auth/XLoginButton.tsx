@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createAuthClient, AuthUser } from "@/lib/supabaseAuth";
+import { startXLogin } from "@/lib/xLogin";
 
 interface Props {
   user: AuthUser | null;
@@ -18,32 +19,9 @@ export default function XLoginButton({ user, browserId, returnTo = "/result", on
 
   const handleLogin = async () => {
     setLoading(true);
-    const supabase = createAuthClient();
-    // Always use window.location.origin on non-production so OAuth
-    // returns to the same host (localhost vs production).
-    const envSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-    let siteUrl = window.location.origin;
-    if (envSiteUrl) {
-      try {
-        if (new URL(envSiteUrl).hostname === window.location.hostname) {
-          siteUrl = envSiteUrl.replace(/\/+$/, "");
-        }
-      } catch {
-        // Malformed env value — keep window.location.origin
-      }
-    }
-    // Store returnTo and browserId in cookies before OAuth redirect,
-    // because Supabase strips query params from the redirectTo URL.
-    document.cookie = `auth_return_to=${encodeURIComponent(returnTo)}; path=/; max-age=600; SameSite=Lax`;
-    document.cookie = `auth_browser_id=${encodeURIComponent(browserId)}; path=/; max-age=600; SameSite=Lax`;
-    const redirectUrl = `${siteUrl}/auth/callback`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      // "x" = X (OAuth 2.0) provider; "twitter" is the legacy OAuth 1.0a one
-      provider: "x" as "twitter",
-      options: { redirectTo: redirectUrl },
-    });
+    const error = await startXLogin(returnTo, browserId);
     if (error) {
-      console.error("X login error:", error.message);
+      console.error("X login error:", error);
       setLoading(false);
     }
     // On success the page navigates away — no need to clear loading

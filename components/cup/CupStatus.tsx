@@ -223,13 +223,22 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
             </button>
           )}
 
-          {/* X login prompt — shown while cup is in progress and not logged in */}
-          {!cupFinished && !user && (
-            <div className="mt-3 pt-3 border-t border-zinc-800">
-              <XLoginButton user={null} browserId={browserId} returnTo="/result" />
-              <p className="text-[10px] text-zinc-600 text-center mt-1.5">
-                Sign in to show your X handle on the Cup leaderboard
+          {/* X login prompt / logged-in indicator */}
+          {!user ? (
+            !cupFinished && (
+              <div className="mt-3 pt-3 border-t border-zinc-800">
+                <XLoginButton user={null} browserId={browserId} returnTo="/result" />
+                <p className="text-[10px] text-zinc-600 text-center mt-1.5">
+                  Sign in to show your X handle on the Cup leaderboard
+                </p>
+              </div>
+            )
+          ) : (
+            <div className="mt-3 pt-3 border-t border-zinc-800 flex items-center justify-between gap-3">
+              <p className="text-xs text-zinc-400 truncate">
+                Signed in{user.xHandle ? <span className="text-zinc-500"> · @{user.xHandle}</span> : null}
               </p>
+              <XLoginButton user={user} browserId={browserId} returnTo="/result" compact />
             </div>
           )}
         </div>

@@ -13,6 +13,7 @@ import ExhibitionMatch from "@/components/cup/ExhibitionMatch";
 import CupStatus from "@/components/cup/CupStatus";
 import { GameResult } from "@/lib/simulateGame";
 import { gtm } from "@/lib/gtm";
+import HeaderAuth from "@/components/auth/HeaderAuth";
 
 function SlotLabel({ slot }: { slot: string }) {
   if (slot === "BENCH1") return "6TH";
@@ -364,9 +365,12 @@ export default function ResultPage() {
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
-          {!isSandbox && (
-            <span className="text-xs text-zinc-500">Budget used: {usedBudget}/{TOTAL_BUDGET}</span>
-          )}
+          <div className="flex items-center gap-3">
+            {!isSandbox && (
+              <span className="text-xs text-zinc-500">Budget used: {usedBudget}/{TOTAL_BUDGET}</span>
+            )}
+            <HeaderAuth />
+          </div>
         </div>
       </header>
 
