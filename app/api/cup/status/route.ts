@@ -13,10 +13,11 @@ export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const browserId = searchParams.get("browserId");
     const entryId = searchParams.get("entryId");
+    const teamId = searchParams.get("teamId");
     const cupWeek = searchParams.get("cupWeek") ?? currentCupWeek();
 
-    if (!browserId && !entryId) {
-      return NextResponse.json({ error: "browserId or entryId is required" }, { status: 400 });
+    if (!browserId && !entryId && !teamId) {
+      return NextResponse.json({ error: "browserId, entryId or teamId is required" }, { status: 400 });
     }
 
     const supabase = createServerClient();
@@ -27,6 +28,11 @@ export async function GET(req: NextRequest) {
     let entryQuery = supabase.from("cup_entries").select("*");
     if (entryId) {
       entryQuery = entryQuery.eq("id", entryId);
+    } else if (teamId) {
+      // The current-week entry for a specific team. Scope to the requester's
+      // browser when provided so we only return an entry they own.
+      entryQuery = entryQuery.eq("cup_week", cupWeek).eq("public_team_id", teamId);
+      if (browserId) entryQuery = entryQuery.eq("browser_id", browserId);
     } else {
       entryQuery = entryQuery
         .eq("cup_week", cupWeek)

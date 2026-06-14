@@ -10,6 +10,8 @@ import { createAuthClient } from "@/lib/supabaseAuth";
 import { overallColor } from "@/lib/overallColor";
 import { gtm } from "@/lib/gtm";
 import { useDraftStore } from "@/stores/draftStore";
+import { currentCupWeek } from "@/lib/cupWeek";
+import CupPlayPanel from "@/components/cup/CupPlayPanel";
 
 type MyTeam = {
   id: string;
@@ -96,6 +98,10 @@ export default function MyPage() {
     router.push("/");
   };
 
+  const currentWeek = currentCupWeek();
+  const currentEntries = cupHistory.filter((c) => c.cupWeek === currentWeek);
+  const pastEntries = cupHistory.filter((c) => c.cupWeek !== currentWeek);
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
@@ -150,7 +156,30 @@ export default function MyPage() {
           )}
         </div>
 
-        {/* Cup history */}
+        {/* This week — play your daily matches (one per team) */}
+        {!loading && currentEntries.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">🏆 This Week · {currentWeek}</p>
+              <Link href="/cup" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Standings →</Link>
+            </div>
+            {currentEntries.map((c) => {
+              const team = teams.find((t) => t.id === c.teamId);
+              return (
+                <CupPlayPanel
+                  key={c.entryId}
+                  entryId={c.entryId}
+                  teamId={c.teamId}
+                  teamName={c.teamName}
+                  teamOverall={team?.overall ?? 0}
+                  teamTier={team?.tier ?? "D"}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* Cup history (past weeks) */}
         <div className="bg-zinc-900 border border-amber-700/30 rounded-2xl overflow-hidden">
           <div className="px-4 py-3 bg-amber-900/10 border-b border-amber-700/20 flex items-center justify-between">
             <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">🏆 Cup History</p>
@@ -158,14 +187,18 @@ export default function MyPage() {
           </div>
           {loading ? (
             <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
-          ) : cupHistory.length === 0 ? (
+          ) : pastEntries.length === 0 ? (
             <div className="text-center py-6 px-4">
-              <p className="text-sm text-zinc-500">No cup entries yet.</p>
-              <p className="text-xs text-zinc-600 mt-1">Draft a team and enter the Cup from the result screen!</p>
+              <p className="text-sm text-zinc-500">
+                {currentEntries.length > 0 ? "No past weeks yet — this week is in progress above." : "No cup entries yet."}
+              </p>
+              {currentEntries.length === 0 && (
+                <p className="text-xs text-zinc-600 mt-1">Draft a team and enter the Cup from the result screen!</p>
+              )}
             </div>
           ) : (
             <div className="divide-y divide-zinc-800">
-              {cupHistory.map((c) => (
+              {pastEntries.map((c) => (
                 <div key={c.entryId} className="flex items-center gap-3 px-4 py-3 group">
                   <Link href={`/team/${c.teamId}`} className="flex items-center gap-3 flex-1 min-w-0 hover:bg-zinc-800/50 transition-colors rounded-lg -mx-2 px-2">
                     <span className="text-xs text-zinc-500 font-bold w-20 shrink-0">{c.cupWeek}</span>
