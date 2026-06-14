@@ -188,9 +188,21 @@ export default async function TeamDetailPage({
           </div>
         </div>
 
-        {/* Cup Record */}
+        {/*
+          Cup section:
+          - Owner sees CupPlayPanel (resolves their entry, shows record + match history + play button)
+          - Non-owner (or no entry this week) sees the static summary if cupRecord exists
+          CupPlayPanel self-gates (renders null) when the viewer has no entry for this team.
+        */}
+        <CupPlayPanel
+          teamId={team.id}
+          teamName={team.name}
+          teamOverall={team.overall}
+          teamTier={team.tier}
+          hideSelector=".js-cup-static"
+        />
         {cupRecord && (
-          <div className="bg-zinc-900 border border-amber-700/30 rounded-2xl p-5">
+          <div className="bg-zinc-900 border border-amber-700/30 rounded-2xl p-5 js-cup-static">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">🏆 TeamCraft Cup · {cupRecord.cupWeek}</p>
               <a href="/cup" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Standings →</a>
@@ -214,14 +226,6 @@ export default async function TeamDetailPage({
             </div>
           </div>
         )}
-
-        {/* Owner-only: play this team's daily cup match (renders nothing for others) */}
-        <CupPlayPanel
-          teamId={team.id}
-          teamName={team.name}
-          teamOverall={team.overall}
-          teamTier={team.tier}
-        />
 
         {/* Roster */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">

@@ -14,22 +14,20 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const { entryId, browserId } = await req.json();
+    const { entryId, browserId, userId } = await req.json();
     if (!entryId || !browserId) {
       return NextResponse.json({ error: "entryId and browserId are required" }, { status: 400 });
     }
 
     const supabase = createServerClient();
     const today = isoDate(todayUTC());
-    const cupWeek = currentCupWeek();
 
-    // Verify entry belongs to this browser
+    // Resolve the entry by id first, then check ownership / week separately so
+    // a mismatch returns a clear reason instead of a generic 404.
     const { data: entry, error: entryErr } = await supabase
       .from("cup_entries")
       .select("*")
       .eq("id", entryId)
-      .eq("browser_id", browserId)
-      .eq("cup_week", cupWeek)
       .maybeSingle();
     if (entryErr) {
       if (entryErr.code === "42P01") return NextResponse.json({ error: "Cup tables not yet available" }, { status: 503 });
@@ -37,6 +35,18 @@ export async function POST(req: NextRequest) {
     }
     if (!entry) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
+    }
+    // Ownership: the same browser, or the same signed-in user (entries can be
+    // created on one device and played on another while logged in).
+    const ownsByBrowser = entry.browser_id === browserId;
+    const ownsByUser = !!userId && entry.user_id === userId;
+    if (!ownsByBrowser && !ownsByUser) {
+      return NextResponse.json({ error: "You don't have access to this entry" }, { status: 403 });
+    }
+    // Derive the cup week from the entry itself (avoids client/server week drift)
+    const cupWeek = entry.cup_week;
+    if (cupWeek !== currentCupWeek()) {
+      return NextResponse.json({ error: "This cup week has ended", cupFinished: true, entry }, { status: 409 });
     }
 
     // Check if already played today
