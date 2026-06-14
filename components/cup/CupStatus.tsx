@@ -27,6 +27,7 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
   const [matches, setMatches] = useState<CupMatchSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(false);
+  const [playError, setPlayError] = useState<string | null>(null);
   const { user } = useAuth();
   const [liveMatch, setLiveMatch] = useState<{
     opponent: { id: string; name: string; overall: number; tier: string; isLegend?: boolean };
@@ -46,6 +47,7 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
   const playToday = async () => {
     if (playing) return;
     setPlaying(true);
+    setPlayError(null);
     try {
       const res = await fetch("/api/cup/daily-match", {
         method: "POST",
@@ -55,6 +57,14 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
       const json = await res.json();
       if (json.alreadyPlayed) {
         await fetchStatus();
+        return;
+      }
+      if (json.cupFinished) {
+        await fetchStatus();
+        return;
+      }
+      if (!res.ok) {
+        setPlayError(json.error ?? `Match failed (${res.status})`);
         return;
       }
       if (json.result) {
@@ -81,6 +91,8 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
         });
         await fetchStatus();
       }
+    } catch (e) {
+      setPlayError(e instanceof Error ? e.message : "Network error");
     } finally {
       setPlaying(false);
     }
@@ -227,6 +239,10 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
                 <>🏆 Play Today's Match (Day {played + 1}/7)</>
               )}
             </button>
+          )}
+
+          {playError && (
+            <p className="mt-2 text-center text-xs text-red-400">{playError}</p>
           )}
 
           {/* X login prompt / logged-in indicator */}
