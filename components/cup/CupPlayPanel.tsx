@@ -17,9 +17,16 @@ interface Props {
   teamTier: string;
   /** If the entry id is already known, skip the resolution fetch. */
   entryId?: string;
+  showTeamName?: boolean;
+  /**
+   * CSS selector of sibling element to hide when this panel is visible.
+   * Used on the team detail page to suppress the static cup summary card when
+   * the owner's interactive panel renders.
+   */
+  hideSelector?: string;
 }
 
-export default function CupPlayPanel({ teamId, teamName, teamOverall, teamTier, entryId: knownEntryId }: Props) {
+export default function CupPlayPanel({ teamId, teamName, teamOverall, teamTier, entryId: knownEntryId, showTeamName, hideSelector }: Props) {
   const [entryId, setEntryId] = useState<string | null>(knownEntryId ?? null);
   const [browserId, setBrowserId] = useState("");
   const [resolving, setResolving] = useState(!knownEntryId);
@@ -37,6 +44,16 @@ export default function CupPlayPanel({ teamId, teamName, teamOverall, teamTier, 
       .finally(() => setResolving(false));
   }, [teamId, knownEntryId]);
 
+  // Hide the sibling static card when the interactive panel is visible
+  useEffect(() => {
+    if (!hideSelector || !entryId) return;
+    const el = document.querySelector(hideSelector);
+    if (el) (el as HTMLElement).style.display = "none";
+    return () => {
+      if (el) (el as HTMLElement).style.display = "";
+    };
+  }, [hideSelector, entryId]);
+
   if (resolving || !entryId || !browserId) return null;
 
   return (
@@ -46,6 +63,7 @@ export default function CupPlayPanel({ teamId, teamName, teamOverall, teamTier, 
       teamName={teamName}
       teamOverall={teamOverall}
       teamTier={teamTier}
+      showTeamName={showTeamName}
     />
   );
 }

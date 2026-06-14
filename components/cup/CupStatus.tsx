@@ -16,11 +16,13 @@ interface Props {
   teamTier: string;
   sharePageUrl?: string | null;
   cupWeek?: string;
+  /** Show team name in the panel header (useful when multiple panels are stacked) */
+  showTeamName?: boolean;
 }
 
 const MAX_MATCHES = 7;
 
-export default function CupStatus({ entryId, browserId, teamName, teamOverall, teamTier, sharePageUrl, cupWeek: cupWeekProp }: Props) {
+export default function CupStatus({ entryId, browserId, teamName, teamOverall, teamTier, sharePageUrl, cupWeek: cupWeekProp, showTeamName }: Props) {
   const [entry, setEntry] = useState<CupEntry | null>(null);
   const [matches, setMatches] = useState<CupMatchSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,12 +127,16 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
       <div className="bg-zinc-900 border border-amber-700/30 rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-amber-900/10 border-b border-amber-700/20">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-black text-amber-400">🏆 TEAMCRAFT CUP</span>
-            <span className="text-xs text-zinc-500">{entry.cup_week}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-black text-amber-400 shrink-0">🏆 TEAMCRAFT CUP</span>
+            {showTeamName ? (
+              <span className="text-sm font-bold text-white truncate">{teamName}</span>
+            ) : (
+              <span className="text-xs text-zinc-500">{entry.cup_week}</span>
+            )}
           </div>
           {!cupFinished && (
-            <span className="text-xs text-zinc-400">{remaining} match{remaining !== 1 ? "es" : ""} left</span>
+            <span className="text-xs text-zinc-400 shrink-0 ml-2">{remaining} match{remaining !== 1 ? "es" : ""} left</span>
           )}
         </div>
 
