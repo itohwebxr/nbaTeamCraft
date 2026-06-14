@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const { entryId, browserId } = await req.json();
+    const { entryId, browserId, userId } = await req.json();
     if (!entryId || !browserId) {
       return NextResponse.json({ error: "entryId and browserId are required" }, { status: 400 });
     }
@@ -36,8 +36,12 @@ export async function POST(req: NextRequest) {
     if (!entry) {
       return NextResponse.json({ error: "Entry not found" }, { status: 404 });
     }
-    if (entry.browser_id !== browserId) {
-      return NextResponse.json({ error: "This entry belongs to a different browser" }, { status: 403 });
+    // Ownership: the same browser, or the same signed-in user (entries can be
+    // created on one device and played on another while logged in).
+    const ownsByBrowser = entry.browser_id === browserId;
+    const ownsByUser = !!userId && entry.user_id === userId;
+    if (!ownsByBrowser && !ownsByUser) {
+      return NextResponse.json({ error: "You don't have access to this entry" }, { status: 403 });
     }
     // Derive the cup week from the entry itself (avoids client/server week drift)
     const cupWeek = entry.cup_week;

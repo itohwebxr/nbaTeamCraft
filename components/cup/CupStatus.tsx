@@ -52,7 +52,7 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
       const res = await fetch("/api/cup/daily-match", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ entryId, browserId }),
+        body: JSON.stringify({ entryId, browserId, userId: user?.id }),
       });
       const json = await res.json();
       if (json.alreadyPlayed) {

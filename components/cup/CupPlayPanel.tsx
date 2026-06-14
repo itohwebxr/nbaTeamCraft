@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { getBrowserId } from "@/lib/browserId";
 import { currentCupWeek } from "@/lib/cupWeek";
+import { useAuth } from "@/hooks/useAuth";
 import CupStatus from "./CupStatus";
 
 interface Props {
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export default function CupPlayPanel({ teamId, teamName, teamOverall, teamTier, entryId: knownEntryId, showTeamName, hideSelector }: Props) {
+  const { user } = useAuth();
   const [entryId, setEntryId] = useState<string | null>(knownEntryId ?? null);
   const [browserId, setBrowserId] = useState("");
   const [resolving, setResolving] = useState(!knownEntryId);
@@ -35,14 +37,15 @@ export default function CupPlayPanel({ teamId, teamName, teamOverall, teamTier, 
     const bid = getBrowserId();
     setBrowserId(bid);
     if (knownEntryId) return;
-    fetch(`/api/cup/status?teamId=${encodeURIComponent(teamId)}&browserId=${encodeURIComponent(bid)}`)
+    const userParam = user ? `&userId=${encodeURIComponent(user.id)}` : "";
+    fetch(`/api/cup/status?teamId=${encodeURIComponent(teamId)}&browserId=${encodeURIComponent(bid)}${userParam}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.entry?.id && d.entry.cup_week === currentCupWeek()) setEntryId(d.entry.id);
       })
       .catch(() => {})
       .finally(() => setResolving(false));
-  }, [teamId, knownEntryId]);
+  }, [teamId, knownEntryId, user]);
 
   // Hide the sibling static card when the interactive panel is visible
   useEffect(() => {

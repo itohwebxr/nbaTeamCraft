@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
     const browserId = searchParams.get("browserId");
     const entryId = searchParams.get("entryId");
     const teamId = searchParams.get("teamId");
+    const userId = searchParams.get("userId");
     const cupWeek = searchParams.get("cupWeek") ?? currentCupWeek();
 
     if (!browserId && !entryId && !teamId) {
@@ -29,10 +30,14 @@ export async function GET(req: NextRequest) {
     if (entryId) {
       entryQuery = entryQuery.eq("id", entryId);
     } else if (teamId) {
-      // The current-week entry for a specific team. Scope to the requester's
-      // browser when provided so we only return an entry they own.
+      // The current-week entry for a specific team, scoped to the requester
+      // (their browser or signed-in user) so we only return an entry they own.
       entryQuery = entryQuery.eq("cup_week", cupWeek).eq("public_team_id", teamId);
-      if (browserId) entryQuery = entryQuery.eq("browser_id", browserId);
+      const ownerOr = [
+        browserId ? `browser_id.eq.${browserId}` : null,
+        userId ? `user_id.eq.${userId}` : null,
+      ].filter(Boolean).join(",");
+      if (ownerOr) entryQuery = entryQuery.or(ownerOr);
     } else {
       entryQuery = entryQuery
         .eq("cup_week", cupWeek)
