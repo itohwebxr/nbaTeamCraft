@@ -10,6 +10,7 @@ import { currentCupWeek } from "@/lib/cupWeek";
 import LikeButton from "@/components/common/LikeButton";
 import RadarChart from "@/components/result/RadarChart";
 import HeaderAuth from "@/components/auth/HeaderAuth";
+import CupPlayPanel from "@/components/cup/CupPlayPanel";
 
 export const dynamic = "force-dynamic";
 
@@ -213,6 +214,14 @@ export default async function TeamDetailPage({
             </div>
           </div>
         )}
+
+        {/* Owner-only: play this team's daily cup match (renders nothing for others) */}
+        <CupPlayPanel
+          teamId={team.id}
+          teamName={team.name}
+          teamOverall={team.overall}
+          teamTier={team.tier}
+        />
 
         {/* Roster */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
