@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { gtm } from "@/lib/gtm";
+import { currentCupWeek } from "@/lib/cupWeek";
 import { useAuth } from "@/hooks/useAuth";
 import XLoginButton from "@/components/auth/XLoginButton";
 import { CupEntry, CupMatchSummary } from "@/types";
@@ -132,7 +133,10 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
   const played = entry.wins + entry.losses;
   const remaining = MAX_MATCHES - played;
   const alreadyPlayedToday = matches.some((m) => m.played_on === todayStr());
-  const cupFinished = played >= MAX_MATCHES;
+  // The cup is over either when all 7 matches are played OR when the entry's
+  // week is no longer the current one (past weeks can't be played anymore).
+  const weekEnded = entry.cup_week !== currentCupWeek();
+  const cupFinished = played >= MAX_MATCHES || weekEnded;
 
   return (
     <>
