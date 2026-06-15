@@ -376,7 +376,6 @@ export default function ResultPage() {
         if (json.entry?.id) {
           entryId = json.entry.id;
           cupWeek = json.cupWeek ?? json.entry.cup_week ?? "";
-          setCupEntryId(json.entry.id);
           gtm.cupEnter({ team_overall: evaluation.overall, tier: evaluation.tier, cup_week: cupWeek });
         }
       } catch {
@@ -421,6 +420,11 @@ export default function ResultPage() {
           // match failed — CupStatus in the published panel lets them play manually
         }
       }
+
+      // Mount CupStatus only after match 1 is recorded, so its initial status
+      // fetch already reflects today's played match (otherwise it would briefly
+      // show the "Play Today's Match" button for a match that just happened).
+      if (entryId) setCupEntryId(entryId);
     } finally {
       setIsPublishing(false);
       setShowEnterModal(false);
