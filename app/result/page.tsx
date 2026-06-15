@@ -458,7 +458,7 @@ export default function ResultPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: teamName || "Sandbox Team",
+          name: teamName || "My Roster",
           evaluation,
           roster,
           created_by_browser_id: getBrowserId(),
@@ -467,7 +467,7 @@ export default function ResultPage() {
       });
       if (res.ok) {
         setSandboxSaved(true);
-        gtm.sandboxSave({ team_name: teamName || "Sandbox Team", overall: evaluation.overall, tier: evaluation.tier });
+        gtm.sandboxSave({ team_name: teamName || "My Roster", overall: evaluation.overall, tier: evaluation.tier });
       }
     } catch (e) {
       console.error(e);
@@ -506,7 +506,7 @@ export default function ResultPage() {
       <div className="fade-up fade-up-1 max-w-lg mx-auto px-4 py-6 space-y-5">
         {isSandbox && (
           <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-zinc-700 rounded-xl">
-            <span className="text-xs font-black text-orange-400 uppercase tracking-widest">🎨 Sandbox Mode</span>
+            <span className="text-xs font-black text-orange-400 uppercase tracking-widest">🔧 Roster Builder</span>
             <span className="text-xs text-zinc-500">
               {sandboxConfig.teamFilter !== "Random" ? sandboxConfig.teamFilter : "Any team"}{" · "}
               {sandboxConfig.seasonFilter !== "Random" ? sandboxConfig.seasonFilter : "Any season"}
@@ -654,8 +654,8 @@ export default function ResultPage() {
         {isSandbox && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
             <div>
-              <p className="font-display text-xs font-bold text-orange-400 tracking-[0.2em] mb-1">🎨 SANDBOX TEAM</p>
-              <p className="text-xs text-zinc-500">Sandbox teams don't enter the rankings, but you can save this build to your My Page.</p>
+              <p className="font-display text-xs font-bold text-orange-400 tracking-[0.2em] mb-1">🔧 ROSTER BUILDER</p>
+              <p className="text-xs text-zinc-500">Roster Builder teams don't enter the rankings, but you can save this build to your My Page.</p>
             </div>
             {sandboxSaved ? (
               <div className="space-y-3">

@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
                 textTransform: "uppercase",
               }}
             >
-              SANDBOX MODE
+              ROSTER BUILDER
             </span>
           )}
         </div>

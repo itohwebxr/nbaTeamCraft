@@ -271,7 +271,7 @@ export default function MyPage() {
         {sandboxTeams.length > 0 && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
             <div className="px-4 py-3 border-b border-zinc-800">
-              <p className="text-xs font-bold text-orange-400 uppercase tracking-widest">🎨 Sandbox Builds</p>
+              <p className="text-xs font-bold text-orange-400 uppercase tracking-widest">🔧 Roster Builder</p>
             </div>
             <div className="divide-y divide-zinc-800">
               {sandboxTeams.map((t) => (
@@ -281,7 +281,7 @@ export default function MyPage() {
                   </span>
                   <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
                   <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
-                  <span className="text-xs text-zinc-600 shrink-0 px-2 py-0.5 bg-zinc-800 rounded-full">Sandbox</span>
+                  <span className="text-xs text-zinc-600 shrink-0 px-2 py-0.5 bg-zinc-800 rounded-full">Builder</span>
                   <button
                     onClick={() => setConfirmDeleteId(t.id)}
                     className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"

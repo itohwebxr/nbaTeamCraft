@@ -76,7 +76,7 @@ export default function SandboxFilterBar() {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 bg-zinc-900 border-b border-zinc-800">
       <span className="text-xs font-bold text-orange-400 uppercase tracking-widest shrink-0">
-        Sandbox
+        Roster Builder
       </span>
       <div className="flex gap-2 flex-1">
         <div className="flex flex-col flex-1 min-w-0">
