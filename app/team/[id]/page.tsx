@@ -7,10 +7,10 @@ import { createServerClient } from "@/lib/supabase";
 import { overallColor } from "@/lib/overallColor";
 import { PublicTeam, STARTER_SLOTS } from "@/types";
 import { currentCupWeek } from "@/lib/cupWeek";
-import LikeButton from "@/components/common/LikeButton";
 import RadarChart from "@/components/result/RadarChart";
 import HeaderAuth from "@/components/auth/HeaderAuth";
 import CupPlayPanel from "@/components/cup/CupPlayPanel";
+import TeamActions from "@/components/team/TeamActions";
 
 export const dynamic = "force-dynamic";
 
@@ -270,15 +270,14 @@ export default async function TeamDetailPage({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
-          <LikeButton teamId={team.id} initialCount={team.like_count} />
-          <Link
-            href="/draft"
-            className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm text-center transition-colors"
-          >
-            Build Your Own Team →
-          </Link>
-        </div>
+        <TeamActions
+          teamId={team.id}
+          teamName={team.name}
+          overall={team.overall}
+          tier={team.tier}
+          likeCount={team.like_count}
+          isSandbox={!!team.is_sandbox}
+        />
       </div>
     </div>
   );
