@@ -9,7 +9,9 @@ interface PlayerCardProps {
   isDrafted: boolean;
   isReplaceable: boolean;
   budgetOk: boolean;
+  isSandbox?: boolean;
   onDraft: (player: PlayerSeason, positions: Position[]) => void;
+  onRemove?: (player: PlayerSeason) => void;
   onBudgetBlock?: (player: PlayerSeason) => void;
 }
 
@@ -19,31 +21,46 @@ export default function PlayerCard({
   isDrafted,
   isReplaceable,
   budgetOk,
+  isSandbox = false,
   onDraft,
+  onRemove,
   onBudgetBlock,
 }: PlayerCardProps) {
   const canDraft = draftablePositions.length > 0 && !isDrafted && budgetOk;
+  // In sandbox, a drafted player can be tapped again to remove them (toggle off).
+  const isRemovable = isSandbox && isDrafted;
   const positionStr = player.positions.map((p) => p.position).join("/");
 
   return (
     <div
       className={`relative p-3 rounded-xl border transition-all duration-200
-        ${isDrafted
+        ${isRemovable
+          ? "border-orange-500/60 bg-orange-500/5 cursor-pointer card-draftable hover:bg-orange-500/10"
+          : isDrafted
           ? "opacity-40 border-zinc-700 bg-zinc-900/50 cursor-not-allowed"
           : !canDraft
           ? "opacity-50 border-zinc-700 bg-zinc-900/50 cursor-not-allowed"
           : "border-zinc-700/60 bg-zinc-900 cursor-pointer card-draftable hover:bg-zinc-800/80"
         }`}
       onClick={() => {
-        if (canDraft) {
+        if (isRemovable) {
+          onRemove?.(player);
+        } else if (canDraft) {
           onDraft(player, draftablePositions);
         } else if (!isDrafted && draftablePositions.length > 0 && !budgetOk) {
           onBudgetBlock?.(player);
         }
       }}
     >
-      {/* Drafted stamp */}
-      {isDrafted && (
+      {/* Selected badge (sandbox) — tap to remove */}
+      {isRemovable && (
+        <div className="absolute top-1.5 right-1.5 z-10 flex items-center gap-1 bg-orange-500 text-white font-display text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded">
+          ✓ PICKED
+        </div>
+      )}
+
+      {/* Drafted stamp (draft mode only) */}
+      {isDrafted && !isSandbox && (
         <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/30 z-10">
           <span className="font-display text-xs font-black text-zinc-400 tracking-[0.3em] border border-zinc-600 px-2 py-0.5 rounded">
             DRAFTED

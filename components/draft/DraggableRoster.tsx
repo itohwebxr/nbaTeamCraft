@@ -58,12 +58,14 @@ function DraggableSlot({
   waveIndex,
   isDraggingAny,
   isSandbox,
+  onRemove,
 }: {
   slot: RosterSlot;
   entry: RosterEntry | undefined;
   waveIndex?: number | null;
   isDraggingAny: boolean;
   isSandbox: boolean;
+  onRemove?: (nbaPlayerId: string) => void;
 }) {
   const label = SLOT_LABELS[slot] ?? slot;
   const isBench = slot.startsWith("BENCH");
@@ -161,6 +163,20 @@ function DraggableSlot({
       <span className={`font-display text-xs font-black shrink-0 ${overallColor(entry.playerSeason.overall)}`}>
         {entry.playerSeason.overall}
       </span>
+      {isSandbox && onRemove && (
+        <button
+          // stopPropagation on pointerdown so tapping × never starts a drag
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            onRemove(entry.playerSeason.nba_player_id);
+          }}
+          className="shrink-0 text-zinc-500 hover:text-red-400 text-base leading-none px-1 -mr-1"
+          title="Remove"
+        >
+          ×
+        </button>
+      )}
     </div>
   );
 }
@@ -193,6 +209,7 @@ interface DraggableRosterProps {
   waveOffset?: number;
   isSandbox?: boolean;
   onSwap: (slotA: RosterSlot, slotB: RosterSlot) => void;
+  onRemove?: (nbaPlayerId: string) => void;
 }
 
 export default function DraggableRoster({
@@ -204,6 +221,7 @@ export default function DraggableRoster({
   waveOffset = 0,
   isSandbox = false,
   onSwap,
+  onRemove,
 }: DraggableRosterProps) {
   const [activeSlot, setActiveSlot] = useState<RosterSlot | null>(null);
   const [isDraggingAny, setIsDraggingAny] = useState(false);
@@ -245,6 +263,7 @@ export default function DraggableRoster({
             waveIndex={filledSlots === totalSlots ? waveOffset + i : null}
             isDraggingAny={isDraggingAny}
             isSandbox={isSandbox}
+            onRemove={onRemove}
           />
         ))}
       </div>

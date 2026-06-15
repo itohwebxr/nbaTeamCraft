@@ -24,15 +24,17 @@ export async function POST(req: NextRequest) {
       evaluation,
       roster,
       created_by_browser_id,
+      is_sandbox = false,
     }: {
-      share_id: string;
+      share_id?: string;
       name: string;
       evaluation: { overall: number; tier: string; offense: number; defense: number; rebound: number; playmaking: number };
       roster: RosterEntry[];
       created_by_browser_id?: string;
+      is_sandbox?: boolean;
     } = body;
 
-    if (!share_id || !name || !evaluation || !roster) {
+    if ((!share_id && !is_sandbox) || !name || !evaluation || !roster) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -61,7 +63,7 @@ export async function POST(req: NextRequest) {
       id = generateId();
       const { error } = await supabase.from("public_teams").insert({
         id,
-        share_id,
+        share_id: share_id ?? null,
         name,
         overall: evaluation.overall,
         tier: evaluation.tier,
@@ -72,18 +74,21 @@ export async function POST(req: NextRequest) {
         roster_json,
         metadata,
         created_by_browser_id: created_by_browser_id ?? null,
+        is_sandbox,
       });
       if (!error) break;
       if (attempts++ > 5) throw new Error("Failed to create public team");
     }
 
-    // Calculate ranks (count of teams with higher score in each dimension)
+    // Calculate ranks (count of non-sandbox teams with higher score in each dimension)
     const dims = ["overall", "offense", "defense", "rebound", "playmaking"] as const;
     const rankResults = await Promise.all(
       dims.map((dim) =>
         supabase
           .from("public_teams")
           .select("id", { count: "exact", head: true })
+          .eq("is_sandbox", false)
+          .neq("created_by_browser_id", "__legend__")
           .gt(dim, evaluation[dim])
       )
     );
@@ -110,7 +115,8 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServerClient();
     let query = supabase.from("public_teams").select("*")
-      .neq("created_by_browser_id", "__legend__");
+      .neq("created_by_browser_id", "__legend__")
+      .eq("is_sandbox", false);
 
     if (sort === "trending") {
       // Computed in-query: (like_count + 1) / POWER(days_since_created + 2, 0.8)

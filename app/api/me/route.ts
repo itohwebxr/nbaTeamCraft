@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
     const { data: teams, error: teamsErr } = await supabase
       .from("public_teams")
-      .select("id, name, overall, tier, offense, defense, rebound, playmaking, like_count, created_at")
+      .select("id, name, overall, tier, offense, defense, rebound, playmaking, like_count, created_at, is_sandbox")
       .or(orFilter)
       .order("created_at", { ascending: false })
       .limit(50);
