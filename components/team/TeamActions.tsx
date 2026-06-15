@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDraftStore } from "@/stores/draftStore";
 import { gtm } from "@/lib/gtm";
@@ -27,7 +28,9 @@ export default function TeamActions({
   isSandbox: boolean;
 }) {
   const router = useRouter();
-  const { setMode, reset, sandboxConfig } = useDraftStore();
+  const { setMode, reset, loadRoster, sandboxConfig } = useDraftStore();
+  const [remixing, setRemixing] = useState(false);
+  const [remixError, setRemixError] = useState(false);
 
   const handleShare = () => {
     const label = teamName || "My NBA Team";
@@ -36,6 +39,24 @@ export default function TeamActions({
     gtm.shareTeam({ team_name: label, overall, tier, mode: isSandbox ? "sandbox" : "draft" });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
     window.open(tweetUrl, "_blank", "noopener");
+  };
+
+  const handleRemix = async () => {
+    if (remixing) return;
+    setRemixing(true);
+    setRemixError(false);
+    try {
+      const res = await fetch(`/api/public-teams/${teamId}/roster`);
+      if (!res.ok) throw new Error("Failed to load roster");
+      const data = await res.json();
+      if (!data.roster?.length) throw new Error("Empty roster");
+      loadRoster(data.roster);
+      gtm.remixTeam({ team_name: teamName || "team", overall, tier });
+      router.push("/draft");
+    } catch {
+      setRemixError(true);
+      setRemixing(false);
+    }
   };
 
   const handleBuild = () => {
@@ -60,6 +81,20 @@ export default function TeamActions({
           Share on 𝕏
         </button>
       </div>
+      <button
+        onClick={handleRemix}
+        disabled={remixing}
+        className="block w-full py-3 rounded-xl border-2 border-orange-500/70 hover:border-orange-400 bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 hover:text-orange-200 font-bold text-sm text-center transition-colors disabled:opacity-60"
+      >
+        {remixing ? "Loading roster…" : "🔁 Remix This Roster →"}
+      </button>
+      <p className="text-center text-xs text-zinc-500 -mt-1">
+        {remixError ? (
+          <span className="text-red-400">Couldn&apos;t load this roster. Please try again.</span>
+        ) : (
+          "Start from this lineup and swap a player to make your counter."
+        )}
+      </p>
       <button
         onClick={handleBuild}
         className="block w-full py-3 rounded-xl border border-zinc-700 hover:border-zinc-500 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-sm text-center transition-colors"
