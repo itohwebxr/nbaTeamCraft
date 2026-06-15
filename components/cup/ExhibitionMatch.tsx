@@ -32,6 +32,48 @@ function quarterLabel(i: number): string {
   return i < 4 ? QUARTER_LABELS[i] : `OT${i - 3 > 1 ? i - 3 : ""}`;
 }
 
+// A dramatic, share-worthy headline that varies with the result so no two
+// clips look the same (great for video). Margin + overtime drive the label.
+function resultHeadline(won: boolean, margin: number, overtime: boolean): { text: string; tag?: string } {
+  if (won) {
+    if (overtime) return { text: "🏆 OVERTIME WIN", tag: "INSTANT CLASSIC" };
+    if (margin <= 3) return { text: "🏆 BUZZER BEATER", tag: "CLUTCH" };
+    if (margin >= 25) return { text: "🏆 BLOWOUT", tag: "STATEMENT" };
+    if (margin >= 15) return { text: "🏆 BIG WIN", tag: "DOMINANT" };
+    return { text: "🏆 YOU WIN" };
+  }
+  if (overtime) return { text: "OT HEARTBREAKER", tag: "SO CLOSE" };
+  if (margin <= 3) return { text: "HEARTBREAKER", tag: "GUTTING" };
+  if (margin >= 25) return { text: "BLOWN OUT" };
+  return { text: "DEFEAT" };
+}
+
+// Lightweight CSS-only confetti burst — no dependency, ~70 pieces.
+const CONFETTI_COLORS = ["#f97316", "#fbbf24", "#ffffff", "#fb923c", "#fde68a"];
+function Confetti() {
+  const pieces = Array.from({ length: 70 }).map((_, i) => {
+    const left = Math.random() * 100;
+    const delay = Math.random() * 0.5;
+    const duration = 2.4 + Math.random() * 1.8;
+    const color = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+    const rounded = i % 3 === 0;
+    return (
+      <span
+        key={i}
+        className="confetti-piece"
+        style={{
+          left: `${left}%`,
+          backgroundColor: color,
+          borderRadius: rounded ? "50%" : "1px",
+          animationDelay: `${delay}s`,
+          animationDuration: `${duration}s`,
+        }}
+      />
+    );
+  });
+  return <div className="pointer-events-none fixed inset-0 z-10 overflow-hidden">{pieces}</div>;
+}
+
 function BoxScoreTable({ lines }: { lines: BoxScoreLine[] }) {
   return (
     <div className="overflow-x-auto">
@@ -114,8 +156,12 @@ export default function ExhibitionMatch({
   const userScore = result.quarters.slice(0, revealed).reduce((s, q) => s + q.home, 0);
   const oppScore = result.quarters.slice(0, revealed).reduce((s, q) => s + q.away, 0);
 
+  const margin = Math.abs(result.homeTotal - result.awayTotal);
+  const headline = resultHeadline(won, margin, result.overtime);
+
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950/97 backdrop-blur-sm overflow-y-auto">
+      {phase === "final" && won && <Confetti />}
       <div className="min-h-full flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-lg">
           {/* VS header — always visible */}
@@ -220,25 +266,45 @@ export default function ExhibitionMatch({
           {phase === "final" && (
             <div className="fade-up">
               {/* Result banner */}
-              <div className="text-center mb-5">
+              <div className="relative text-center mb-5 py-3">
+                {/* Radial burst + screen flash behind the headline on a win */}
+                {won && (
+                  <>
+                    <span
+                      aria-hidden
+                      className="burst-glow pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full"
+                      style={{ background: "radial-gradient(circle, rgba(249,115,22,0.55) 0%, rgba(249,115,22,0.12) 45%, transparent 70%)" }}
+                    />
+                    <span aria-hidden className="screen-flash pointer-events-none fixed inset-0 bg-orange-300/40" />
+                  </>
+                )}
+                {headline.tag && (
+                  <p
+                    className={`relative win-reveal font-display text-xs font-black uppercase tracking-[0.35em] mb-1 ${
+                      won ? "text-amber-300" : "text-zinc-500"
+                    }`}
+                  >
+                    {headline.tag}
+                  </p>
+                )}
                 <p
-                  className={`font-display text-4xl font-black tracking-tight ${
-                    won ? "text-orange-400" : "text-zinc-400"
+                  className={`relative win-reveal font-display text-5xl font-black tracking-tight ${
+                    won ? "text-orange-400 win-glow" : "text-zinc-400 defeat-shake"
                   }`}
                 >
-                  {won ? "🏆 YOU WIN" : "DEFEAT"}
+                  {headline.text}
                 </p>
-                {result.overtime && (
-                  <p className="text-xs text-zinc-500 mt-1">After overtime</p>
-                )}
-                <p className="text-xs text-zinc-500 mt-2">
+                <p className="relative text-sm font-black text-white tabular-nums mt-2">
+                  {result.homeTotal} – {result.awayTotal}
+                </p>
+                <p className="relative text-xs text-zinc-500 mt-2">
                   {cupMode ? "Cup record" : "Exhibition record"}:{" "}
                   <span className="text-white font-bold">
                     {sessionRecord.wins}W – {sessionRecord.losses}L
                   </span>
                 </p>
                 {cupMode && (
-                  <p className="text-xs text-zinc-500 mt-1">Come back tomorrow for your next match!</p>
+                  <p className="relative text-xs text-zinc-500 mt-1">Come back tomorrow for your next match!</p>
                 )}
               </div>
 
