@@ -84,6 +84,7 @@ export default function ResultPage() {
   // Sandbox save state
   const [sandboxSaved, setSandboxSaved] = useState(false);
   const [sandboxSaving, setSandboxSaving] = useState(false);
+  const [sandboxError, setSandboxError] = useState(false);
   const [xLoginLoading, setXLoginLoading] = useState(false);
   // Cup state
   const [cupEntryId, setCupEntryId] = useState<string | null>(null);
@@ -453,6 +454,7 @@ export default function ResultPage() {
   const handleSandboxSave = async () => {
     if (sandboxSaving || sandboxSaved || !evaluation) return;
     setSandboxSaving(true);
+    setSandboxError(false);
     try {
       const res = await fetch("/api/public-teams", {
         method: "POST",
@@ -468,9 +470,12 @@ export default function ResultPage() {
       if (res.ok) {
         setSandboxSaved(true);
         gtm.sandboxSave({ team_name: teamName || "My Roster", overall: evaluation.overall, tier: evaluation.tier });
+      } else {
+        setSandboxError(true);
       }
     } catch (e) {
       console.error(e);
+      setSandboxError(true);
     } finally {
       setSandboxSaving(false);
     }
@@ -700,11 +705,18 @@ export default function ResultPage() {
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Saving...
                     </span>
+                  ) : sandboxError ? (
+                    "Retry — Save Team to My Page"
                   ) : (
                     "Save Team to My Page"
                   )}
                 </button>
-                {!user && (
+                {sandboxError && (
+                  <p className="text-center text-xs text-red-400">
+                    Couldn't save. Please try again.
+                  </p>
+                )}
+                {!user && !sandboxError && (
                   <p className="text-center text-xs text-zinc-600">
                     Sign in with X after saving to keep your teams across devices.
                   </p>
