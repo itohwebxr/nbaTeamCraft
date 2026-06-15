@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useDraftStore } from "@/stores/draftStore";
 import { gtm } from "@/lib/gtm";
 
-export default function ModeSelector() {
+// Single CTA button. `variant` selects which mode it launches so the two
+// home sections (Roster Builder / Dream Draft) can place them independently.
+export default function ModeSelector({ variant }: { variant: "builder" | "draft" }) {
   const router = useRouter();
   const { setMode, reset, sandboxConfig } = useDraftStore();
 
@@ -21,8 +23,8 @@ export default function ModeSelector() {
     router.push("/draft");
   };
 
-  return (
-    <div className="space-y-3">
+  if (variant === "builder") {
+    return (
       <button
         onClick={startSandbox}
         className="block w-full py-4 rounded-2xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600
@@ -30,16 +32,16 @@ export default function ModeSelector() {
       >
         🔧 Roster Builder →
       </button>
-      <p className="text-xs text-zinc-500 -mt-1">
-        Test any trade or FA rumor — build the roster &amp; see how strong it is
-      </p>
-      <button
-        onClick={startDraft}
-        className="block w-full py-3 rounded-2xl border border-zinc-700 hover:border-zinc-500
-          bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-sm transition-colors"
-      >
-        🏀 Dream Draft — pick 6 in a 17-pt budget &amp; enter the Cup
-      </button>
-    </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={startDraft}
+      className="block w-full py-3.5 rounded-2xl border border-zinc-700 hover:border-zinc-500
+        bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-base transition-colors"
+    >
+      🏀 Start Dream Draft →
+    </button>
   );
 }
