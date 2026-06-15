@@ -3,7 +3,10 @@
 # Project Rules
 
 ## Language
-All user-facing text in the application (UI labels, buttons, messages, placeholders, modals, etc.) must be written in **English**. Do not use Japanese or any other language in the app UI.
+There are two distinct language rules — do not mix them up:
+
+- **App UI text** (UI labels, buttons, messages, placeholders, modals, etc.) must be written in **English**. Do not use Japanese or any other language in the app UI.
+- **Conversation with the user**: Claude must always reply in **Japanese** (日本語) in chat, including explanations, progress reports, and summaries. Code, identifiers, commit messages, and the app UI itself stay in English as specified above.
 
 ## GTM Custom Events
 When implementing any new feature, always follow these two steps:
