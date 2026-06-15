@@ -57,11 +57,11 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerClient();
 
-    let id: string = "";
-    let attempts = 0;
-    while (true) {
-      id = generateId();
-      const { error } = await supabase.from("public_teams").insert({
+    // Include is_sandbox unless the column is missing (migration 005 pending),
+    // in which case we drop it so the save still succeeds.
+    let includeSandbox = true;
+    const buildRow = (id: string) => {
+      const row: Record<string, unknown> = {
         id,
         share_id: share_id ?? null,
         name,
@@ -74,23 +74,44 @@ export async function POST(req: NextRequest) {
         roster_json,
         metadata,
         created_by_browser_id: created_by_browser_id ?? null,
-        is_sandbox,
-      });
+      };
+      if (includeSandbox) row.is_sandbox = is_sandbox;
+      return row;
+    };
+
+    let id: string = "";
+    let attempts = 0;
+    while (true) {
+      id = generateId();
+      const { error } = await supabase.from("public_teams").insert(buildRow(id));
       if (!error) break;
+      if ((error as { code?: string }).code === "42703" && includeSandbox) {
+        // is_sandbox column doesn't exist yet — retry without it
+        includeSandbox = false;
+        continue;
+      }
       if (attempts++ > 5) throw new Error("Failed to create public team");
     }
 
     // Calculate ranks (count of non-sandbox teams with higher score in each dimension)
     const dims = ["overall", "offense", "defense", "rebound", "playmaking"] as const;
+    const rankQuery = (dim: string, applySandbox: boolean) => {
+      let q = supabase
+        .from("public_teams")
+        .select("id", { count: "exact", head: true })
+        .neq("created_by_browser_id", "__legend__")
+        .gt(dim, evaluation[dim as keyof typeof evaluation] as number);
+      if (applySandbox) q = q.eq("is_sandbox", false);
+      return q;
+    };
     const rankResults = await Promise.all(
-      dims.map((dim) =>
-        supabase
-          .from("public_teams")
-          .select("id", { count: "exact", head: true })
-          .eq("is_sandbox", false)
-          .neq("created_by_browser_id", "__legend__")
-          .gt(dim, evaluation[dim])
-      )
+      dims.map(async (dim) => {
+        let res = await rankQuery(dim, includeSandbox);
+        if (res.error && (res.error as { code?: string }).code === "42703") {
+          res = await rankQuery(dim, false);
+        }
+        return res;
+      })
     );
 
     const rank: Record<string, number> = {};

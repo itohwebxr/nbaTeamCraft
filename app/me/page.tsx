@@ -115,6 +115,8 @@ export default function MyPage() {
   const regularTeams = teams.filter((t) => !t.is_sandbox);
   const sandboxTeams = teams.filter((t) => t.is_sandbox);
 
+  const [activeTab, setActiveTab] = useState<"dream" | "builds">("dream");
+
   const toggleCup = (teamId: string) => {
     setExpandedCup((prev) => {
       const next = new Set(prev);
@@ -178,122 +180,153 @@ export default function MyPage() {
           )}
         </div>
 
-        {/* My Teams (with inline cup status) */}
+        {/* Tab bar */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">My Teams</p>
-            <Link href="/cup" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Cup Standings →</Link>
+          <div className="flex border-b border-zinc-800">
+            <button
+              onClick={() => setActiveTab("dream")}
+              className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
+                activeTab === "dream"
+                  ? "text-white border-b-2 border-orange-500 -mb-px"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              Dream Teams
+              {regularTeams.length > 0 && (
+                <span className="ml-1.5 text-[10px] bg-zinc-800 text-zinc-400 rounded-full px-1.5 py-0.5">
+                  {regularTeams.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab("builds")}
+              className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
+                activeTab === "builds"
+                  ? "text-orange-400 border-b-2 border-orange-500 -mb-px"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              Builds
+              {sandboxTeams.length > 0 && (
+                <span className="ml-1.5 text-[10px] bg-zinc-800 text-zinc-400 rounded-full px-1.5 py-0.5">
+                  {sandboxTeams.length}
+                </span>
+              )}
+            </button>
           </div>
 
           {loading ? (
             <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
-          ) : regularTeams.length === 0 ? (
-            <div className="text-center py-8 px-4 space-y-3">
-              <p className="text-2xl">🏀</p>
-              <p className="text-sm text-zinc-500">No published teams yet.</p>
-              <button
-                onClick={startNewDraft}
-                className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
-              >
-                Start Drafting →
-              </button>
-            </div>
-          ) : (
-            <div className="divide-y divide-zinc-800">
-              {regularTeams.map((t) => {
-                const cup = cupByTeam[t.id];
-                const hasCurrentCup = cup?.cupWeek === currentWeek;
-                const hasCup = !!cup;
-                const isExpanded = expandedCup.has(t.id);
+          ) : activeTab === "dream" ? (
+            regularTeams.length === 0 ? (
+              <div className="text-center py-8 px-4 space-y-3">
+                <p className="text-2xl">🏀</p>
+                <p className="text-sm text-zinc-500">No Dream Teams yet.</p>
+                <button
+                  onClick={startNewDraft}
+                  className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+                >
+                  Start Drafting →
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="px-4 py-2 flex justify-end">
+                  <Link href="/cup" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Cup Standings →</Link>
+                </div>
+                <div className="divide-y divide-zinc-800">
+                  {regularTeams.map((t) => {
+                    const cup = cupByTeam[t.id];
+                    const hasCurrentCup = cup?.cupWeek === currentWeek;
+                    const hasCup = !!cup;
+                    const isExpanded = expandedCup.has(t.id);
 
-                return (
-                  <div key={t.id} className="group">
-                    {/* Team row */}
-                    <div className="flex items-center gap-2 px-4 py-3">
-                      {/* OVR + Tier */}
-                      <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
-                          {t.overall}
-                        </span>
-                        <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
-                        <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
-                      </Link>
-
-                      {/* Cup badge / play button */}
-                      {hasCup && (
-                        <button
-                          onClick={() => toggleCup(t.id)}
-                          className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
-                            hasCurrentCup
-                              ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
-                              : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
-                          }`}
-                        >
-                          <span>🏆</span>
-                          {cup.wins}–{cup.losses}
-                          <span className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}>▾</span>
-                        </button>
-                      )}
-
-                      {/* Meta */}
-                      <span className="text-xs text-zinc-600 shrink-0">❤️ {t.like_count}</span>
-
-                      {/* Delete */}
-                      <button
-                        onClick={() => setConfirmDeleteId(t.id)}
-                        className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
-                        title="Delete team"
-                      >
-                        ×
-                      </button>
-                    </div>
-
-                    {/* Cup panel — expanded inline */}
-                    {hasCup && isExpanded && (
-                      <div className="px-3 pb-3">
-                        <CupPlayPanel
-                          entryId={cup.entryId}
-                          teamId={t.id}
-                          teamName={t.name}
-                          teamOverall={t.overall}
-                          teamTier={t.tier}
-                        />
+                    return (
+                      <div key={t.id} className="group">
+                        <div className="flex items-center gap-2 px-4 py-3">
+                          <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
+                              {t.overall}
+                            </span>
+                            <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
+                            <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
+                          </Link>
+                          {hasCup && (
+                            <button
+                              onClick={() => toggleCup(t.id)}
+                              className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
+                                hasCurrentCup
+                                  ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                                  : "bg-zinc-800 text-zinc-500 hover:bg-zinc-700"
+                              }`}
+                            >
+                              <span>🏆</span>
+                              {cup.wins}–{cup.losses}
+                              <span className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}>▾</span>
+                            </button>
+                          )}
+                          <span className="text-xs text-zinc-600 shrink-0">❤️ {t.like_count}</span>
+                          <button
+                            onClick={() => setConfirmDeleteId(t.id)}
+                            className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
+                            title="Delete team"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        {hasCup && isExpanded && (
+                          <div className="px-3 pb-3">
+                            <CupPlayPanel
+                              entryId={cup.entryId}
+                              teamId={t.id}
+                              teamName={t.name}
+                              teamOverall={t.overall}
+                              teamTier={t.tier}
+                            />
+                          </div>
+                        )}
                       </div>
-                    )}
+                    );
+                  })}
+                </div>
+              </>
+            )
+          ) : (
+            sandboxTeams.length === 0 ? (
+              <div className="text-center py-8 px-4 space-y-3">
+                <p className="text-2xl">🔧</p>
+                <p className="text-sm text-zinc-500">No builds saved yet.</p>
+                <Link
+                  href="/draft?mode=sandbox"
+                  className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+                >
+                  Open Roster Builder →
+                </Link>
+              </div>
+            ) : (
+              <div className="divide-y divide-zinc-800">
+                {sandboxTeams.map((t) => (
+                  <div key={t.id} className="group flex items-center gap-2 px-4 py-3">
+                    <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
+                        {t.overall}
+                      </span>
+                      <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
+                      <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
+                    </Link>
+                    <button
+                      onClick={() => setConfirmDeleteId(t.id)}
+                      className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
+                      title="Delete build"
+                    >
+                      ×
+                    </button>
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )
           )}
         </div>
-
-        {/* Sandbox Teams */}
-        {sandboxTeams.length > 0 && (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-zinc-800">
-              <p className="text-xs font-bold text-orange-400 uppercase tracking-widest">🔧 Roster Builder</p>
-            </div>
-            <div className="divide-y divide-zinc-800">
-              {sandboxTeams.map((t) => (
-                <div key={t.id} className="group flex items-center gap-2 px-4 py-3">
-                  <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
-                    {t.overall}
-                  </span>
-                  <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
-                  <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
-                  <span className="text-xs text-zinc-600 shrink-0 px-2 py-0.5 bg-zinc-800 rounded-full">Builder</span>
-                  <button
-                    onClick={() => setConfirmDeleteId(t.id)}
-                    className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
-                    title="Delete team"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
       </div>
 
