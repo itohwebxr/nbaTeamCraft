@@ -80,8 +80,8 @@ export default function Home() {
               className="relative mx-auto object-contain w-40 md:w-[280px] drop-shadow-[0_0_48px_rgba(249,115,22,0.45)] drop-shadow-[0_0_96px_rgba(249,115,22,0.2)]"
             />
             <p className="mt-4 text-zinc-300 text-base leading-relaxed font-display tracking-wide">
-              Draft your dream team.<br />
-              <span className="text-orange-400 font-bold">Battle it out.</span>
+              Build any NBA roster.<br />
+              <span className="text-orange-400 font-bold">Settle the debate.</span>
             </p>
           </div>
 

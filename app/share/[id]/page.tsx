@@ -130,7 +130,7 @@ export default async function ShareIdPage({
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-5">
         {isSandbox && (
           <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-orange-400 uppercase tracking-widest">🎨 Sandbox Mode</span>
+            <span className="text-xs font-black text-orange-400 uppercase tracking-widest">🔧 Roster Builder</span>
             {(share.sandbox_team || share.sandbox_season) && (
               <span className="text-xs text-zinc-500">
                 {share.sandbox_team ?? "Any team"}{" · "}{share.sandbox_season ?? "Any season"}
