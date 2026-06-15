@@ -154,4 +154,10 @@ export const gtm = {
     overall: number;
     tier: string;
   }) => push({ event: "sandbox_save", ...params }),
+
+  remixTeam: (params: {
+    team_name: string;
+    overall: number;
+    tier: string;
+  }) => push({ event: "remix_team", ...params }),
 };

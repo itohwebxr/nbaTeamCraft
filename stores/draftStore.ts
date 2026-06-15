@@ -36,6 +36,7 @@ interface DraftStore {
   clearCurrentTeam: () => void;
   draftPlayer: (playerSeason: PlayerSeason, slot: RosterSlot, assignedPosition: Position) => void;
   removePlayer: (nbaPlayerId: string) => void;
+  loadRoster: (roster: RosterEntry[]) => void;
   reset: () => void;
   setMode: (mode: DraftMode) => void;
   setSandboxConfig: (config: Partial<SandboxConfig>) => void;
@@ -183,6 +184,17 @@ export const useDraftStore = create<DraftStore>()(
       };
     });
   },
+
+  // Seed the builder with an existing team's roster (remix flow). Forces
+  // sandbox mode so the user can swap players freely on top of the base team.
+  loadRoster: (roster) => set((state) => ({
+    ...initialGameState,
+    mode: "sandbox",
+    sandboxConfig: state.sandboxConfig,
+    roster: rebalanceSlots(roster),
+    draftedPlayerIds: roster.map((e) => e.playerSeason.nba_player_id),
+    usedBudget: roster.reduce((sum, e) => sum + e.playerSeason.cost, 0),
+  })),
 
   // Resets game state but preserves mode and sandbox config (so Draft Again stays in same mode)
   reset: () => set((state) => ({
