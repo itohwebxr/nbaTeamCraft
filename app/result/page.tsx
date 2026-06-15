@@ -455,12 +455,50 @@ export default function ResultPage() {
     if (sandboxSaving || sandboxSaved || !evaluation) return;
     setSandboxSaving(true);
     setSandboxError(false);
+    const name = teamName || "My Roster";
     try {
+      // public_teams.share_id references a shares row, so create the share
+      // first (same as the normal publish flow) before saving the team.
+      const formatName = (n: string) => {
+        const parts = n.trim().split(/\s+/);
+        return parts.length === 1 ? n : `${parts[0][0]} ${parts[parts.length - 1]}`;
+      };
+      const slotKey = (slot: string) => (slot === "BENCH1" ? "6th" : slot.toLowerCase());
+      const shareData: Record<string, string> = {
+        name,
+        overall: String(evaluation.overall),
+        tier: evaluation.tier,
+        mode: "sandbox",
+      };
+      if (sandboxConfig.teamFilter !== "Random") shareData.sandbox_team = sandboxConfig.teamFilter;
+      if (sandboxConfig.seasonFilter !== "Random") shareData.sandbox_season = sandboxConfig.seasonFilter;
+      [...starters, ...bench].forEach((e) => {
+        if (e) {
+          const key = slotKey(e.slot);
+          shareData[key] = formatName(e.playerSeason.name);
+          shareData[`${key}_s`] = e.playerSeason.season;
+        }
+      });
+
+      let shareId: string | null = null;
+      const shareRes = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(shareData),
+      });
+      const shareJson = await shareRes.json();
+      if (shareJson.url) {
+        const parts = shareJson.url.split("/");
+        shareId = parts[parts.length - 1];
+      }
+      if (!shareId) throw new Error("Failed to create share");
+
       const res = await fetch("/api/public-teams", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: teamName || "My Roster",
+          share_id: shareId,
+          name,
           evaluation,
           roster,
           created_by_browser_id: getBrowserId(),
@@ -469,7 +507,7 @@ export default function ResultPage() {
       });
       if (res.ok) {
         setSandboxSaved(true);
-        gtm.sandboxSave({ team_name: teamName || "My Roster", overall: evaluation.overall, tier: evaluation.tier });
+        gtm.sandboxSave({ team_name: name, overall: evaluation.overall, tier: evaluation.tier });
       } else {
         setSandboxError(true);
       }
