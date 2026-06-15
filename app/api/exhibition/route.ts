@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
       supabase.from("public_teams").select("*").eq("created_by_browser_id", "__legend__"),
       supabase.from("public_teams").select("*")
         .neq("created_by_browser_id", "__legend__")
+        .eq("is_sandbox", false)
         .order("created_at", { ascending: false })
         .limit(150),
     ]);

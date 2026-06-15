@@ -14,6 +14,8 @@ import CupStatus from "@/components/cup/CupStatus";
 import { GameResult } from "@/lib/simulateGame";
 import { gtm } from "@/lib/gtm";
 import HeaderAuth from "@/components/auth/HeaderAuth";
+import { useAuth } from "@/hooks/useAuth";
+import { startXLogin } from "@/lib/xLogin";
 
 function SlotLabel({ slot }: { slot: string }) {
   if (slot === "BENCH1") return "6TH";
@@ -60,6 +62,7 @@ function RankCard({ label, rank, index }: { label: string; rank: number; index: 
 export default function ResultPage() {
   const router = useRouter();
   const { roster, usedBudget, reset, mode, sandboxConfig } = useDraftStore();
+  const { user } = useAuth();
   const isSandbox = mode === "sandbox";
   const [evaluation, setEvaluation] = useState<TeamEvaluation | null>(null);
   const [teamName, setTeamName] = useState("");
@@ -78,6 +81,10 @@ export default function ResultPage() {
   } | null>(null);
   const [sessionRecord, setSessionRecord] = useState({ wins: 0, losses: 0 });
   const [recentOpponentIds, setRecentOpponentIds] = useState<string[]>([]);
+  // Sandbox save state
+  const [sandboxSaved, setSandboxSaved] = useState(false);
+  const [sandboxSaving, setSandboxSaving] = useState(false);
+  const [xLoginLoading, setXLoginLoading] = useState(false);
   // Cup state
   const [cupEntryId, setCupEntryId] = useState<string | null>(null);
   const [isEnteringCup, setIsEnteringCup] = useState(false);
@@ -443,6 +450,42 @@ export default function ResultPage() {
     window.open(tweetUrl, "_blank", "noopener");
   };
 
+  const handleSandboxSave = async () => {
+    if (sandboxSaving || sandboxSaved || !evaluation) return;
+    setSandboxSaving(true);
+    try {
+      const res = await fetch("/api/public-teams", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: teamName || "Sandbox Team",
+          evaluation,
+          roster,
+          created_by_browser_id: getBrowserId(),
+          is_sandbox: true,
+        }),
+      });
+      if (res.ok) {
+        setSandboxSaved(true);
+        gtm.sandboxSave({ team_name: teamName || "Sandbox Team", overall: evaluation.overall, tier: evaluation.tier });
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSandboxSaving(false);
+    }
+  };
+
+  const handleXLogin = async () => {
+    if (xLoginLoading) return;
+    setXLoginLoading(true);
+    const error = await startXLogin(window.location.pathname, getBrowserId());
+    if (error) {
+      console.error("X login error:", error);
+      setXLoginLoading(false);
+    }
+  };
+
   const starters = STARTER_SLOTS.map((slot) => roster.find((e) => e.slot === slot));
   const bench = BENCH_SLOTS.map((slot) => roster.find((e) => e.slot === slot));
 
@@ -609,9 +652,66 @@ export default function ResultPage() {
           </div>
         )}
         {isSandbox && (
-          <p className="text-center text-xs text-zinc-600">
-            Sandbox Mode teams cannot enter the rankings.
-          </p>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
+            <div>
+              <p className="font-display text-xs font-bold text-orange-400 tracking-[0.2em] mb-1">🎨 SANDBOX TEAM</p>
+              <p className="text-xs text-zinc-500">Sandbox teams don't enter the rankings, but you can save this build to your My Page.</p>
+            </div>
+            {sandboxSaved ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 py-2.5 px-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                  <span className="text-emerald-400">✓</span>
+                  <span className="text-sm font-bold text-emerald-400">Team saved to My Page</span>
+                </div>
+                {!user && (
+                  <div className="bg-zinc-800 rounded-xl p-4 space-y-2">
+                    <p className="text-xs text-zinc-400 font-bold">Keep it across devices</p>
+                    <p className="text-xs text-zinc-500">Sign in with X to sync your saved teams across all your devices.</p>
+                    <button
+                      onClick={handleXLogin}
+                      disabled={xLoginLoading}
+                      className="w-full py-2.5 rounded-xl bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                    >
+                      {xLoginLoading ? (
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <span className="text-base leading-none">𝕏</span>
+                      )}
+                      Sign in with X
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={() => router.push("/me")}
+                  className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-sm transition-colors"
+                >
+                  View on My Page →
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <button
+                  onClick={handleSandboxSave}
+                  disabled={sandboxSaving || !evaluation || loading}
+                  className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-sm transition-colors"
+                >
+                  {sandboxSaving ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Saving...
+                    </span>
+                  ) : (
+                    "Save Team to My Page"
+                  )}
+                </button>
+                {!user && (
+                  <p className="text-center text-xs text-zinc-600">
+                    Sign in with X after saving to keep your teams across devices.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         {/* Exhibition Match — try your team before committing to the Cup */}

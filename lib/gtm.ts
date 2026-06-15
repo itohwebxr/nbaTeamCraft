@@ -141,4 +141,10 @@ export const gtm = {
     teams_count: number;
     cup_entries_count: number;
   }) => push({ event: "mypage_view", ...params }),
+
+  sandboxSave: (params: {
+    team_name: string;
+    overall: number;
+    tier: string;
+  }) => push({ event: "sandbox_save", ...params }),
 };
