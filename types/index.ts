@@ -102,6 +102,7 @@ export interface PublicTeam {
   like_count: number;
   created_by_browser_id: string | null;
   created_at: string;
+  is_sandbox?: boolean;
 }
 
 export interface PublicTeamRank {
