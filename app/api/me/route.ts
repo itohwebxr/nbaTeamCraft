@@ -23,12 +23,38 @@ export async function GET(req: NextRequest) {
       browserId ? `created_by_browser_id.eq.${browserId}` : null,
     ].filter(Boolean).join(",");
 
-    const { data: teams, error: teamsErr } = await supabase
+    type TeamRow = {
+      id: string; name: string; overall: number; tier: string;
+      offense: number; defense: number; rebound: number; playmaking: number;
+      like_count: number; created_at: string; is_sandbox?: boolean;
+    };
+
+    // Try to include is_sandbox; fall back if migration hasn't been applied yet
+    let teams: TeamRow[] | null = null;
+    let teamsErr: { code?: string; message?: string } | null = null;
+
+    const fullRes = await supabase
       .from("public_teams")
       .select("id, name, overall, tier, offense, defense, rebound, playmaking, like_count, created_at, is_sandbox")
       .or(orFilter)
       .order("created_at", { ascending: false })
       .limit(50);
+
+    if (fullRes.error && (fullRes.error as { code?: string }).code === "42703") {
+      // Column not found (migration pending) — fall back to safe column set
+      const fallbackRes = await supabase
+        .from("public_teams")
+        .select("id, name, overall, tier, offense, defense, rebound, playmaking, like_count, created_at")
+        .or(orFilter)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      teams = fallbackRes.data as TeamRow[] | null;
+      teamsErr = fallbackRes.error;
+    } else {
+      teams = fullRes.data as TeamRow[] | null;
+      teamsErr = fullRes.error;
+    }
+
     if (teamsErr) throw teamsErr;
 
     const entryFilter = [
