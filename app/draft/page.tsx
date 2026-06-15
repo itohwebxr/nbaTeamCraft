@@ -36,8 +36,11 @@ export default function DraftPage() {
     const filled = s.roster.length;
     return players.some((player) => {
       if (s.isPlayerDrafted(player.nba_player_id)) return false;
-      if (s.getDraftablePositions(player).length === 0) return false;
+      // Sandbox: any not-yet-picked player qualifies. Slots may be full right
+      // after a remix — the user frees one by removing a pick — so we don't
+      // gate on vacant positions here (that would skip every team and error).
       if (isSandbox) return true;
+      if (s.getDraftablePositions(player).length === 0) return false;
       const displaced = s.roster.find((e) => e.playerSeason.team_id === player.team_id);
       const refund = displaced?.playerSeason.cost ?? 0;
       const budgetAfter = remaining - player.cost + refund;
