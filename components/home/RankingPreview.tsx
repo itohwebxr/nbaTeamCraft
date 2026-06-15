@@ -9,6 +9,7 @@ async function getTopTeams(): Promise<PublicTeam[]> {
     const { data } = await supabase
       .from("public_teams")
       .select("*")
+      .neq("created_by_browser_id", "__legend__")
       .order("overall", { ascending: false })
       .limit(5);
     return (data ?? []) as PublicTeam[];
