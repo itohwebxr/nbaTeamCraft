@@ -101,6 +101,12 @@ export default function MyPage() {
     router.push("/draft");
   };
 
+  const startRosterBuilder = () => {
+    resetDraft();
+    setMode("sandbox");
+    router.push("/draft");
+  };
+
   const handleSignOut = async () => {
     setSigningOut(true);
     await createAuthClient().auth.signOut();
@@ -133,8 +139,11 @@ export default function MyPage() {
           <Link href="/">
             <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
-          <button onClick={startNewDraft} className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
-            Draft →
+          <button
+            onClick={activeTab === "builds" ? startRosterBuilder : startNewDraft}
+            className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors"
+          >
+            {activeTab === "builds" ? "Roster Builder →" : "Dream Draft →"}
           </button>
         </div>
       </header>
