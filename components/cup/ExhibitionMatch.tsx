@@ -20,6 +20,8 @@ interface Props {
   sessionRecord: { wins: number; losses: number };
   onRematch: () => void;
   onClose: () => void;
+  /** When true, hides the "Play Again" button and shows cup-appropriate messaging */
+  cupMode?: boolean;
 }
 
 type Phase = "vs" | "playing" | "final";
@@ -81,6 +83,7 @@ export default function ExhibitionMatch({
   sessionRecord,
   onRematch,
   onClose,
+  cupMode,
 }: Props) {
   const [phase, setPhase] = useState<Phase>("vs");
   // Number of quarters currently revealed during the "playing" phase
@@ -229,11 +232,14 @@ export default function ExhibitionMatch({
                   <p className="text-xs text-zinc-500 mt-1">After overtime</p>
                 )}
                 <p className="text-xs text-zinc-500 mt-2">
-                  Exhibition record:{" "}
+                  {cupMode ? "Cup record" : "Exhibition record"}:{" "}
                   <span className="text-white font-bold">
                     {sessionRecord.wins}W – {sessionRecord.losses}L
                   </span>
                 </p>
+                {cupMode && (
+                  <p className="text-xs text-zinc-500 mt-1">Come back tomorrow for your next match!</p>
+                )}
               </div>
 
               {/* Box score */}
@@ -276,18 +282,29 @@ export default function ExhibitionMatch({
 
               {/* Actions */}
               <div className="flex gap-3">
-                <button
-                  onClick={onClose}
-                  className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
-                >
-                  Back
-                </button>
-                <button
-                  onClick={onRematch}
-                  className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
-                >
-                  ⚔️ Play Again
-                </button>
+                {cupMode ? (
+                  <button
+                    onClick={onClose}
+                    className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+                  >
+                    Done
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={onClose}
+                      className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+                    >
+                      Back
+                    </button>
+                    <button
+                      onClick={onRematch}
+                      className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+                    >
+                      ⚔️ Play Again
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}

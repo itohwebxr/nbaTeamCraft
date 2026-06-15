@@ -277,6 +277,7 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
           sessionRecord={{ wins: entry.wins, losses: entry.losses }}
           onRematch={() => setLiveMatch(null)}
           onClose={() => setLiveMatch(null)}
+          cupMode
         />
       )}
     </>

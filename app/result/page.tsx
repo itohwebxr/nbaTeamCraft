@@ -81,6 +81,12 @@ export default function ResultPage() {
   // Cup state
   const [cupEntryId, setCupEntryId] = useState<string | null>(null);
   const [isEnteringCup, setIsEnteringCup] = useState(false);
+  // Auto-played first cup match (shown as an overlay right after entering)
+  const [cupMatch, setCupMatch] = useState<{
+    opponent: { id: string; name: string; overall: number; tier: string; isLegend?: boolean };
+    result: GameResult;
+    record: { wins: number; losses: number };
+  } | null>(null);
   // Wait for zustand persist rehydration before judging roster emptiness —
   // on a full page load (e.g. returning from OAuth) roster is [] until then.
   const [hydrated, setHydrated] = useState(useDraftStore.persist?.hasHydrated?.() ?? false);
@@ -270,9 +276,13 @@ export default function ResultPage() {
     return id;
   };
 
-  const handleEnterRankings = async (name: string) => {
-    if (isPublishing || !evaluation) return;
-    setIsPublishing(true);
+  // Publishes the team to the rankings. Returns the new public_team id (and rank)
+  // on success, or null on failure. Sets the related state as a side effect so
+  // callers can chain the cup entry without waiting on React state updates.
+  const publishToRankings = async (
+    name: string
+  ): Promise<{ id: string; rank: PublicTeamRank } | null> => {
+    if (!evaluation) return null;
 
     // Ensure share URL exists first
     let resolvedShareId: string | null = null;
@@ -310,10 +320,7 @@ export default function ResultPage() {
       // continue without share_id — will fail validation
     }
 
-    if (!resolvedShareId) {
-      setIsPublishing(false);
-      return;
-    }
+    if (!resolvedShareId) return null;
 
     try {
       const res = await fetch("/api/public-teams", {
@@ -338,13 +345,86 @@ export default function ResultPage() {
           tier: evaluation.tier,
           rank_overall: json.rank.overall,
         });
+        return { id: json.id, rank: json.rank };
       }
     } catch {
       // silently fail — user can retry
+    }
+    return null;
+  };
+
+  // Single-action onboarding: publish to rankings → enter the Cup → auto-play
+  // match 1, then surface the live match animation. The ranking listing is a
+  // side effect surfaced afterwards in the published panel.
+  const handleEnterCupFlow = async (name: string) => {
+    if (isPublishing || !evaluation) return;
+    setIsPublishing(true);
+    try {
+      const published = await publishToRankings(name);
+      if (!published) return;
+
+      // Enter the Cup for this freshly published team
+      let entryId: string | null = null;
+      let cupWeek = "";
+      try {
+        const res = await fetch("/api/cup/enter", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ publicTeamId: published.id, browserId: getBrowserId() }),
+        });
+        const json = await res.json();
+        if (json.entry?.id) {
+          entryId = json.entry.id;
+          cupWeek = json.cupWeek ?? json.entry.cup_week ?? "";
+          setCupEntryId(json.entry.id);
+          gtm.cupEnter({ team_overall: evaluation.overall, tier: evaluation.tier, cup_week: cupWeek });
+        }
+      } catch {
+        // cup entry failed — published panel still offers a manual retry button
+      }
+
+      // Auto-play match 1
+      if (entryId) {
+        try {
+          const res = await fetch("/api/cup/daily-match", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ entryId, browserId: getBrowserId() }),
+          });
+          const json = await res.json();
+          if (json.result) {
+            const record = json.updatedEntry ?? { wins: json.result.won ? 1 : 0, losses: json.result.won ? 0 : 1 };
+            gtm.cupDailyMatch({
+              result: json.result.won ? "win" : "loss",
+              score_for: json.result.userScore,
+              score_against: json.result.oppScore,
+              opponent_name: json.opponent.name,
+              is_legend_opponent: !!json.opponent.isLegend,
+              match_number: 1,
+              cup_week: cupWeek,
+            });
+            setCupMatch({
+              opponent: json.opponent,
+              result: {
+                quarters: json.result.quarters,
+                homeTotal: json.result.userScore,
+                awayTotal: json.result.oppScore,
+                winner: json.result.won ? "home" : "away",
+                overtime: json.result.overtime ?? false,
+                homeBox: json.result.userBox,
+                awayBox: json.result.oppBox,
+              },
+              record,
+            });
+          }
+        } catch {
+          // match failed — CupStatus in the published panel lets them play manually
+        }
+      }
     } finally {
       setIsPublishing(false);
       setShowEnterModal(false);
-      // Scroll to the top so the freshly published ranking panel is in view
+      // Scroll to top so the published panel is in view once the overlay closes
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -515,12 +595,12 @@ export default function ResultPage() {
             <button
               onClick={() => setShowEnterModal(true)}
               disabled={!evaluation || loading}
-              className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-base transition-colors"
+              className="w-full py-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-base transition-colors"
             >
-              🏆 Enter Rankings & the Cup
+              🏆 Enter the Cup
             </button>
             <p className="text-center text-xs text-zinc-600">
-              Register your team to compete in the weekly Cup tournament
+              Play your first match instantly · you'll also be added to the rankings
             </p>
           </div>
         )}
@@ -604,10 +684,23 @@ export default function ResultPage() {
           onClose={() => setMatch(null)}
         />
       )}
+      {cupMatch && evaluation && (
+        <ExhibitionMatch
+          userTeamName={teamName || "My Team"}
+          userOverall={evaluation.overall}
+          userTier={evaluation.tier}
+          opponent={cupMatch.opponent}
+          result={cupMatch.result}
+          sessionRecord={cupMatch.record}
+          onRematch={() => setCupMatch(null)}
+          onClose={() => setCupMatch(null)}
+          cupMode
+        />
+      )}
       {showEnterModal && (
         <EnterRankingsModal
           initialName={teamName}
-          onConfirm={handleEnterRankings}
+          onConfirm={handleEnterCupFlow}
           onCancel={() => setShowEnterModal(false)}
           isSubmitting={isPublishing}
         />
