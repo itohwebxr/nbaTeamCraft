@@ -184,6 +184,16 @@ export default function DraftPage() {
   const filledSlots = roster.length;
   const draftedFromCurrentTeam = currentPlayers.some((p) => store.isPlayerDrafted(p.nba_player_id));
 
+  const goToResults = () => {
+    gtm.draftComplete({
+      used_budget: usedBudget,
+      remaining_budget: TOTAL_BUDGET - usedBudget,
+      teams_seen_count: store.appearedTeamIds.length,
+      mode: store.mode,
+    });
+    router.push("/result");
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       {/* Header */}
@@ -301,34 +311,52 @@ export default function DraftPage() {
             onRemove={(id) => store.removePlayer(id)}
           />
 
-          {filledSlots < TOTAL_ROSTER_SIZE && (
-            <button
-              onClick={fetchNextTeam}
-              disabled={!isSandbox && !draftedFromCurrentTeam}
-              className="w-full mt-4 py-3 rounded-xl bg-orange-500 hover:bg-orange-400
-                disabled:opacity-40 disabled:cursor-not-allowed
-                text-white font-bold text-sm transition-colors"
-            >
-              {isSandbox ? "Change Team →" : "Next Pick →"}
-            </button>
-          )}
-          {filledSlots === TOTAL_ROSTER_SIZE && (
-            <button
-              onClick={() => {
-                gtm.draftComplete({
-                  used_budget: usedBudget,
-                  remaining_budget: TOTAL_BUDGET - usedBudget,
-                  teams_seen_count: store.appearedTeamIds.length,
-                  mode: store.mode,
-                });
-                router.push("/result");
-              }}
-              className="pulse-glow w-full mt-4 py-3.5 rounded-xl font-display font-black text-lg tracking-widest uppercase
-                bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400
-                text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              🏆 View Results
-            </button>
+          {isSandbox ? (
+            // Roster Builder: team switching is done via the filter bar above,
+            // so no "Change Team" button. A single completion button is always
+            // present and unlocks once the roster is full.
+            filledSlots === TOTAL_ROSTER_SIZE ? (
+              <button
+                onClick={goToResults}
+                className="pulse-glow w-full mt-4 py-3.5 rounded-xl font-display font-black text-lg tracking-widest uppercase
+                  bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400
+                  text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                🏆 View Results
+              </button>
+            ) : (
+              <button
+                disabled
+                className="w-full mt-4 py-3.5 rounded-xl font-display font-bold text-sm tracking-wide uppercase
+                  bg-zinc-800 text-zinc-500 cursor-not-allowed"
+              >
+                Pick {TOTAL_ROSTER_SIZE - filledSlots} more to finish
+              </button>
+            )
+          ) : (
+            <>
+              {filledSlots < TOTAL_ROSTER_SIZE && (
+                <button
+                  onClick={fetchNextTeam}
+                  disabled={!draftedFromCurrentTeam}
+                  className="w-full mt-4 py-3 rounded-xl bg-orange-500 hover:bg-orange-400
+                    disabled:opacity-40 disabled:cursor-not-allowed
+                    text-white font-bold text-sm transition-colors"
+                >
+                  Next Pick →
+                </button>
+              )}
+              {filledSlots === TOTAL_ROSTER_SIZE && (
+                <button
+                  onClick={goToResults}
+                  className="pulse-glow w-full mt-4 py-3.5 rounded-xl font-display font-black text-lg tracking-widest uppercase
+                    bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400
+                    text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  🏆 View Results
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>
