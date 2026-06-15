@@ -112,34 +112,54 @@ export async function GET(req: NextRequest) {
     const sort = searchParams.get("sort") ?? "trending";
     const limit = Math.min(Number(searchParams.get("limit") ?? 20), 50);
     const cursor = searchParams.get("cursor");
+    // builder=1 → Roster Builder gallery (is_sandbox = true), always latest-first
+    const builder = searchParams.get("builder") === "1";
 
     const supabase = createServerClient();
-    let query = supabase.from("public_teams").select("*")
-      .neq("created_by_browser_id", "__legend__")
-      .eq("is_sandbox", false);
 
-    if (sort === "trending") {
-      // Computed in-query: (like_count + 1) / POWER(days_since_created + 2, 0.8)
-      // Supabase doesn't support ORDER BY computed expressions directly,
-      // so we fetch recent records and sort client-side for MVP
-      query = query.order("created_at", { ascending: false }).limit(200);
-    } else if (sort === "latest") {
-      if (cursor) query = query.lt("created_at", cursor);
-      query = query.order("created_at", { ascending: false }).limit(limit);
-    } else {
-      const col = ["overall", "offense", "defense", "rebound", "playmaking"].includes(sort)
-        ? sort
-        : "overall";
-      if (cursor) query = query.lt(col, Number(cursor));
-      query = query.order(col, { ascending: false }).limit(limit);
+    // Build the query; `applySandbox` is skipped on the retry path when the
+    // is_sandbox column doesn't exist yet (migration 005 pending).
+    const buildQuery = (applySandbox: boolean) => {
+      let query = supabase.from("public_teams").select("*")
+        .neq("created_by_browser_id", "__legend__");
+      if (applySandbox) query = query.eq("is_sandbox", builder);
+
+      if (builder) {
+        if (cursor) query = query.lt("created_at", cursor);
+        query = query.order("created_at", { ascending: false }).limit(limit);
+      } else if (sort === "trending") {
+        // Computed in-query: (like_count + 1) / POWER(days_since_created + 2, 0.8)
+        // Supabase doesn't support ORDER BY computed expressions directly,
+        // so we fetch recent records and sort client-side for MVP
+        query = query.order("created_at", { ascending: false }).limit(200);
+      } else if (sort === "latest") {
+        if (cursor) query = query.lt("created_at", cursor);
+        query = query.order("created_at", { ascending: false }).limit(limit);
+      } else {
+        const col = ["overall", "offense", "defense", "rebound", "playmaking"].includes(sort)
+          ? sort
+          : "overall";
+        if (cursor) query = query.lt(col, Number(cursor));
+        query = query.order(col, { ascending: false }).limit(limit);
+      }
+      return query;
+    };
+
+    let { data, error } = await buildQuery(true);
+    if (error && (error as { code?: string }).code === "42703") {
+      // is_sandbox column missing — builder lists are empty, dream lists unfiltered
+      if (builder) {
+        data = [];
+        error = null;
+      } else {
+        ({ data, error } = await buildQuery(false));
+      }
     }
-
-    const { data, error } = await query;
     if (error) throw error;
 
     let teams = data ?? [];
 
-    if (sort === "trending") {
+    if (!builder && sort === "trending") {
       const now = Date.now();
       teams = teams
         .map((t) => {
@@ -150,12 +170,15 @@ export async function GET(req: NextRequest) {
         .slice(0, limit);
     }
 
-    const nextCursor =
-      sort !== "trending" && teams.length === limit
-        ? sort === "latest"
-          ? String(teams[teams.length - 1].created_at)
-          : String(teams[teams.length - 1][sort as keyof typeof teams[0]])
-        : null;
+    let nextCursor: string | null = null;
+    if (teams.length === limit) {
+      const last = teams[teams.length - 1];
+      if (builder || sort === "latest") {
+        nextCursor = String(last.created_at);
+      } else if (sort !== "trending") {
+        nextCursor = String(last[sort as keyof typeof last]);
+      }
+    }
 
     return NextResponse.json({ teams, nextCursor });
   } catch (e) {

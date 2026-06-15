@@ -10,17 +10,19 @@ const TIER_DOT: Record<string, string> = {
   D: "bg-zinc-600",
 };
 
-export default async function LatestTeams() {
-  const teams = await fetchHomeTeams({ kind: "dream", orderBy: "created_at", limit: 5 });
+// Latest Roster Builder (trade/FA scenario) rosters — the visible ② growth loop.
+// Hidden entirely until at least one build exists.
+export default async function LatestBuilderTeams() {
+  const teams = await fetchHomeTeams({ kind: "builder", orderBy: "created_at", limit: 10 });
   if (teams.length === 0) return null;
 
   return (
     <div className="w-full max-w-md mx-auto">
       <div className="flex items-center justify-between mb-3">
         <p className="font-display text-xs font-bold text-zinc-400 uppercase tracking-[0.2em]">
-          Latest Teams
+          🔧 Latest Builds
         </p>
-        <Link href="/ranking?tab=latest" className="text-xs text-orange-400 hover:text-orange-300 font-bold transition-colors">
+        <Link href="/builder" className="text-xs text-orange-400 hover:text-orange-300 font-bold transition-colors">
           View All →
         </Link>
       </div>
@@ -32,18 +34,13 @@ export default async function LatestTeams() {
             href={`/team/${team.id}`}
             className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/60 transition-colors border-b border-zinc-800/60 last:border-0"
           >
-            {/* Tier dot */}
             <span className={`w-2 h-2 rounded-full shrink-0 ${TIER_DOT[team.tier] ?? "bg-zinc-600"}`} />
-
-            {/* Name + players */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white truncate">{team.name}</p>
               <p className="text-xs text-zinc-600 truncate mt-0.5">
                 {team.roster_json.slice(0, 3).map((p) => p.name.split(" ").pop()).join(" · ")}
               </p>
             </div>
-
-            {/* Overall */}
             <div className="flex items-center gap-1.5 shrink-0">
               <span className={`font-display text-base font-black ${overallColor(team.overall)}`}>
                 {team.overall}

@@ -1,11 +1,11 @@
 import Image from "next/image";
 import { Suspense } from "react";
-import Link from "next/link";
 
 // Latest teams / ranking preview must refresh — regenerate at most every 60s
 export const revalidate = 60;
 import RankingPreview from "@/components/home/RankingPreview";
 import LatestTeams from "@/components/home/LatestTeams";
+import LatestBuilderTeams from "@/components/home/LatestBuilderTeams";
 import TeamCraftCupTeaser from "@/components/home/TeamCraftCupTeaser";
 import ModeSelector from "@/components/home/ModeSelector";
 import HeaderAuth from "@/components/auth/HeaderAuth";
@@ -58,9 +58,9 @@ export default function Home() {
           </svg>
         </div>
 
-      {/* ── Hero (single viewport, centered) ── */}
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 relative">
-        <div className="max-w-md w-full text-center space-y-8 relative z-10">
+      {/* ── Hero + Section ①: Roster Builder (front door) ── */}
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 relative py-16">
+        <div className="max-w-md w-full text-center space-y-7 relative z-10">
 
           {/* Logo */}
           <div className="fade-up fade-up-1 relative">
@@ -85,36 +85,18 @@ export default function Home() {
             </p>
           </div>
 
-          {/* How to Play — 3-step condensed */}
-          <div className="fade-up fade-up-2 bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 text-left backdrop-blur-sm">
-            <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.2em] mb-4">How to Play</p>
-            <div className="flex items-start gap-0">
-              {[
-                { step: "Draft", icon: "🏀", desc: "Pick 6 players from any historic NBA roster within a 17-pt budget" },
-                { step: "Battle", icon: "⚔️", desc: "Play exhibition matches or enter the weekly Cup — quarter scores & full box score" },
-                { step: "Climb", icon: "🏆", desc: "Earn your spot on the leaderboard. 7 matches over 7 days decides the champion" },
-              ].map((item, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center text-center px-2">
-                  <span className="text-2xl mb-2">{item.icon}</span>
-                  <p className="font-display font-black text-white text-sm mb-1">{item.step}</p>
-                  <p className="text-xs text-zinc-500 leading-relaxed">{item.desc}</p>
-                  {i < 2 && (
-                    <span className="absolute" style={{ display: "none" }} />
-                  )}
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center gap-2 mt-4 pt-3 border-t border-zinc-800">
-              <div className="flex-1 h-px bg-orange-500/30 rounded" />
-              <span className="text-xs text-zinc-600 font-display tracking-widest">DRAFT → BATTLE → CLIMB</span>
-              <div className="flex-1 h-px bg-orange-500/30 rounded" />
-            </div>
+          {/* Roster Builder CTA */}
+          <div className="fade-up fade-up-2 space-y-2.5">
+            <ModeSelector variant="builder" />
+            <p className="text-xs text-zinc-500 leading-relaxed">
+              Test any trade or FA rumor — build the roster &amp; see how strong it is
+            </p>
           </div>
 
-          {/* CTA */}
-          <div className="fade-up fade-up-3">
-            <ModeSelector />
-          </div>
+          {/* Latest Builds — visible proof of the trade-scenario loop */}
+          <Suspense fallback={null}>
+            <LatestBuilderTeams />
+          </Suspense>
 
           <p className="fade-up fade-up-4 text-xs text-zinc-600 font-display tracking-widest">
             DATA: NBA SEASONS 2001–2026
@@ -122,18 +104,55 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Sections below hero ── */}
-      <div className="relative z-10 flex flex-col items-center px-4 py-10 gap-10">
+      {/* ── Section ②: Dream Draft × Cup (depth / retention) ── */}
+      <div className="relative z-10 flex flex-col items-center px-4 py-10 gap-8">
 
-        {/* TeamCraft Cup — above the fold on first scroll */}
+        {/* Section divider */}
+        <div className="w-full max-w-md mx-auto flex items-center gap-3">
+          <div className="flex-1 h-px bg-zinc-800" />
+          <span className="font-display text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] whitespace-nowrap">
+            Dream Draft × Cup
+          </span>
+          <div className="flex-1 h-px bg-zinc-800" />
+        </div>
+
+        {/* How to Play — explains the Dream Draft → Cup loop */}
+        <div className="w-full max-w-md mx-auto bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 text-left backdrop-blur-sm">
+          <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.2em] mb-4">How to Play</p>
+          <div className="flex items-start gap-0">
+            {[
+              { step: "Draft", icon: "🏀", desc: "Pick 6 players from any historic NBA roster within a 17-pt budget" },
+              { step: "Battle", icon: "⚔️", desc: "Play exhibition matches or enter the weekly Cup — quarter scores & full box score" },
+              { step: "Climb", icon: "🏆", desc: "Earn your spot on the leaderboard. 7 matches over 7 days decides the champion" },
+            ].map((item, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center text-center px-2">
+                <span className="text-2xl mb-2">{item.icon}</span>
+                <p className="font-display font-black text-white text-sm mb-1">{item.step}</p>
+                <p className="text-xs text-zinc-500 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 mt-4 pt-3 border-t border-zinc-800">
+            <div className="flex-1 h-px bg-orange-500/30 rounded" />
+            <span className="text-xs text-zinc-600 font-display tracking-widest">DRAFT → BATTLE → CLIMB</span>
+            <div className="flex-1 h-px bg-orange-500/30 rounded" />
+          </div>
+        </div>
+
+        {/* Dream Draft CTA */}
+        <div className="w-full max-w-md mx-auto">
+          <ModeSelector variant="draft" />
+        </div>
+
+        {/* TeamCraft Cup — this week's standings */}
         <TeamCraftCupTeaser />
 
-        {/* Ranking Preview */}
+        {/* Overall Ranking */}
         <Suspense fallback={null}>
           <RankingPreview />
         </Suspense>
 
-        {/* Latest Teams */}
+        {/* Latest Dream Draft Teams */}
         <Suspense fallback={null}>
           <LatestTeams />
         </Suspense>

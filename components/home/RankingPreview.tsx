@@ -1,27 +1,11 @@
 import Link from "next/link";
-import { createServerClient } from "@/lib/supabase";
 import { overallColor } from "@/lib/overallColor";
-import { PublicTeam } from "@/types";
-
-async function getTopTeams(): Promise<PublicTeam[]> {
-  try {
-    const supabase = createServerClient();
-    const { data } = await supabase
-      .from("public_teams")
-      .select("*")
-      .neq("created_by_browser_id", "__legend__")
-      .order("overall", { ascending: false })
-      .limit(5);
-    return (data ?? []) as PublicTeam[];
-  } catch {
-    return [];
-  }
-}
+import { fetchHomeTeams } from "@/lib/homeTeams";
 
 const RANK_MEDAL = ["🥇", "🥈", "🥉", "#4", "#5"];
 
 export default async function RankingPreview() {
-  const teams = await getTopTeams();
+  const teams = await fetchHomeTeams({ kind: "dream", orderBy: "overall", limit: 5 });
 
   if (teams.length === 0) return null;
 
