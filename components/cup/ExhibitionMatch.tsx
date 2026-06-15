@@ -71,7 +71,8 @@ function Confetti() {
       />
     );
   });
-  return <div className="pointer-events-none fixed inset-0 z-10 overflow-hidden">{pieces}</div>;
+  // z-[60] sits above the z-50 overlay so confetti is always visible
+  return <div className="pointer-events-none fixed inset-0 z-[60] overflow-hidden">{pieces}</div>;
 }
 
 function BoxScoreTable({ lines }: { lines: BoxScoreLine[] }) {
@@ -266,18 +267,7 @@ export default function ExhibitionMatch({
           {phase === "final" && (
             <div className="fade-up">
               {/* Result banner */}
-              <div className="relative text-center mb-5 py-3">
-                {/* Radial burst + screen flash behind the headline on a win */}
-                {won && (
-                  <>
-                    <span
-                      aria-hidden
-                      className="burst-glow pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full"
-                      style={{ background: "radial-gradient(circle, rgba(249,115,22,0.55) 0%, rgba(249,115,22,0.12) 45%, transparent 70%)" }}
-                    />
-                    <span aria-hidden className="screen-flash pointer-events-none fixed inset-0 bg-orange-300/40" />
-                  </>
-                )}
+              <div className={`relative text-center mb-5 py-5 rounded-2xl ${won ? "bg-orange-500/10 border border-orange-500/20" : "bg-zinc-900 border border-zinc-800"}`}>
                 {headline.tag && (
                   <p
                     className={`relative win-reveal font-display text-xs font-black uppercase tracking-[0.35em] mb-1 ${

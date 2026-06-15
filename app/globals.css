@@ -217,26 +217,6 @@ body {
   animation: win-glow 1.8s ease-in-out infinite;
 }
 
-/* Radial burst behind the headline on win */
-@keyframes burst-glow {
-  0%   { transform: scale(0.3); opacity: 0; }
-  40%  { transform: scale(1.05); opacity: 0.9; }
-  100% { transform: scale(1.4); opacity: 0; }
-}
-.burst-glow {
-  animation: burst-glow 0.9s ease-out forwards;
-}
-
-/* One-shot screen flash at the moment of reveal */
-@keyframes screen-flash {
-  0%   { opacity: 0; }
-  12%  { opacity: 0.55; }
-  100% { opacity: 0; }
-}
-.screen-flash {
-  animation: screen-flash 0.6s ease-out forwards;
-}
-
 /* Defeat headline shakes briefly */
 @keyframes defeat-shake {
   0%, 100% { transform: translateX(0); }
@@ -277,7 +257,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .win-reveal, .win-glow, .burst-glow, .screen-flash, .defeat-shake, .confetti-piece, .budget-tick {
+  .win-reveal, .win-glow, .defeat-shake, .confetti-piece, .budget-tick {
     animation: none;
   }
 }
