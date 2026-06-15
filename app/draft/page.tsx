@@ -101,8 +101,23 @@ export default function DraftPage() {
     }
   }, [store.currentTeam]);
 
+  // In sandbox, auto-pick the slot (no modal): prefer the player's primary
+  // natural position, then any natural position, then the first vacant slot.
+  const pickSandboxPosition = (player: PlayerSeason, positions: Position[]): Position => {
+    const primary =
+      player.positions.find((p) => p.is_primary)?.position ?? player.positions[0]?.position;
+    if (primary && positions.includes(primary as Position)) return primary as Position;
+    const natural = player.positions
+      .map((p) => p.position as Position)
+      .find((p) => positions.includes(p));
+    return natural ?? positions[0];
+  };
+
   const handleDraftAttempt = (player: PlayerSeason, positions: Position[]) => {
-    if (positions.length === 1) {
+    if (store.mode === "sandbox") {
+      // Multi-select bulk fill — commit straight to an auto-assigned slot
+      commitDraft(player, pickSandboxPosition(player, positions));
+    } else if (positions.length === 1) {
       commitDraft(player, positions[0]);
     } else {
       setPendingDraft({ player, positions });
@@ -227,7 +242,17 @@ export default function DraftPage() {
                       isDrafted={isDrafted}
                       isReplaceable={isReplaceable}
                       budgetOk={budgetOk}
+                      isSandbox={isSandbox}
                       onDraft={handleDraftAttempt}
+                      onRemove={(p) => {
+                        gtm.draftRemovePlayer({
+                          player_name: p.name,
+                          player_overall: p.overall,
+                          roster_size: store.roster.length - 1,
+                          mode: store.mode,
+                        });
+                        store.removePlayer(p.nba_player_id);
+                      }}
                       onBudgetBlock={(p) => gtm.budgetBlock({
                         player_overall: p.overall,
                         player_cost: p.cost,
@@ -245,7 +270,14 @@ export default function DraftPage() {
         {/* Right: My Roster */}
         <div className="lg:w-64 shrink-0 order-1 lg:order-2">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest">My Team</h3>
+            <h3 className="text-sm font-semibold text-zinc-400 uppercase tracking-widest">
+              My Team
+              {isSandbox && (
+                <span className="ml-2 text-orange-400 font-bold normal-case tracking-normal">
+                  {filledSlots}/{TOTAL_ROSTER_SIZE} selected
+                </span>
+              )}
+            </h3>
             <button
               onClick={() => setShowResetModal(true)}
               className="text-xs text-zinc-600 hover:text-red-400 transition-colors"
@@ -253,6 +285,11 @@ export default function DraftPage() {
               Reset Draft
             </button>
           </div>
+          {isSandbox && (
+            <p className="text-xs text-zinc-600 mb-2">
+              Tap players to add or remove — pick multiple from one team, then switch teams above.
+            </p>
+          )}
           <DraggableRoster
             slots={[...STARTER_SLOTS, ...BENCH_SLOTS]}
             roster={roster}
@@ -261,17 +298,18 @@ export default function DraftPage() {
             totalSlots={TOTAL_ROSTER_SIZE}
             isSandbox={isSandbox}
             onSwap={(a, b) => store.swapRosterSlots(a, b)}
+            onRemove={(id) => store.removePlayer(id)}
           />
 
           {filledSlots < TOTAL_ROSTER_SIZE && (
             <button
               onClick={fetchNextTeam}
-              disabled={!draftedFromCurrentTeam}
+              disabled={!isSandbox && !draftedFromCurrentTeam}
               className="w-full mt-4 py-3 rounded-xl bg-orange-500 hover:bg-orange-400
                 disabled:opacity-40 disabled:cursor-not-allowed
                 text-white font-bold text-sm transition-colors"
             >
-              Next Pick →
+              {isSandbox ? "Change Team →" : "Next Pick →"}
             </button>
           )}
           {filledSlots === TOTAL_ROSTER_SIZE && (

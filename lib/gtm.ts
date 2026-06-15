@@ -26,6 +26,13 @@ export const gtm = {
     mode: string;
   }) => push({ event: "draft_replace", ...params }),
 
+  draftRemovePlayer: (params: {
+    player_name: string;
+    player_overall: number;
+    roster_size: number;
+    mode: string;
+  }) => push({ event: "draft_remove_player", ...params }),
+
   nextTeam: (teams_seen_count: number) =>
     push({ event: "next_team", teams_seen_count }),
 
