@@ -105,6 +105,7 @@ export interface PublicTeam {
   is_sandbox?: boolean;
   user_id?: string | null;
   description?: string | null;
+  comment_count?: number;
 }
 
 export interface TeamCreator {

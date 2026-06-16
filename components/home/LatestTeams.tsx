@@ -43,12 +43,19 @@ export default async function LatestTeams() {
               </p>
             </div>
 
-            {/* Overall */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className={`font-display text-base font-black ${overallColor(team.overall)}`}>
-                {team.overall}
-              </span>
-              <span className="font-display text-xs text-zinc-600">{team.tier}</span>
+            {/* Comment count + Overall */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              {(team.comment_count ?? 0) > 0 && (
+                <span className="text-xs text-zinc-500 flex items-center gap-0.5">
+                  💬 {team.comment_count}
+                </span>
+              )}
+              <div className="flex items-center gap-1.5">
+                <span className={`font-display text-base font-black ${overallColor(team.overall)}`}>
+                  {team.overall}
+                </span>
+                <span className="font-display text-xs text-zinc-600">{team.tier}</span>
+              </div>
             </div>
           </Link>
         ))}

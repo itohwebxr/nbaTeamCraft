@@ -21,6 +21,7 @@ type MyTeam = {
   like_count: number;
   created_at: string;
   is_sandbox?: boolean;
+  comment_count?: number;
 };
 
 type CupHistoryRow = {
@@ -274,6 +275,9 @@ export default function MyPage() {
                               <span className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}>▾</span>
                             </button>
                           )}
+                          {(t.comment_count ?? 0) > 0 && (
+                            <span className="text-xs text-zinc-600 shrink-0">💬 {t.comment_count}</span>
+                          )}
                           <span className="text-xs text-zinc-600 shrink-0">❤️ {t.like_count}</span>
                           <button
                             onClick={() => setConfirmDeleteId(t.id)}
@@ -323,6 +327,9 @@ export default function MyPage() {
                       <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
                       <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
                     </Link>
+                    {(t.comment_count ?? 0) > 0 && (
+                      <span className="text-xs text-zinc-600 shrink-0">💬 {t.comment_count}</span>
+                    )}
                     <button
                       onClick={() => setConfirmDeleteId(t.id)}
                       className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"

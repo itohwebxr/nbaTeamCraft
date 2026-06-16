@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     type TeamRow = {
       id: string; name: string; overall: number; tier: string;
       offense: number; defense: number; rebound: number; playmaking: number;
-      like_count: number; created_at: string; is_sandbox?: boolean;
+      like_count: number; created_at: string; is_sandbox?: boolean; comment_count?: number;
     };
 
     // Try to include is_sandbox; fall back if migration hasn't been applied yet
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
 
     const fullRes = await supabase
       .from("public_teams")
-      .select("id, name, overall, tier, offense, defense, rebound, playmaking, like_count, created_at, is_sandbox")
+      .select("id, name, overall, tier, offense, defense, rebound, playmaking, like_count, created_at, is_sandbox, comment_count")
       .or(orFilter)
       .order("created_at", { ascending: false })
       .limit(50);
