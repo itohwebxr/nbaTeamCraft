@@ -277,6 +277,8 @@ export default async function TeamDetailPage({
           tier={team.tier}
           likeCount={team.like_count}
           isSandbox={!!team.is_sandbox}
+          roster={team.roster_json}
+          shareId={team.share_id}
         />
       </div>
     </div>
