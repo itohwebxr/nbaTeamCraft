@@ -174,8 +174,8 @@ export default function ResultPage() {
       .map((e) => `${slotLabel(e.slot)} : ${formatName(e.playerSeason.name)}`)
       .join("\n");
     const text = evaluation
-      ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\n#NBATeamCraft\n`
-      : `🏀 ${label}\n${rosterLines}\n#NBATeamCraft\n`;
+      ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\n#NBATeamCraft #NBA @nbaTeamCraft\n`
+      : `🏀 ${label}\n${rosterLines}\n#NBATeamCraft #NBA @nbaTeamCraft\n`;
 
     if (evaluation) {
       gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier, mode });
@@ -446,7 +446,7 @@ export default function ResultPage() {
   const handleShareRanking = () => {
     if (!evaluation || !publishedRank) return;
     const label = teamName || "My NBA Team";
-    const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\n#NBATeamCraft\n`;
+    const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\n#NBATeamCraft #NBA @nbaTeamCraft\n`;
     const url = withShareUtm(sharePageUrl ?? `${window.location.origin}/`, { handle: user?.xHandle, campaign: "ranking_share" });
     gtm.shareRanking({ team_name: label, overall: evaluation.overall, rank_overall: publishedRank.overall });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
