@@ -162,4 +162,13 @@ export const gtm = {
     overall: number;
     tier: string;
   }) => push({ event: "remix_team", ...params }),
+
+  postComment: (params: {
+    team_id: string;
+    logged_in: boolean;
+  }) => push({ event: "post_comment", ...params }),
+
+  likeComment: (params: {
+    team_id: string;
+  }) => push({ event: "like_comment", ...params }),
 };

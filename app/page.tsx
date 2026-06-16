@@ -73,7 +73,7 @@ export default function Home() {
                 md:bg-[radial-gradient(ellipse_at_center,rgba(249,115,22,0.18)_0%,rgba(249,115,22,0.06)_45%,transparent_70%)]"
             />
             <Image
-              src="/logo.png"
+              src="/logo.png?v=2"
               alt="NBA TeamCraft"
               width={280}
               height={94}

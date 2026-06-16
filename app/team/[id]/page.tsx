@@ -11,6 +11,7 @@ import RadarChart from "@/components/result/RadarChart";
 import HeaderAuth from "@/components/auth/HeaderAuth";
 import CupPlayPanel from "@/components/cup/CupPlayPanel";
 import TeamActions from "@/components/team/TeamActions";
+import TeamComments from "@/components/team/TeamComments";
 
 export const dynamic = "force-dynamic";
 
@@ -174,7 +175,7 @@ export default async function TeamDetailPage({
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <Link href="/">
-            <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
+            <Image src="/logo.png?v=2" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/ranking" className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">
@@ -364,6 +365,9 @@ export default async function TeamDetailPage({
           isSandbox={!!team.is_sandbox}
           roster={team.roster_json}
         />
+
+        {/* Discussion */}
+        <TeamComments teamId={team.id} />
       </div>
     </div>
   );

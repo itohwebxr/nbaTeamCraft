@@ -19,7 +19,7 @@ export default async function RankingPage({
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <Link href="/">
-            <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
+            <Image src="/logo.png?v=2" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/cup" className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors">

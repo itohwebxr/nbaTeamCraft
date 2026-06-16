@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.ico",
-    apple: "/logo.png",
+    apple: "/logo.png?v=2",
   },
   openGraph: {
     title: "NBA TeamCraft",

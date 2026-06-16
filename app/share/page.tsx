@@ -87,7 +87,7 @@ export default async function SharePage({
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center px-4">
       <ClientRedirect />
       <header className="mb-8">
-        <Link href="/"><Image src="/logo.png" alt="NBA TeamCraft" height={40} width={75} className="object-contain" /></Link>
+        <Link href="/"><Image src="/logo.png?v=2" alt="NBA TeamCraft" height={40} width={75} className="object-contain" /></Link>
       </header>
 
       <div className="w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-5">
