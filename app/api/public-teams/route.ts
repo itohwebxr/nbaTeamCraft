@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
       roster,
       created_by_browser_id,
       user_id,
+      description,
       is_sandbox = false,
     }: {
       share_id?: string;
@@ -33,6 +34,7 @@ export async function POST(req: NextRequest) {
       roster: RosterEntry[];
       created_by_browser_id?: string;
       user_id?: string | null;
+      description?: string | null;
       is_sandbox?: boolean;
     } = body;
 
@@ -59,9 +61,11 @@ export async function POST(req: NextRequest) {
 
     const supabase = createServerClient();
 
-    // Include is_sandbox unless the column is missing (migration 005 pending),
-    // in which case we drop it so the save still succeeds.
+    // Include is_sandbox / description unless the column is missing (migration
+    // 005 / 006 pending), in which case we drop it so the save still succeeds.
     let includeSandbox = true;
+    let includeDescription = true;
+    const cleanDescription = typeof description === "string" ? description.trim().slice(0, 280) : "";
     const buildRow = (id: string) => {
       const row: Record<string, unknown> = {
         id,
@@ -79,6 +83,7 @@ export async function POST(req: NextRequest) {
         user_id: user_id ?? null,
       };
       if (includeSandbox) row.is_sandbox = is_sandbox;
+      if (includeDescription) row.description = cleanDescription || null;
       return row;
     };
 
@@ -88,6 +93,11 @@ export async function POST(req: NextRequest) {
       id = generateId();
       const { error } = await supabase.from("public_teams").insert(buildRow(id));
       if (!error) break;
+      if ((error as { code?: string }).code === "42703" && includeDescription) {
+        // description column doesn't exist yet — retry without it
+        includeDescription = false;
+        continue;
+      }
       if ((error as { code?: string }).code === "42703" && includeSandbox) {
         // is_sandbox column doesn't exist yet — retry without it
         includeSandbox = false;

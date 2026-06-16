@@ -103,6 +103,14 @@ export interface PublicTeam {
   created_by_browser_id: string | null;
   created_at: string;
   is_sandbox?: boolean;
+  user_id?: string | null;
+  description?: string | null;
+}
+
+export interface TeamCreator {
+  xHandle: string | null;
+  displayName: string | null;
+  avatarUrl: string | null;
 }
 
 export interface PublicTeamRank {
