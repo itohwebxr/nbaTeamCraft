@@ -70,3 +70,12 @@ $$;
 -- Server routes use the service-role key, so lock down direct client access.
 alter table team_comments enable row level security;
 alter table comment_likes enable row level security;
+
+-- The service_role bypasses RLS but still needs table-level privileges. Newly
+-- created tables don't automatically inherit grants, so grant them explicitly.
+grant select, insert, update, delete on team_comments to service_role;
+grant select, insert, update, delete on comment_likes to service_role;
+grant execute on function increment_comment_like(uuid) to service_role;
+grant execute on function decrement_comment_like(uuid) to service_role;
+grant execute on function increment_team_comment_count(text) to service_role;
+grant execute on function decrement_team_comment_count(text) to service_role;
