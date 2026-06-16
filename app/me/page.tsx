@@ -277,7 +277,7 @@ export default function MyPage() {
                           <span className="text-xs text-zinc-600 shrink-0">❤️ {t.like_count}</span>
                           <button
                             onClick={() => setConfirmDeleteId(t.id)}
-                            className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
+                            className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
                             title="Delete team"
                           >
                             ×
@@ -325,7 +325,7 @@ export default function MyPage() {
                     </Link>
                     <button
                       onClick={() => setConfirmDeleteId(t.id)}
-                      className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
+                      className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
                       title="Delete build"
                     >
                       ×
