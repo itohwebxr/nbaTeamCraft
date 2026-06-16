@@ -75,8 +75,9 @@ export async function GET(
 
     return NextResponse.json({ comments: result });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Failed to load comments" }, { status: 500 });
+    console.error("[comments GET]", e);
+    const detail = e instanceof Error ? e.message : JSON.stringify(e);
+    return NextResponse.json({ error: "Failed to load comments", detail }, { status: 500 });
   }
 }
 
@@ -159,7 +160,8 @@ export async function POST(
       },
     });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Failed to post comment" }, { status: 500 });
+    console.error("[comments POST]", e);
+    const detail = e instanceof Error ? e.message : JSON.stringify(e);
+    return NextResponse.json({ error: "Failed to post comment", detail }, { status: 500 });
   }
 }
