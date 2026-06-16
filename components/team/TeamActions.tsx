@@ -3,8 +3,19 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDraftStore } from "@/stores/draftStore";
+import { useAuth } from "@/hooks/useAuth";
 import { gtm } from "@/lib/gtm";
+import { withShareUtm } from "@/lib/utm";
+import { PublicTeamRosterItem } from "@/types";
 import LikeButton from "@/components/common/LikeButton";
+
+const SLOT_ORDER: Record<string, number> = { PG: 0, SG: 1, SF: 2, PF: 3, C: 4, BENCH1: 5 };
+const formatName = (name: string) => {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return name;
+  return `${parts[0][0]} ${parts[parts.length - 1]}`;
+};
+const slotLabel = (slot: string) => (slot === "BENCH1" ? "6TH" : slot);
 
 // Client-side actions for the team detail page.
 // - Share on X (orange, primary)
@@ -19,6 +30,8 @@ export default function TeamActions({
   tier,
   likeCount,
   isSandbox,
+  roster,
+  shareId,
 }: {
   teamId: string;
   teamName: string;
@@ -26,16 +39,27 @@ export default function TeamActions({
   tier: string;
   likeCount: number;
   isSandbox: boolean;
+  roster: PublicTeamRosterItem[];
+  shareId?: string | null;
 }) {
   const router = useRouter();
+  const { user } = useAuth();
   const { setMode, reset, loadRoster, sandboxConfig } = useDraftStore();
   const [remixing, setRemixing] = useState(false);
   const [remixError, setRemixError] = useState(false);
 
   const handleShare = () => {
     const label = teamName || "My NBA Team";
-    const text = `🏀 ${label}\nOverall: ${overall} (${tier} Tier)\n#NBATeamCraft\n`;
-    const url = `${window.location.origin}/team/${teamId}`;
+    const rosterLines = [...roster]
+      .sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9))
+      .map((e) => `${slotLabel(e.slot)} : ${formatName(e.name)}`)
+      .join("\n");
+    const text = `🏀 ${label}\nOverall: ${overall} (${tier} Tier)\n${rosterLines}\n#NBATeamCraft\n`;
+    // Prefer the share page (rich OGP with roster); fall back to the team page.
+    const baseUrl = shareId
+      ? `${window.location.origin}/share/${shareId}`
+      : `${window.location.origin}/team/${teamId}`;
+    const url = withShareUtm(baseUrl, { handle: user?.xHandle, campaign: "team_share" });
     gtm.shareTeam({ team_name: label, overall, tier, mode: isSandbox ? "sandbox" : "draft" });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
     window.open(tweetUrl, "_blank", "noopener");

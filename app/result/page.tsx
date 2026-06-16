@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { overallColor } from "@/lib/overallColor";
 import { useDraftStore } from "@/stores/draftStore";
@@ -16,6 +17,7 @@ import { gtm } from "@/lib/gtm";
 import HeaderAuth from "@/components/auth/HeaderAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { startXLogin } from "@/lib/xLogin";
+import { withShareUtm } from "@/lib/utm";
 
 function SlotLabel({ slot }: { slot: string }) {
   if (slot === "BENCH1") return "6TH";
@@ -195,7 +197,7 @@ export default function ResultPage() {
       setSharing(false);
     }
 
-    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(sharePageUrl)}`;
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(withShareUtm(sharePageUrl, { handle: user?.xHandle, campaign: "team_share" }))}`;
     if (shareWindow) {
       shareWindow.location.href = tweetUrl;
     } else {
@@ -445,7 +447,7 @@ export default function ResultPage() {
     if (!evaluation || !publishedRank) return;
     const label = teamName || "My NBA Team";
     const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\n#NBATeamCraft\n`;
-    const url = sharePageUrl ?? `${window.location.origin}/`;
+    const url = withShareUtm(sharePageUrl ?? `${window.location.origin}/`, { handle: user?.xHandle, campaign: "ranking_share" });
     gtm.shareRanking({ team_name: label, overall: evaluation.overall, rank_overall: publishedRank.overall });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
     window.open(tweetUrl, "_blank", "noopener");
@@ -536,7 +538,7 @@ export default function ResultPage() {
     <div className="min-h-screen bg-zinc-950 text-white">
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
+          <Link href="/"><Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" /></Link>
           <div className="flex items-center gap-3">
             {!isSandbox && (
               <span className="text-xs text-zinc-500">Budget used: {usedBudget}/{TOTAL_BUDGET}</span>
