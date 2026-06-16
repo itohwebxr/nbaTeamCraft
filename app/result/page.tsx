@@ -10,6 +10,7 @@ import { TeamEvaluation, STARTER_SLOTS, BENCH_SLOTS, TOTAL_BUDGET, PublicTeamRan
 import TeamStats from "@/components/result/TeamStats";
 import TeamNameInput from "@/components/result/TeamNameInput";
 import EnterRankingsModal from "@/components/result/EnterRankingsModal";
+import SaveBuildModal from "@/components/result/SaveBuildModal";
 import ExhibitionMatch from "@/components/cup/ExhibitionMatch";
 import CupStatus from "@/components/cup/CupStatus";
 import { GameResult } from "@/lib/simulateGame";
@@ -71,6 +72,7 @@ export default function ResultPage() {
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
   const [showEnterModal, setShowEnterModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishedId, setPublishedId] = useState<string | null>(null);
   const [publishedRank, setPublishedRank] = useState<PublicTeamRank | null>(null);
@@ -143,10 +145,13 @@ export default function ResultPage() {
     // only hand off to the X app when navigation starts from a user gesture.
     const shareWindow = window.open("about:blank", "_blank");
     const label = teamName || "My NBA Team";
+    const NAME_SUFFIXES_1 = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "v"]);
     const formatName = (name: string) => {
       const parts = name.trim().split(/\s+/);
       if (parts.length === 1) return name;
-      return `${parts[0][0]} ${parts[parts.length - 1]}`;
+      const suffix = NAME_SUFFIXES_1.has(parts[parts.length - 1].toLowerCase()) ? parts[parts.length - 1] : null;
+      const lastName = suffix ? parts[parts.length - 2] ?? parts[0] : parts[parts.length - 1];
+      return suffix ? `${parts[0][0]} ${lastName} ${suffix}` : `${parts[0][0]} ${lastName}`;
     };
     const slotKey = (slot: string) => slot === "BENCH1" ? "6th" : slot.toLowerCase();
     const slotLabel = (slot: string) => slot === "BENCH1" ? "6TH" : slot;
@@ -297,10 +302,13 @@ export default function ResultPage() {
     // Ensure share URL exists first
     let resolvedShareId: string | null = null;
     try {
+      const NAME_SUFFIXES_2 = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "v"]);
       const formatName = (n: string) => {
         const parts = n.trim().split(/\s+/);
         if (parts.length === 1) return n;
-        return `${parts[0][0]} ${parts[parts.length - 1]}`;
+        const suffix = NAME_SUFFIXES_2.has(parts[parts.length - 1].toLowerCase()) ? parts[parts.length - 1] : null;
+        const lastName = suffix ? parts[parts.length - 2] ?? parts[0] : parts[parts.length - 1];
+        return suffix ? `${parts[0][0]} ${lastName} ${suffix}` : `${parts[0][0]} ${lastName}`;
       };
       const slotKey = (slot: string) => slot === "BENCH1" ? "6th" : slot.toLowerCase();
       const shareData: Record<string, string> = { name };
@@ -453,17 +461,26 @@ export default function ResultPage() {
     window.open(tweetUrl, "_blank", "noopener");
   };
 
-  const handleSandboxSave = async () => {
+  const handleSandboxSave = async (nameOverride?: string) => {
     if (sandboxSaving || sandboxSaved || !evaluation) return;
     setSandboxSaving(true);
     setSandboxError(false);
-    const name = teamName || "My Roster";
+    const name = (nameOverride ?? teamName).trim();
+    if (!name) {
+      setSandboxSaving(false);
+      setShowSaveModal(true);
+      return;
+    }
     try {
       // public_teams.share_id references a shares row, so create the share
       // first (same as the normal publish flow) before saving the team.
+      const NAME_SUFFIXES_3 = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "v"]);
       const formatName = (n: string) => {
         const parts = n.trim().split(/\s+/);
-        return parts.length === 1 ? n : `${parts[0][0]} ${parts[parts.length - 1]}`;
+        if (parts.length === 1) return n;
+        const suffix = NAME_SUFFIXES_3.has(parts[parts.length - 1].toLowerCase()) ? parts[parts.length - 1] : null;
+        const lastName = suffix ? parts[parts.length - 2] ?? parts[0] : parts[parts.length - 1];
+        return suffix ? `${parts[0][0]} ${lastName} ${suffix}` : `${parts[0][0]} ${lastName}`;
       };
       const slotKey = (slot: string) => (slot === "BENCH1" ? "6th" : slot.toLowerCase());
       const shareData: Record<string, string> = {
@@ -736,7 +753,7 @@ export default function ResultPage() {
             ) : (
               <div className="space-y-2">
                 <button
-                  onClick={handleSandboxSave}
+                  onClick={() => handleSandboxSave()}
                   disabled={sandboxSaving || !evaluation || loading}
                   className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-sm transition-colors"
                 >
@@ -859,6 +876,18 @@ export default function ResultPage() {
           onConfirm={handleEnterCupFlow}
           onCancel={() => setShowEnterModal(false)}
           isSubmitting={isPublishing}
+        />
+      )}
+      {showSaveModal && (
+        <SaveBuildModal
+          initialName={teamName}
+          onConfirm={(name) => {
+            setTeamName(name);
+            setShowSaveModal(false);
+            handleSandboxSave(name);
+          }}
+          onCancel={() => setShowSaveModal(false)}
+          isSubmitting={sandboxSaving}
         />
       )}
     </div>

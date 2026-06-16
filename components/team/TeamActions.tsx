@@ -10,10 +10,13 @@ import { PublicTeamRosterItem } from "@/types";
 import LikeButton from "@/components/common/LikeButton";
 
 const SLOT_ORDER: Record<string, number> = { PG: 0, SG: 1, SF: 2, PF: 3, C: 4, BENCH1: 5 };
+const NAME_SUFFIXES = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "v"]);
 const formatName = (name: string) => {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return name;
-  return `${parts[0][0]} ${parts[parts.length - 1]}`;
+  const suffix = NAME_SUFFIXES.has(parts[parts.length - 1].toLowerCase()) ? parts[parts.length - 1] : null;
+  const lastName = suffix ? parts[parts.length - 2] ?? parts[0] : parts[parts.length - 1];
+  return suffix ? `${parts[0][0]} ${lastName} ${suffix}` : `${parts[0][0]} ${lastName}`;
 };
 const slotLabel = (slot: string) => (slot === "BENCH1" ? "6TH" : slot);
 
