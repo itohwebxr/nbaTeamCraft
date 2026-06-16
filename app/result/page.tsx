@@ -350,6 +350,7 @@ export default function ResultPage() {
           evaluation,
           roster,
           created_by_browser_id: getBrowserId(),
+          user_id: user?.id ?? null,
         }),
       });
       const json = await res.json();
@@ -521,6 +522,7 @@ export default function ResultPage() {
           evaluation,
           roster,
           created_by_browser_id: getBrowserId(),
+          user_id: user?.id ?? null,
           is_sandbox: true,
         }),
       });

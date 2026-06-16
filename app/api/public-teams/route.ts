@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       evaluation,
       roster,
       created_by_browser_id,
+      user_id,
       is_sandbox = false,
     }: {
       share_id?: string;
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
       evaluation: { overall: number; tier: string; offense: number; defense: number; rebound: number; playmaking: number };
       roster: RosterEntry[];
       created_by_browser_id?: string;
+      user_id?: string | null;
       is_sandbox?: boolean;
     } = body;
 
@@ -74,6 +76,7 @@ export async function POST(req: NextRequest) {
         roster_json,
         metadata,
         created_by_browser_id: created_by_browser_id ?? null,
+        user_id: user_id ?? null,
       };
       if (includeSandbox) row.is_sandbox = is_sandbox;
       return row;
