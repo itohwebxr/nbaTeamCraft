@@ -59,6 +59,16 @@ async function getTeam(id: string): Promise<PublicTeam | null> {
   return data as PublicTeam;
 }
 
+const OG_SLOT_KEY: Record<string, string> = { PG: "pg", SG: "sg", SF: "sf", PF: "pf", C: "c", BENCH1: "6th" };
+const NAME_SUFFIXES = new Set(["jr", "jr.", "sr", "sr.", "ii", "iii", "iv", "v"]);
+function formatOgName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return name;
+  const suffix = NAME_SUFFIXES.has(parts[parts.length - 1].toLowerCase()) ? parts[parts.length - 1] : null;
+  const lastName = suffix ? parts[parts.length - 2] ?? parts[0] : parts[parts.length - 1];
+  return suffix ? `${parts[0][0]} ${lastName} ${suffix}` : `${parts[0][0]} ${lastName}`;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -71,9 +81,21 @@ export async function generateMetadata({
   const title = `${team.name} | NBA TeamCraft`;
   const description = `Overall: ${team.overall} (${team.tier} Tier) — NBA TeamCraft`;
 
-  // Reuse share OGP image if share_id exists
+  // Rich OGP including the roster (mirrors the /share OGP).
   const siteUrl = await getSiteUrl();
-  const ogImageUrl = `${siteUrl}/api/og?name=${encodeURIComponent(team.name)}&overall=${team.overall}&tier=${team.tier}`;
+  const qs = new URLSearchParams({
+    name: team.name,
+    overall: String(team.overall),
+    tier: team.tier,
+  });
+  if (team.is_sandbox) qs.set("mode", "sandbox");
+  for (const entry of team.roster_json) {
+    const key = OG_SLOT_KEY[entry.slot];
+    if (!key) continue;
+    qs.set(key, formatOgName(entry.name));
+    if (entry.season) qs.set(`${key}_s`, entry.season);
+  }
+  const ogImageUrl = `${siteUrl}/api/og?${qs.toString()}`;
 
   return {
     title,
@@ -278,7 +300,6 @@ export default async function TeamDetailPage({
           likeCount={team.like_count}
           isSandbox={!!team.is_sandbox}
           roster={team.roster_json}
-          shareId={team.share_id}
         />
       </div>
     </div>
