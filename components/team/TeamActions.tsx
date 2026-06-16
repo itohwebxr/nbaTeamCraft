@@ -54,7 +54,7 @@ export default function TeamActions({
       .sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9))
       .map((e) => `${slotLabel(e.slot)} : ${formatName(e.name)}`)
       .join("\n");
-    const text = `🏀 ${label}\nOverall: ${overall} (${tier} Tier)\n${rosterLines}\n#NBATeamCraft\n`;
+    const text = `🏀 ${label}\nOverall: ${overall} (${tier} Tier)\n${rosterLines}\n#NBATeamCraft #NBA @nbaTeamCraft\n`;
     // Prefer the share page (rich OGP with roster); fall back to the team page.
     const baseUrl = shareId
       ? `${window.location.origin}/share/${shareId}`
