@@ -34,7 +34,6 @@ export default function TeamActions({
   likeCount,
   isSandbox,
   roster,
-  shareId,
 }: {
   teamId: string;
   teamName: string;
@@ -43,7 +42,6 @@ export default function TeamActions({
   likeCount: number;
   isSandbox: boolean;
   roster: PublicTeamRosterItem[];
-  shareId?: string | null;
 }) {
   const router = useRouter();
   const { user } = useAuth();
@@ -58,10 +56,10 @@ export default function TeamActions({
       .map((e) => `${slotLabel(e.slot)} : ${formatName(e.name)}`)
       .join("\n");
     const text = `🏀 ${label}\nOverall: ${overall} (${tier} Tier)\n${rosterLines}\n#NBATeamCraft #NBA @nbaTeamCraft\n`;
-    // Prefer the share page (rich OGP with roster); fall back to the team page.
-    const baseUrl = shareId
-      ? `${window.location.origin}/share/${shareId}`
-      : `${window.location.origin}/team/${teamId}`;
+    // The team detail page now carries rich roster OGP, so share it directly —
+    // visitors land on the interactive team page (Remix / Build CTAs) instead
+    // of being bounced to the top page via /share.
+    const baseUrl = `${window.location.origin}/team/${teamId}`;
     const url = withShareUtm(baseUrl, { handle: user?.xHandle, campaign: "team_share" });
     gtm.shareTeam({ team_name: label, overall, tier, mode: isSandbox ? "sandbox" : "draft" });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;

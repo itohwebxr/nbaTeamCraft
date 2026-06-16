@@ -33,6 +33,20 @@ async function getShareData(id: string): Promise<ShareData | null> {
   return data.data as ShareData;
 }
 
+// Older posts shared the /share/<id> URL (which bounces humans to the top page).
+// If a saved public team references this share, send visitors to that team's
+// detail page instead so the landing matches the OGP they clicked.
+async function getTeamIdForShare(id: string): Promise<string | null> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from("public_teams")
+    .select("id")
+    .eq("share_id", id)
+    .maybeSingle();
+  if (error || !data) return null;
+  return data.id as string;
+}
+
 async function buildOgUrl(params: ShareData): Promise<string> {
   const siteUrl = await getSiteUrl();
   const qs = new URLSearchParams();
@@ -90,11 +104,11 @@ const SLOT_LABEL: Record<string, string> = { "6th": "6TH" };
 
 // Client-side redirect so bots (Twitter crawler) still receive the OGP HTML,
 // while human visitors are forwarded to the top page.
-function ClientRedirect() {
+function ClientRedirect({ to }: { to: string }) {
   return (
     <script
       dangerouslySetInnerHTML={{
-        __html: `window.location.replace("/");`,
+        __html: `window.location.replace(${JSON.stringify(to)});`,
       }}
     />
   );
@@ -109,6 +123,9 @@ export default async function ShareIdPage({
   const share = await getShareData(id);
   if (!share) notFound();
 
+  const teamId = await getTeamIdForShare(id);
+  const redirectTo = teamId ? `/team/${teamId}` : "/";
+
   const name = share.name || "My NBA Team";
   const overall = share.overall || "";
   const tier = share.tier || "";
@@ -122,7 +139,7 @@ export default async function ShareIdPage({
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center px-4">
-      <ClientRedirect />
+      <ClientRedirect to={redirectTo} />
       <header className="mb-8">
         <Link href="/"><Image src="/logo.png" alt="NBA TeamCraft" height={40} width={75} className="object-contain" /></Link>
       </header>
