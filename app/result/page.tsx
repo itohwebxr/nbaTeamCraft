@@ -16,6 +16,7 @@ import { gtm } from "@/lib/gtm";
 import HeaderAuth from "@/components/auth/HeaderAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { startXLogin } from "@/lib/xLogin";
+import { withShareUtm } from "@/lib/utm";
 
 function SlotLabel({ slot }: { slot: string }) {
   if (slot === "BENCH1") return "6TH";
@@ -195,7 +196,7 @@ export default function ResultPage() {
       setSharing(false);
     }
 
-    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(sharePageUrl)}`;
+    const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(withShareUtm(sharePageUrl, { handle: user?.xHandle, campaign: "team_share" }))}`;
     if (shareWindow) {
       shareWindow.location.href = tweetUrl;
     } else {
@@ -445,7 +446,7 @@ export default function ResultPage() {
     if (!evaluation || !publishedRank) return;
     const label = teamName || "My NBA Team";
     const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\n#NBATeamCraft\n`;
-    const url = sharePageUrl ?? `${window.location.origin}/`;
+    const url = withShareUtm(sharePageUrl ?? `${window.location.origin}/`, { handle: user?.xHandle, campaign: "ranking_share" });
     gtm.shareRanking({ team_name: label, overall: evaluation.overall, rank_overall: publishedRank.overall });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
     window.open(tweetUrl, "_blank", "noopener");

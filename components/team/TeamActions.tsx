@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDraftStore } from "@/stores/draftStore";
+import { useAuth } from "@/hooks/useAuth";
 import { gtm } from "@/lib/gtm";
+import { withShareUtm } from "@/lib/utm";
 import LikeButton from "@/components/common/LikeButton";
 
 // Client-side actions for the team detail page.
@@ -28,6 +30,7 @@ export default function TeamActions({
   isSandbox: boolean;
 }) {
   const router = useRouter();
+  const { user } = useAuth();
   const { setMode, reset, loadRoster, sandboxConfig } = useDraftStore();
   const [remixing, setRemixing] = useState(false);
   const [remixError, setRemixError] = useState(false);
@@ -35,7 +38,7 @@ export default function TeamActions({
   const handleShare = () => {
     const label = teamName || "My NBA Team";
     const text = `🏀 ${label}\nOverall: ${overall} (${tier} Tier)\n#NBATeamCraft\n`;
-    const url = `${window.location.origin}/team/${teamId}`;
+    const url = withShareUtm(`${window.location.origin}/team/${teamId}`, { handle: user?.xHandle, campaign: "team_share" });
     gtm.shareTeam({ team_name: label, overall, tier, mode: isSandbox ? "sandbox" : "draft" });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
     window.open(tweetUrl, "_blank", "noopener");
