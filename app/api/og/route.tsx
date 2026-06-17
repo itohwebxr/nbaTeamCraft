@@ -40,6 +40,54 @@ export async function GET(req: NextRequest) {
     };
   }).filter((e) => e.name);
 
+  // Matchup result OG — VS scoreboard for the Match Simulator
+  if (p.get("mode") === "matchup") {
+    const homeName = p.get("home") || "Home";
+    const awayName = p.get("away") || "Away";
+    const homeScore = p.get("hs") || "0";
+    const awayScore = p.get("as") || "0";
+    const isSeries = p.get("kind") === "series";
+    const homeWon = parseInt(homeScore, 10) >= parseInt(awayScore, 10);
+
+    const Side = ({ name, score, won, align }: { name: string; score: string; won: boolean; align: "flex-start" | "flex-end" }) => (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: align, width: "440px" }}>
+        <span style={{ fontSize: "30px", fontWeight: 700, color: won ? "#ffffff" : "#a1a1aa", textAlign: align === "flex-start" ? "left" : "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "440px" }}>
+          {name}
+        </span>
+        <span style={{ fontSize: "150px", fontWeight: 900, color: won ? "#f97316" : "#52525b", lineHeight: 1, marginTop: "8px" }}>
+          {score}
+        </span>
+        {won && (
+          <span style={{ fontSize: "18px", fontWeight: 900, color: "#f59e0b", letterSpacing: "0.2em", textTransform: "uppercase", marginTop: "8px" }}>
+            {isSeries ? "Series Winner" : "Winner"}
+          </span>
+        )}
+      </div>
+    );
+
+    return new ImageResponse(
+      (
+        <div style={{ width: "1200px", height: "630px", background: "#09090b", display: "flex", flexDirection: "column", padding: "56px 64px", fontFamily: "sans-serif" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
+            <span style={{ fontSize: "18px", color: "#71717a", letterSpacing: "0.15em", textTransform: "uppercase" }}>NBA TeamCraft</span>
+            <span style={{ fontSize: "13px", fontWeight: 700, color: "#000", background: "#f97316", padding: "3px 10px", borderRadius: "6px", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+              {isSeries ? "Series · Best of 7" : "Match Simulator"}
+            </span>
+          </div>
+          <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "space-between" }}>
+            <Side name={homeName} score={homeScore} won={homeWon} align="flex-start" />
+            <span style={{ fontSize: "56px", fontWeight: 900, color: "#3f3f46", display: "flex" }}>VS</span>
+            <Side name={awayName} score={awayScore} won={!homeWon} align="flex-end" />
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+            <span style={{ fontSize: "16px", color: "#3f3f46" }}>#NBATeamCraft</span>
+          </div>
+        </div>
+      ),
+      { width: 1200, height: 630, headers: { "Cache-Control": "public, max-age=3600" } }
+    );
+  }
+
   // Cup result OG — special layout highlighting the W-L record
   if (isCup) {
     const wins = parseInt(cupWins, 10);
