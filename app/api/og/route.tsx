@@ -49,6 +49,53 @@ export async function GET(req: NextRequest) {
     const isSeries = p.get("kind") === "series";
     const homeWon = parseInt(homeScore, 10) >= parseInt(awayScore, 10);
 
+    // Series with per-game scores -> full G1..G7 scoreboard (mirrors the app).
+    const games = (p.get("games") || "")
+      .split(",")
+      .map((g) => g.split("-"))
+      .filter((pair) => pair.length === 2 && pair[0] !== "");
+
+    if (isSeries && games.length > 0) {
+      const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+      return new ImageResponse(
+        (
+          <div style={{ width: "1200px", height: "630px", background: "#09090b", display: "flex", flexDirection: "column", padding: "48px 64px", fontFamily: "sans-serif" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "14px" }}>
+              <span style={{ fontSize: "16px", fontWeight: 900, color: "#f59e0b", letterSpacing: "0.25em", textTransform: "uppercase" }}>Series Final · Best of 7</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "24px", marginBottom: "18px" }}>
+              <span style={{ fontSize: "40px", fontWeight: 900, color: "#ffffff" }}>🏆 {truncate(homeWon ? homeName : awayName, 22)}</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "20px", marginBottom: "20px" }}>
+              <span style={{ fontSize: "60px", fontWeight: 900, color: homeWon ? "#f97316" : "#52525b" }}>{homeScore}</span>
+              <span style={{ fontSize: "32px", color: "#3f3f46" }}>—</span>
+              <span style={{ fontSize: "60px", fontWeight: 900, color: !homeWon ? "#f97316" : "#52525b" }}>{awayScore}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center", gap: "6px" }}>
+              {games.map(([h, a], i) => {
+                const hWon = parseInt(h, 10) >= parseInt(a, 10);
+                return (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "16px", padding: "6px 16px", background: i % 2 === 0 ? "#18181b" : "transparent", borderRadius: "8px" }}>
+                    <span style={{ fontSize: "16px", fontWeight: 700, color: "#71717a", width: "42px", display: "flex" }}>G{i + 1}</span>
+                    <span style={{ fontSize: "20px", fontWeight: hWon ? 700 : 400, color: hWon ? "#ffffff" : "#71717a", flex: 1, display: "flex", overflow: "hidden" }}>{truncate(homeName, 18)}</span>
+                    <span style={{ fontSize: "22px", fontWeight: 900, color: hWon ? "#f97316" : "#71717a", display: "flex" }}>{h}</span>
+                    <span style={{ fontSize: "16px", color: "#3f3f46", display: "flex" }}>-</span>
+                    <span style={{ fontSize: "22px", fontWeight: 900, color: !hWon ? "#f97316" : "#71717a", display: "flex" }}>{a}</span>
+                    <span style={{ fontSize: "20px", fontWeight: !hWon ? 700 : 400, color: !hWon ? "#ffffff" : "#71717a", flex: 1, textAlign: "right", display: "flex", justifyContent: "flex-end", overflow: "hidden" }}>{truncate(awayName, 18)}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
+              <span style={{ fontSize: "15px", color: "#52525b", letterSpacing: "0.1em", textTransform: "uppercase" }}>NBA TeamCraft</span>
+              <span style={{ fontSize: "15px", color: "#3f3f46" }}>#NBATeamCraft</span>
+            </div>
+          </div>
+        ),
+        { width: 1200, height: 630, headers: { "Cache-Control": "public, max-age=3600" } }
+      );
+    }
+
     const Side = ({ name, score, won, align }: { name: string; score: string; won: boolean; align: "flex-start" | "flex-end" }) => (
       <div style={{ display: "flex", flexDirection: "column", alignItems: align, width: "440px" }}>
         <span style={{ fontSize: "30px", fontWeight: 700, color: won ? "#ffffff" : "#a1a1aa", textAlign: align === "flex-start" ? "left" : "right", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "440px" }}>
