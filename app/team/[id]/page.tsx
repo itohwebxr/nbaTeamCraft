@@ -189,8 +189,10 @@ export default async function TeamDetailPage({
 
       <div className="fade-up fade-up-1 max-w-lg mx-auto px-4 py-6 space-y-4">
 
-        {/* Hero */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+        {/* Hero + Roster — single card */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-5">
+
+          {/* Team name + overall + radar */}
           <div className="flex items-start gap-4">
             <div className="flex-1 min-w-0">
               <p className="font-display text-xs font-bold text-zinc-500 tracking-[0.2em] mb-1">TEAM</p>
@@ -212,7 +214,7 @@ export default async function TeamDetailPage({
           </div>
 
           {/* Stat bars */}
-          <div className="mt-5 space-y-2.5">
+          <div className="space-y-2.5">
             {STAT_LABELS.map(({ key, label }) => {
               const value = team[key as keyof PublicTeam] as number;
               const color =
@@ -234,9 +236,51 @@ export default async function TeamDetailPage({
             })}
           </div>
 
-          {/* Creator attribution + description — the seed for discussion */}
+          {/* Roster */}
+          <div className="pt-4 border-t border-zinc-800">
+            <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Roster</h2>
+
+            <p className="text-xs text-zinc-600 mb-2">STARTERS</p>
+            <div className="space-y-2 mb-4">
+              {starters.map((entry, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-orange-400 w-8 shrink-0">
+                    {STARTER_SLOTS[i]}
+                  </span>
+                  {entry ? (
+                    <>
+                      <span className="text-sm font-semibold text-white flex-1 truncate">{entry.name}</span>
+                      <span className="text-xs text-zinc-500 shrink-0">{entry.season}</span>
+                      <span className={`font-display text-xs font-black w-6 text-right shrink-0 ${overallColor(entry.overall)}`}>
+                        {entry.overall}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-zinc-700 flex-1">—</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-zinc-600 mb-2">6TH MAN</p>
+            <div className="space-y-2">
+              {bench.map((entry, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-zinc-500 w-8 shrink-0">BN</span>
+                  <span className="text-xs text-zinc-400 mr-1 shrink-0">{entry.assignedPosition}</span>
+                  <span className="text-sm font-semibold text-white flex-1 truncate">{entry.name}</span>
+                  <span className="text-xs text-zinc-500 shrink-0">{entry.season}</span>
+                  <span className={`font-display text-xs font-black w-6 text-right shrink-0 ${overallColor(entry.overall)}`}>
+                    {entry.overall}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Creator attribution + description — below roster */}
           {(creator || team.description) && (
-            <div className="mt-5 pt-4 border-t border-zinc-800 space-y-3">
+            <div className="pt-4 border-t border-zinc-800 space-y-3">
               {creator && (
                 <a
                   href={creator.xHandle ? `https://x.com/${creator.xHandle}` : undefined}
@@ -314,48 +358,6 @@ export default async function TeamDetailPage({
           </div>
         )}
 
-        {/* Roster */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-          <h2 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Roster</h2>
-
-          <p className="text-xs text-zinc-600 mb-2">STARTERS</p>
-          <div className="space-y-2 mb-4">
-            {starters.map((entry, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-xs font-bold text-orange-400 w-8 shrink-0">
-                  {STARTER_SLOTS[i]}
-                </span>
-                {entry ? (
-                  <>
-                    <span className="text-sm font-semibold text-white flex-1 truncate">{entry.name}</span>
-                    <span className="text-xs text-zinc-500 shrink-0">{entry.season}</span>
-                    <span className={`font-display text-xs font-black w-6 text-right shrink-0 ${overallColor(entry.overall)}`}>
-                      {entry.overall}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-sm text-zinc-700 flex-1">—</span>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <p className="text-xs text-zinc-600 mb-2">6TH MAN</p>
-          <div className="space-y-2">
-            {bench.map((entry, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-xs font-bold text-zinc-500 w-8 shrink-0">BN</span>
-                <span className="text-xs text-zinc-400 mr-1 shrink-0">{entry.assignedPosition}</span>
-                <span className="text-sm font-semibold text-white flex-1 truncate">{entry.name}</span>
-                <span className="text-xs text-zinc-500 shrink-0">{entry.season}</span>
-                <span className={`font-display text-xs font-black w-6 text-right shrink-0 ${overallColor(entry.overall)}`}>
-                  {entry.overall}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Actions */}
         <TeamActions
           teamId={team.id}
@@ -366,6 +368,14 @@ export default async function TeamDetailPage({
           isSandbox={!!team.is_sandbox}
           roster={team.roster_json}
         />
+
+        {/* Match Simulator — pit this team against any other lineup */}
+        <Link
+          href={`/matchup?homeTeamId=${team.id}&homeName=${encodeURIComponent(team.name)}&homeOverall=${team.overall}&homeTier=${team.tier}${team.is_sandbox ? "&homeSandbox=1" : ""}`}
+          className="block w-full py-3 rounded-xl border border-zinc-700 hover:border-orange-500/50 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-orange-300 font-bold text-sm text-center transition-colors"
+        >
+          ⚔️ Simulate a Matchup →
+        </Link>
 
         {/* Discussion */}
         <TeamComments teamId={team.id} />

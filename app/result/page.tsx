@@ -789,10 +789,10 @@ export default function ResultPage() {
           </div>
         )}
 
-        {/* Exhibition Match — try your team before committing to the Cup */}
+        {/* Match Simulator — try your team before committing to the Cup */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">⚔️ Exhibition</p>
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">⚔️ Match Simulator</p>
             {(sessionRecord.wins > 0 || sessionRecord.losses > 0) && (
               <p className="text-xs text-zinc-500">
                 <span className="text-white font-bold">{sessionRecord.wins}W–{sessionRecord.losses}L</span>
@@ -800,7 +800,7 @@ export default function ResultPage() {
             )}
           </div>
           <p className="text-xs text-zinc-600 mb-3">
-            Scrimmage against other rosters — quarter scores + box score. No stakes, unlimited.
+            Simulate against other rosters — quarter scores + box score. No stakes, unlimited.
           </p>
           <button
             onClick={handleExhibition}
@@ -813,9 +813,17 @@ export default function ResultPage() {
                 Finding opponent...
               </>
             ) : (
-              <>⚔️ Play Exhibition Match</>
+              <>⚔️ Quick Match (Random Opponent)</>
             )}
           </button>
+          {publishedId && (
+            <Link
+              href={`/matchup?homeTeamId=${publishedId}&homeName=${encodeURIComponent(teamName || "My Team")}${evaluation ? `&homeOverall=${evaluation.overall}&homeTier=${evaluation.tier}` : ""}${isSandbox ? "&homeSandbox=1" : ""}`}
+              className="mt-2 block w-full py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/40 hover:border-orange-500/70 text-orange-300 hover:text-orange-200 font-bold text-sm text-center transition-colors"
+            >
+              ⚔️ Choose Your Opponent →
+            </Link>
+          )}
         </div>
 
         {/* Actions */}

@@ -44,19 +44,38 @@ export async function GET(req: NextRequest) {
 
   const { data: { session }, error } = await supabaseAuth.auth.exchangeCodeForSession(code);
 
-  if (!error && session?.user && browserId) {
-    // Migrate browser_id → user_id on cup_entries and public_teams
+  if (!error && session?.user) {
     const db = createSupabaseServer();
-    await Promise.all([
-      db.from("cup_entries")
-        .update({ user_id: session.user.id })
-        .eq("browser_id", browserId)
-        .is("user_id", null),
-      db.from("public_teams")
-        .update({ user_id: session.user.id })
-        .eq("created_by_browser_id", browserId)
-        .is("user_id", null),
-    ]);
+    const u = session.user;
+    const meta = u.user_metadata ?? {};
+
+    // Upsert the profile with the latest X OAuth metadata on every login so
+    // display_name, avatar_url, and x_handle stay fresh (the trigger only runs
+    // on INSERT and uses `on conflict do nothing`).
+    await db.from("profiles").upsert(
+      {
+        id: u.id,
+        x_handle: meta.user_name ?? null,
+        display_name: meta.full_name ?? null,
+        avatar_url: meta.avatar_url ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    );
+
+    if (browserId) {
+      // Migrate browser_id → user_id on cup_entries and public_teams
+      await Promise.all([
+        db.from("cup_entries")
+          .update({ user_id: u.id })
+          .eq("browser_id", browserId)
+          .is("user_id", null),
+        db.from("public_teams")
+          .update({ user_id: u.id })
+          .eq("created_by_browser_id", browserId)
+          .is("user_id", null),
+      ]);
+    }
   }
 
   return NextResponse.redirect(`${origin}${returnTo}`);
