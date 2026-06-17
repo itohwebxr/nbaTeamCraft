@@ -211,4 +211,14 @@ export const gtm = {
   teamSearchShowMore: (params: {
     shown: number;
   }) => push({ event: "team_search_show_more", ...params }),
+
+  seasonSimulate: (params: {
+    team_overall: number;
+  }) => push({ event: "season_simulate", ...params }),
+
+  seasonShare: (params: {
+    wins: number;
+    losses: number;
+    label: string;
+  }) => push({ event: "season_share", ...params }),
 };
