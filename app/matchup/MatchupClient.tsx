@@ -17,6 +17,15 @@ type TeamPick = {
 
 type SimMeta = { id: string; name: string; overall: number; tier: string };
 
+// Open the X intent composer with the given text + the matchup page URL.
+function shareToX(text: string) {
+  const url = typeof window !== "undefined" ? `${window.location.origin}/matchup` : "";
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+    `${text}\n#NBATeamCraft #NBA @nbaTeamCraft\n`
+  )}&url=${encodeURIComponent(url)}`;
+  window.open(tweetUrl, "_blank", "noopener");
+}
+
 type SimResponse =
   | { mode: "single"; home: SimMeta; away: SimMeta; result: GameResult }
   | {
@@ -256,8 +265,18 @@ function SeriesResult({
         </div>
 
         <button
+          onClick={() =>
+            shareToX(
+              `🏀 ${home.name} ${wins.home}–${wins.away} ${away.name}\n${winnerName} takes the series! ⚔️ Best-of-7 simulated on NBA TeamCraft`
+            )
+          }
+          className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white font-bold text-sm transition-colors"
+        >
+          Share on 𝕏
+        </button>
+        <button
           onClick={onReset}
-          className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+          className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
         >
           New Matchup
         </button>
@@ -318,6 +337,9 @@ export default function MatchupClient() {
 
   // ── Result overlays ──────────────────────────────────────────────
   if (sim?.mode === "single" && home && away) {
+    const r = sim.result;
+    const winnerName = r.winner === "home" ? sim.home.name : sim.away.name;
+    const shareText = `🏀 ${sim.home.name} ${r.homeTotal}–${r.awayTotal} ${sim.away.name}\n${winnerName} wins! ⚔️ Simulated on NBA TeamCraft`;
     return (
       <ExhibitionMatch
         userTeamName={sim.home.name}
@@ -328,7 +350,8 @@ export default function MatchupClient() {
         sessionRecord={{ wins: 0, losses: 0 }}
         onRematch={simulate}
         onClose={reset}
-        cupMode
+        defaultShowBox
+        onShare={() => shareToX(shareText)}
       />
     );
   }
