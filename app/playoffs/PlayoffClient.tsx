@@ -61,6 +61,19 @@ function TierBadge({ tier }: { tier: string }) {
   );
 }
 
+function GroupChip({ group }: { group: "A" | "B" | null }) {
+  if (!group) return null;
+  const color =
+    group === "A"
+      ? "text-sky-400 border-sky-400/40 bg-sky-400/10"
+      : "text-rose-400 border-rose-400/40 bg-rose-400/10";
+  return (
+    <span className={`font-display text-[9px] font-bold px-1 py-0.5 rounded border shrink-0 ${color}`}>
+      {group}
+    </span>
+  );
+}
+
 function shortScorer(name: string, max = 13): string {
   const parts = name.trim().split(/\s+/);
   let s = parts.length >= 2 ? `${parts[0][0]}. ${parts.slice(1).join(" ")}` : name;
@@ -136,12 +149,12 @@ async function shareToX(result: PlayoffResult) {
 // ── TeamPicker ─────────────────────────────────────────────────────────
 
 function TeamPicker({
-  slot,
+  seedLabel,
   selected,
   onSelect,
   usedIds,
 }: {
-  slot: number;
+  seedLabel: string;
   selected: TeamPick | null;
   onSelect: (t: TeamPick | null) => void;
   usedIds: Set<string>;
@@ -200,11 +213,9 @@ function TeamPicker({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const seedLabel = `#${slot + 1}`;
-
   return (
     <div className="flex items-center gap-2">
-      <span className="font-display text-xs font-bold text-zinc-500 w-6 shrink-0">{seedLabel}</span>
+      <span className="font-display text-xs font-bold text-zinc-500 w-7 shrink-0">{seedLabel}</span>
       {selected ? (
         <button
           onClick={() => onSelect(null)}
@@ -285,12 +296,10 @@ function TeamPicker({
 
 function SeriesCard({
   s,
-  roundLabel,
   expanded,
   onToggle,
 }: {
   s: SeriesSummary;
-  roundLabel: string;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -301,7 +310,7 @@ function SeriesCard({
         onClick={onToggle}
         className="w-full px-3 py-2.5 flex items-center gap-2 hover:bg-zinc-800/60 transition-colors text-left"
       >
-        <span className="font-display text-[10px] font-bold text-zinc-500 w-24 shrink-0">{roundLabel}</span>
+        <GroupChip group={s.group} />
         <span className={`flex-1 text-xs font-bold truncate ${homeWon ? "text-white" : "text-zinc-500"}`}>{s.home.name}</span>
         <span className="font-display text-xs font-black tabular-nums shrink-0">
           <span className={homeWon ? "text-orange-400" : "text-zinc-500"}>{s.wins.home}</span>
@@ -393,7 +402,6 @@ function PlayoffResults({
                   <SeriesCard
                     key={key}
                     s={s}
-                    roundLabel={`${label} G`}
                     expanded={expandedKey === key}
                     onToggle={() => setExpandedKey(expandedKey === key ? null : key)}
                   />
@@ -548,6 +556,7 @@ function PlayoffPlayback({
                 return (
                   <div key={si} className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5">
                     <div className="flex items-center gap-2">
+                      <GroupChip group={s.group} />
                       <span className={`flex-1 text-xs font-bold truncate ${homeWon ? "text-white" : "text-zinc-500"}`}>{s.home.name}</span>
                       <span className="font-display text-sm font-black tabular-nums shrink-0">
                         <span className={homeWon ? "text-orange-400" : "text-zinc-500"}>{s.wins.home}</span>
@@ -705,20 +714,45 @@ export default function PlayoffClient() {
           🎲 Fill All with Random Teams
         </button>
 
-        {/* Team pickers */}
+        {/* Team pickers — split into two groups (think East / West). The two
+            group winners meet in the Finals. */}
         <div>
-          <p className="font-display text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] mb-3">
-            Teams ({filledCount}/{size})
-          </p>
-          <div className="space-y-2">
-            {teams.map((t, i) => (
-              <TeamPicker
-                key={i}
-                slot={i}
-                selected={t}
-                onSelect={(pick) => updateTeam(i, pick)}
-                usedIds={usedIds}
-              />
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-display text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">
+              Teams ({filledCount}/{size})
+            </p>
+            <p className="text-[10px] text-zinc-600">Group winners meet in the Finals</p>
+          </div>
+          <div className="space-y-5">
+            {([
+              { group: "A" as const, accent: "text-sky-400", start: 0 },
+              { group: "B" as const, accent: "text-rose-400", start: size / 2 },
+            ]).map(({ group, accent, start }) => (
+              <div key={group}>
+                <div className="flex items-center gap-2 mb-2">
+                  <GroupChip group={group} />
+                  <span className={`font-display text-xs font-bold uppercase tracking-[0.2em] ${accent}`}>
+                    Group {group}
+                  </span>
+                  <span className="text-[10px] text-zinc-600">
+                    (seeds {group}1–{group}{size / 2})
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {Array.from({ length: size / 2 }, (_, j) => {
+                    const i = start + j;
+                    return (
+                      <TeamPicker
+                        key={i}
+                        seedLabel={`${group}${j + 1}`}
+                        selected={teams[i] ?? null}
+                        onSelect={(pick) => updateTeam(i, pick)}
+                        usedIds={usedIds}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
         </div>
