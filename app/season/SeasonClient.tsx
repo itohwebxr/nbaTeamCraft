@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { gtm } from "@/lib/gtm";
 import { seasonGrade } from "@/lib/season";
 import type { SeasonResult } from "@/app/api/season/simulate/route";
@@ -236,7 +236,21 @@ function SeasonPlayback({
 
 export default function SeasonClient() {
   const router = useRouter();
-  const [team, setTeam] = useState<TeamPick | null>(null);
+  const params = useSearchParams();
+
+  // Pre-select the team when arriving from a team / result page.
+  const [team, setTeam] = useState<TeamPick | null>(() => {
+    const id = params.get("teamId");
+    if (!id) return null;
+    return {
+      id,
+      name: params.get("teamName") ?? "Selected Team",
+      overall: Number(params.get("teamOverall")) || 0,
+      tier: params.get("teamTier") ?? "C",
+      is_sandbox: params.get("teamSandbox") === "1",
+      created_at: "",
+    };
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SeasonResult | null>(null);
