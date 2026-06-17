@@ -34,8 +34,15 @@ type TeamPick = {
   overall: number;
   tier: string;
   is_sandbox: boolean;
+  is_historical?: boolean;
   created_at: string;
 };
+
+// Source label shown under a team in the picker.
+function sourceLabel(t: { is_historical?: boolean; is_sandbox: boolean }): string {
+  if (t.is_historical) return "🏀 Real NBA Team";
+  return t.is_sandbox ? "Roster Builder" : "Dream Draft";
+}
 
 type SimMeta = { id: string; name: string; overall: number; tier: string };
 
@@ -205,7 +212,7 @@ function TeamPicker({
           </div>
           <div className="flex items-center justify-between mt-1">
             <span className="text-[10px] text-zinc-500 uppercase tracking-wider">
-              {selected.is_sandbox ? "Roster Builder" : "Dream Draft"}
+              {sourceLabel(selected)}
             </span>
             <span className="font-display text-sm font-black text-orange-400">{selected.overall}</span>
           </div>
@@ -254,8 +261,8 @@ function TeamPicker({
                       <span className="font-display text-xs font-black text-orange-400">{t.overall}</span>
                     </span>
                   </div>
-                  <span className="text-[10px] text-zinc-600 uppercase tracking-wider">
-                    {t.is_sandbox ? "Roster Builder" : "Dream Draft"}
+                  <span className={`text-[10px] uppercase tracking-wider ${t.is_historical ? "text-orange-400/80" : "text-zinc-600"}`}>
+                    {sourceLabel(t)}
                   </span>
                 </button>
               ))}
