@@ -22,6 +22,10 @@ interface Props {
   onClose: () => void;
   /** When true, hides the "Play Again" button and shows cup-appropriate messaging */
   cupMode?: boolean;
+  /** Open the box score by default instead of collapsed */
+  defaultShowBox?: boolean;
+  /** When provided, renders a "Share on X" button on the final screen */
+  onShare?: () => void;
 }
 
 type Phase = "vs" | "playing" | "final";
@@ -127,12 +131,14 @@ export default function ExhibitionMatch({
   onRematch,
   onClose,
   cupMode,
+  defaultShowBox = false,
+  onShare,
 }: Props) {
   const [phase, setPhase] = useState<Phase>("vs");
   // Number of quarters currently revealed during the "playing" phase
   const [revealed, setRevealed] = useState(0);
   const [boxTab, setBoxTab] = useState<"user" | "opp">("user");
-  const [showBox, setShowBox] = useState(false);
+  const [showBox, setShowBox] = useState(defaultShowBox);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const won = result.winner === "home";
@@ -287,12 +293,14 @@ export default function ExhibitionMatch({
                 <p className="relative text-sm font-black text-white tabular-nums mt-2">
                   {result.homeTotal} – {result.awayTotal}
                 </p>
-                <p className="relative text-xs text-zinc-500 mt-2">
-                  {cupMode ? "Cup record" : "Exhibition record"}:{" "}
-                  <span className="text-white font-bold">
-                    {sessionRecord.wins}W – {sessionRecord.losses}L
-                  </span>
-                </p>
+                {(cupMode || sessionRecord.wins > 0 || sessionRecord.losses > 0) && (
+                  <p className="relative text-xs text-zinc-500 mt-2">
+                    {cupMode ? "Cup record" : "Exhibition record"}:{" "}
+                    <span className="text-white font-bold">
+                      {sessionRecord.wins}W – {sessionRecord.losses}L
+                    </span>
+                  </p>
+                )}
                 {cupMode && (
                   <p className="relative text-xs text-zinc-500 mt-1">Come back tomorrow for your next match!</p>
                 )}
@@ -337,30 +345,44 @@ export default function ExhibitionMatch({
               </div>
 
               {/* Actions */}
-              <div className="flex gap-3">
-                {cupMode ? (
+              <div className="space-y-3">
+                {onShare && (
                   <button
-                    onClick={onClose}
-                    className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+                    onClick={onShare}
+                    className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white font-bold text-sm transition-colors"
                   >
-                    Done
+                    Share on 𝕏
                   </button>
-                ) : (
-                  <>
+                )}
+                <div className="flex gap-3">
+                  {cupMode ? (
                     <button
                       onClick={onClose}
-                      className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+                      className={`flex-1 py-3 rounded-xl font-bold text-sm transition-colors ${
+                        onShare
+                          ? "bg-zinc-800 hover:bg-zinc-700 text-white"
+                          : "bg-orange-500 hover:bg-orange-400 text-white"
+                      }`}
                     >
-                      Back
+                      Done
                     </button>
-                    <button
-                      onClick={onRematch}
-                      className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
-                    >
-                      ⚔️ Play Again
-                    </button>
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <button
+                        onClick={onClose}
+                        className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={onRematch}
+                        className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+                      >
+                        ⚔️ Play Again
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           )}

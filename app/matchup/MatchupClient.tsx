@@ -17,6 +17,15 @@ type TeamPick = {
 
 type SimMeta = { id: string; name: string; overall: number; tier: string };
 
+// Open the X intent composer with the given text + the matchup page URL.
+function shareToX(text: string) {
+  const url = typeof window !== "undefined" ? `${window.location.origin}/matchup` : "";
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+    `${text}\n#NBATeamCraft #NBA @nbaTeamCraft\n`
+  )}&url=${encodeURIComponent(url)}`;
+  window.open(tweetUrl, "_blank", "noopener");
+}
+
 type SimResponse =
   | { mode: "single"; home: SimMeta; away: SimMeta; result: GameResult }
   | {
@@ -58,9 +67,12 @@ function TeamPicker({
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<TeamPick[]>([]);
+  const [hasMore, setHasMore] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [dropTop, setDropTop] = useState(0);
   const boxRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const runSearch = useCallback(async (q: string) => {
     setLoading(true);
@@ -68,11 +80,19 @@ function TeamPicker({
       const res = await fetch(`/api/matchup/search?q=${encodeURIComponent(q)}&limit=10`);
       const json = await res.json();
       setResults(json.teams ?? []);
+      setHasMore(!!json.hasMore);
     } catch {
       setResults([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Anchor the full-width dropdown right under the input.
+  const positionDropdown = useCallback(() => {
+    const r = inputRef.current?.getBoundingClientRect();
+    if (r) setDropTop(r.bottom + 6);
   }, []);
 
   // Debounced search; also primes latest teams when focused with empty query.
@@ -81,6 +101,18 @@ function TeamPicker({
     const id = setTimeout(() => runSearch(query.trim()), 220);
     return () => clearTimeout(id);
   }, [query, open, runSearch]);
+
+  // Keep the dropdown anchored while open (scroll / resize).
+  useEffect(() => {
+    if (!open) return;
+    positionDropdown();
+    window.addEventListener("scroll", positionDropdown, true);
+    window.addEventListener("resize", positionDropdown);
+    return () => {
+      window.removeEventListener("scroll", positionDropdown, true);
+      window.removeEventListener("resize", positionDropdown);
+    };
+  }, [open, positionDropdown]);
 
   // Close on outside click.
   useEffect(() => {
@@ -113,19 +145,27 @@ function TeamPicker({
           <span className="block text-[10px] text-zinc-600 mt-1 group-hover:text-zinc-400">Tap to change</span>
         </button>
       ) : (
-        <div ref={boxRef} className="relative">
+        <div ref={boxRef}>
           <input
+            ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onFocus={() => {
               setOpen(true);
+              positionDropdown();
               if (results.length === 0) runSearch("");
             }}
-            placeholder="Team, player, or NBA team…"
+            placeholder="Team, player, NBA team…"
             className="w-full bg-zinc-900 border border-zinc-700 focus:border-orange-500/60 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 outline-none transition-colors"
           />
           {open && (
-            <div className="absolute z-30 mt-1 w-full max-h-72 overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl">
+            // Full window-width dropdown (capped to the page container), anchored
+            // under the input via fixed positioning so it isn't constrained to
+            // the narrow picker column.
+            <div
+              className="fixed left-1/2 -translate-x-1/2 z-30 w-[calc(100vw-1.5rem)] max-w-lg max-h-[60vh] overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl"
+              style={{ top: dropTop }}
+            >
               {loading && <p className="px-3 py-3 text-xs text-zinc-500">Searching…</p>}
               {!loading && results.length === 0 && (
                 <p className="px-3 py-3 text-xs text-zinc-500">No teams found.</p>
@@ -152,6 +192,11 @@ function TeamPicker({
                   </span>
                 </button>
               ))}
+              {!loading && hasMore && (
+                <p className="px-3 py-2.5 text-center text-[11px] text-zinc-500 bg-zinc-900/80 border-t border-zinc-800">
+                  Showing the latest {results.length} — search by team, player, or NBA team to find more.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -220,8 +265,18 @@ function SeriesResult({
         </div>
 
         <button
+          onClick={() =>
+            shareToX(
+              `🏀 ${home.name} ${wins.home}–${wins.away} ${away.name}\n${winnerName} takes the series! ⚔️ Best-of-7 simulated on NBA TeamCraft`
+            )
+          }
+          className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white font-bold text-sm transition-colors"
+        >
+          Share on 𝕏
+        </button>
+        <button
           onClick={onReset}
-          className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+          className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
         >
           New Matchup
         </button>
@@ -282,6 +337,9 @@ export default function MatchupClient() {
 
   // ── Result overlays ──────────────────────────────────────────────
   if (sim?.mode === "single" && home && away) {
+    const r = sim.result;
+    const winnerName = r.winner === "home" ? sim.home.name : sim.away.name;
+    const shareText = `🏀 ${sim.home.name} ${r.homeTotal}–${r.awayTotal} ${sim.away.name}\n${winnerName} wins! ⚔️ Simulated on NBA TeamCraft`;
     return (
       <ExhibitionMatch
         userTeamName={sim.home.name}
@@ -292,7 +350,8 @@ export default function MatchupClient() {
         sessionRecord={{ wins: 0, losses: 0 }}
         onRematch={simulate}
         onClose={reset}
-        cupMode
+        defaultShowBox
+        onShare={() => shareToX(shareText)}
       />
     );
   }
