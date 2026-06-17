@@ -89,29 +89,41 @@ export default function Home() {
           <div className="fade-up fade-up-2 space-y-2.5">
             <ModeSelector variant="builder" />
 
-            {/* Match Simulator — sits directly under the Roster Builder button */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* Simulators — sit directly under the Roster Builder button */}
+            <div className="grid grid-cols-3 gap-2">
               <a
                 href="/matchup"
-                className="group block bg-gradient-to-br from-orange-500/15 via-zinc-900 to-zinc-900 border border-orange-500/30 hover:border-orange-500/60 rounded-2xl p-4 transition-colors"
+                className="group block bg-gradient-to-br from-orange-500/15 via-zinc-900 to-zinc-900 border border-orange-500/30 hover:border-orange-500/60 rounded-2xl p-3 transition-colors"
               >
                 <div className="flex flex-col gap-1.5">
                   <span className="text-2xl">⚔️</span>
-                  <p className="font-display text-sm font-black text-white">Match Simulator</p>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    1v1 · single game or series
+                  <p className="font-display text-[13px] font-black text-white leading-tight">Match Simulator</p>
+                  <p className="text-[10px] text-zinc-400 leading-snug">
+                    1v1 · game or series
                   </p>
                 </div>
               </a>
               <a
                 href="/playoffs"
-                className="group block bg-gradient-to-br from-yellow-500/10 via-zinc-900 to-zinc-900 border border-yellow-500/20 hover:border-yellow-500/40 rounded-2xl p-4 transition-colors"
+                className="group block bg-gradient-to-br from-yellow-500/10 via-zinc-900 to-zinc-900 border border-yellow-500/20 hover:border-yellow-500/40 rounded-2xl p-3 transition-colors"
               >
                 <div className="flex flex-col gap-1.5">
                   <span className="text-2xl">🏆</span>
-                  <p className="font-display text-sm font-black text-white">Playoff Simulator</p>
-                  <p className="text-[11px] text-zinc-400 leading-relaxed">
-                    4/8/16 teams · full bracket
+                  <p className="font-display text-[13px] font-black text-white leading-tight">Playoff Simulator</p>
+                  <p className="text-[10px] text-zinc-400 leading-snug">
+                    4/8/16 · full bracket
+                  </p>
+                </div>
+              </a>
+              <a
+                href="/season"
+                className="group block bg-gradient-to-br from-sky-500/10 via-zinc-900 to-zinc-900 border border-sky-500/20 hover:border-sky-500/40 rounded-2xl p-3 transition-colors"
+              >
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-2xl">📅</span>
+                  <p className="font-display text-[13px] font-black text-white leading-tight">Season Simulator</p>
+                  <p className="text-[10px] text-zinc-400 leading-snug">
+                    82 games · W-L record
                   </p>
                 </div>
               </a>
