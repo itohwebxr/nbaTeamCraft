@@ -85,12 +85,19 @@ function gaussian(rng: () => number): number {
 
 const BASE_POINTS = 105;
 
+// Expected points for `team` against `opp`. The headline `overall` is the
+// dominant strength signal (it's what users read on the card), with the four
+// sub-ratings adding texture. Coefficients are tuned so a clearly better team
+// reliably wins: a 5-overall edge ≈ +5.5 expected margin, a 10-overall edge
+// ≈ +11 — meaningful against the ~13pt single-game margin noise below (so the
+// favorite still loses sometimes, but no longer near a coin flip).
 function expectedPoints(team: SimTeamEvaluation, opp: SimTeamEvaluation): number {
   return (
     BASE_POINTS +
-    (team.offense - opp.defense) * 0.45 +
-    (team.rebound - opp.rebound) * 0.15 +
-    (team.playmaking - opp.playmaking) * 0.1
+    (team.overall - opp.overall) * 0.55 +
+    (team.offense - opp.defense) * 0.33 +
+    (team.rebound - opp.rebound) * 0.12 +
+    (team.playmaking - opp.playmaking) * 0.08
   );
 }
 
@@ -200,9 +207,12 @@ export function simulateGame(home: SimTeam, away: SimTeam, seed: string): GameRe
   let homeTotal = 0;
   let awayTotal = 0;
 
+  // Per-quarter noise of 4.6 → full-game margin stddev ≈ 13pts, matching real
+  // NBA single-game variance. Higher values drown out the rating edge and make
+  // outcomes feel like coin flips.
   for (let q = 0; q < 4; q++) {
-    const h = Math.max(12, Math.round(homeExp / 4 + gaussian(rng) * 5.5));
-    const a = Math.max(12, Math.round(awayExp / 4 + gaussian(rng) * 5.5));
+    const h = Math.max(12, Math.round(homeExp / 4 + gaussian(rng) * 4.6));
+    const a = Math.max(12, Math.round(awayExp / 4 + gaussian(rng) * 4.6));
     quarters.push({ home: h, away: a });
     homeTotal += h;
     awayTotal += a;

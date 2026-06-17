@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { headers } from "next/headers";
 import HeaderAuth from "@/components/auth/HeaderAuth";
+import BuildTeamButton from "@/components/team/BuildTeamButton";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +32,20 @@ function parse(sp: SP) {
   const kind = one(sp.kind) === "series" ? "series" : "single";
   const homeWon = parseInt(hs, 10) >= parseInt(as, 10);
   const gamesRaw = one(sp.games);
+  // Per-game top scorers, encoded as "hName~hPts~aName~aPts" per game.
+  const topsRaw = one(sp.tops);
+  const tops = topsRaw
+    ? topsRaw.split(",").map((t) => {
+        const [hName = "", hPts = "", aName = "", aPts = ""] = t.split("~");
+        return { hName, hPts, aName, aPts };
+      })
+    : [];
   const games = gamesRaw
     ? gamesRaw
         .split(",")
         .map((g) => g.split("-"))
         .filter((pair) => pair.length === 2 && pair[0] !== "")
-        .map(([h, a]) => ({ h, a }))
+        .map(([h, a], i) => ({ h, a, top: tops[i] }))
     : [];
   return { home, away, hs, as, kind, homeWon, games };
 }
@@ -58,7 +67,17 @@ export async function generateMetadata({
       : `${winner} wins ${hs}–${as} — simulated on NBA TeamCraft`;
 
   const qs = new URLSearchParams({ mode: "matchup", home, away, hs, as, kind });
-  if (games.length > 0) qs.set("games", games.map((g) => `${g.h}-${g.a}`).join(","));
+  if (games.length > 0) {
+    qs.set("games", games.map((g) => `${g.h}-${g.a}`).join(","));
+    if (games.some((g) => g.top)) {
+      qs.set(
+        "tops",
+        games
+          .map((g) => (g.top ? `${g.top.hName}~${g.top.hPts}~${g.top.aName}~${g.top.aPts}` : "~~~"))
+          .join(",")
+      );
+    }
+  }
   const ogImageUrl = `${siteUrl}/api/og?${qs.toString()}`;
 
   return {
@@ -127,15 +146,27 @@ export default async function MatchupResultPage({
               {games.map((g, i) => {
                 const hWon = parseInt(g.h, 10) >= parseInt(g.a, 10);
                 return (
-                  <div key={i} className="flex items-center gap-3 py-2">
-                    <span className="font-display text-xs font-bold text-zinc-500 w-7 shrink-0">G{i + 1}</span>
-                    <span className={`flex-1 text-xs font-bold truncate ${hWon ? "text-white" : "text-zinc-500"}`}>{home}</span>
-                    <span className="font-display text-sm font-black tabular-nums shrink-0">
-                      <span className={hWon ? "text-orange-400" : "text-zinc-500"}>{g.h}</span>
-                      <span className="text-zinc-700 mx-1.5">-</span>
-                      <span className={!hWon ? "text-orange-400" : "text-zinc-500"}>{g.a}</span>
-                    </span>
-                    <span className={`flex-1 text-xs font-bold truncate text-right ${!hWon ? "text-white" : "text-zinc-500"}`}>{away}</span>
+                  <div key={i} className="py-2">
+                    <div className="flex items-center gap-3">
+                      <span className="font-display text-xs font-bold text-zinc-500 w-7 shrink-0">G{i + 1}</span>
+                      <span className={`flex-1 text-xs font-bold truncate ${hWon ? "text-white" : "text-zinc-500"}`}>{home}</span>
+                      <span className="font-display text-sm font-black tabular-nums shrink-0">
+                        <span className={hWon ? "text-orange-400" : "text-zinc-500"}>{g.h}</span>
+                        <span className="text-zinc-700 mx-1.5">-</span>
+                        <span className={!hWon ? "text-orange-400" : "text-zinc-500"}>{g.a}</span>
+                      </span>
+                      <span className={`flex-1 text-xs font-bold truncate text-right ${!hWon ? "text-white" : "text-zinc-500"}`}>{away}</span>
+                    </div>
+                    {g.top && (g.top.hName || g.top.aName) && (
+                      <div className="flex items-center gap-2 mt-1 pl-10 text-[11px] text-zinc-500">
+                        <span className="flex-1 truncate">
+                          🏀 {g.top.hName} <span className="font-bold text-zinc-300">{g.top.hPts}</span>
+                        </span>
+                        <span className="flex-1 truncate text-right">
+                          <span className="font-bold text-zinc-300">{g.top.aPts}</span> {g.top.aName} 🏀
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -150,6 +181,7 @@ export default async function MatchupResultPage({
         >
           ⚔️ Simulate Your Own
         </Link>
+        <BuildTeamButton isSandbox />
         <Link
           href="/"
           className="block text-center text-xs text-zinc-500 hover:text-zinc-300 transition-colors"

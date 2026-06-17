@@ -9,10 +9,13 @@ type TeamPick = {
   overall: number;
   tier: string;
   is_sandbox: boolean;
+  is_historical?: boolean;
   created_at: string;
 };
 
 const SELECT = "id, name, overall, tier, is_sandbox, created_at";
+const LEGEND = "__legend__";
+const HISTORICAL = "__historical__";
 // Pool size scanned in-process for player / NBA-team substring matching. Small
 // scale, so a JS filter over recent teams is simpler and far more robust than
 // fragile jsonb-text casting inside PostgREST.
@@ -30,11 +33,13 @@ export async function GET(req: NextRequest) {
     const supabase = createServerClient();
 
     if (!q) {
+      // Default suggestion list: user-made teams only. Legend and historical
+      // (real NBA) teams are surfaced exclusively via explicit search.
       // Fetch one extra to tell whether more exist beyond the shown list.
       const { data, error } = await supabase
         .from("public_teams")
         .select(SELECT)
-        .neq("created_by_browser_id", "__legend__")
+        .not("created_by_browser_id", "in", `(${LEGEND},${HISTORICAL})`)
         .order("created_at", { ascending: false })
         .limit(limit + 1);
       if (error) throw error;
@@ -52,23 +57,12 @@ export async function GET(req: NextRequest) {
       .or(`name.ilike.%${q}%,abbreviation.ilike.%${q}%`);
     const matchingTeamIds = new Set((nbaTeams ?? []).map((t) => t.id as string));
 
-    // 2) Scan a recent pool and filter in JS by team name, player name, or the
-    //    player's NBA team id.
-    const { data: pool, error } = await supabase
-      .from("public_teams")
-      .select(`${SELECT}, roster_json, metadata`)
-      .neq("created_by_browser_id", "__legend__")
-      .order("created_at", { ascending: false })
-      .limit(POOL);
-    if (error) throw error;
-
     type PoolRow = TeamPick & {
       roster_json: { name: string }[];
       metadata: { players?: { name: string; team: string }[] } | null;
     };
 
-    const matched: TeamPick[] = [];
-    for (const row of (pool ?? []) as PoolRow[]) {
+    const rowMatches = (row: PoolRow): boolean => {
       const nameHit = row.name?.toLowerCase().includes(needle);
       const players = row.metadata?.players ?? [];
       const rosterNames = row.roster_json ?? [];
@@ -77,18 +71,46 @@ export async function GET(req: NextRequest) {
         players.some((p) => p.name?.toLowerCase().includes(needle));
       const nbaTeamHit =
         matchingTeamIds.size > 0 && players.some((p) => matchingTeamIds.has(p.team));
+      return !!(nameHit || playerHit || nbaTeamHit);
+    };
 
-      if (nameHit || playerHit || nbaTeamHit) {
-        matched.push({
-          id: row.id,
-          name: row.name,
-          overall: row.overall,
-          tier: row.tier,
-          is_sandbox: row.is_sandbox,
-          created_at: row.created_at,
-        });
-      }
-    }
+    // 2) User-made teams: scan a recent pool and filter in JS.
+    const { data: userPool, error } = await supabase
+      .from("public_teams")
+      .select(`${SELECT}, roster_json, metadata`)
+      .not("created_by_browser_id", "in", `(${LEGEND},${HISTORICAL})`)
+      .order("created_at", { ascending: false })
+      .limit(POOL);
+    if (error) throw error;
+
+    // 3) Historical (real NBA) teams: queried separately so their bulk doesn't
+    //    crowd the user pool. Bounded set (≈one row per real team), so a full
+    //    JS scan is fine.
+    const { data: histPool, error: histErr } = await supabase
+      .from("public_teams")
+      .select(`${SELECT}, roster_json, metadata`)
+      .eq("created_by_browser_id", HISTORICAL)
+      .limit(2000);
+    if (histErr) throw histErr;
+
+    const toPick = (row: PoolRow, historical: boolean): TeamPick => ({
+      id: row.id,
+      name: row.name,
+      overall: row.overall,
+      tier: row.tier,
+      is_sandbox: row.is_sandbox,
+      is_historical: historical,
+      created_at: row.created_at,
+    });
+
+    const userMatches = ((userPool ?? []) as PoolRow[]).filter(rowMatches).map((r) => toPick(r, false));
+    const histMatches = ((histPool ?? []) as PoolRow[])
+      .filter(rowMatches)
+      .sort((a, b) => b.overall - a.overall)
+      .map((r) => toPick(r, true));
+
+    // User-made teams first, then real NBA teams (strongest first).
+    const matched = [...userMatches, ...histMatches];
 
     return NextResponse.json({
       teams: matched.slice(0, limit),

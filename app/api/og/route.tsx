@@ -55,6 +55,12 @@ export async function GET(req: NextRequest) {
       .map((g) => g.split("-"))
       .filter((pair) => pair.length === 2 && pair[0] !== "");
 
+    // Per-game top scorers, encoded as "hName~hPts~aName~aPts" per game.
+    const tops = (p.get("tops") || "").split(",").map((t) => {
+      const [hName = "", hPts = "", aName = "", aPts = ""] = t.split("~");
+      return { hName, hPts, aName, aPts };
+    });
+
     if (isSeries && games.length > 0) {
       const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
       return new ImageResponse(
@@ -74,14 +80,29 @@ export async function GET(req: NextRequest) {
             <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center", gap: "6px" }}>
               {games.map(([h, a], i) => {
                 const hWon = parseInt(h, 10) >= parseInt(a, 10);
+                const top = tops[i];
+                const hasTop = top && (top.hName || top.aName);
                 return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "16px", padding: "6px 16px", background: i % 2 === 0 ? "#18181b" : "transparent", borderRadius: "8px" }}>
-                    <span style={{ fontSize: "16px", fontWeight: 700, color: "#71717a", width: "42px", display: "flex" }}>G{i + 1}</span>
-                    <span style={{ fontSize: "20px", fontWeight: hWon ? 700 : 400, color: hWon ? "#ffffff" : "#71717a", flex: 1, display: "flex", overflow: "hidden" }}>{truncate(homeName, 18)}</span>
-                    <span style={{ fontSize: "22px", fontWeight: 900, color: hWon ? "#f97316" : "#71717a", display: "flex" }}>{h}</span>
-                    <span style={{ fontSize: "16px", color: "#3f3f46", display: "flex" }}>-</span>
-                    <span style={{ fontSize: "22px", fontWeight: 900, color: !hWon ? "#f97316" : "#71717a", display: "flex" }}>{a}</span>
-                    <span style={{ fontSize: "20px", fontWeight: !hWon ? 700 : 400, color: !hWon ? "#ffffff" : "#71717a", flex: 1, textAlign: "right", display: "flex", justifyContent: "flex-end", overflow: "hidden" }}>{truncate(awayName, 18)}</span>
+                  <div key={i} style={{ display: "flex", flexDirection: "column", padding: "5px 16px", background: i % 2 === 0 ? "#18181b" : "transparent", borderRadius: "8px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                      <span style={{ fontSize: "16px", fontWeight: 700, color: "#71717a", width: "42px", display: "flex" }}>G{i + 1}</span>
+                      <span style={{ fontSize: "20px", fontWeight: hWon ? 700 : 400, color: hWon ? "#ffffff" : "#71717a", flex: 1, display: "flex", overflow: "hidden" }}>{truncate(homeName, 18)}</span>
+                      <span style={{ fontSize: "22px", fontWeight: 900, color: hWon ? "#f97316" : "#71717a", display: "flex" }}>{h}</span>
+                      <span style={{ fontSize: "16px", color: "#3f3f46", display: "flex" }}>-</span>
+                      <span style={{ fontSize: "22px", fontWeight: 900, color: !hWon ? "#f97316" : "#71717a", display: "flex" }}>{a}</span>
+                      <span style={{ fontSize: "20px", fontWeight: !hWon ? 700 : 400, color: !hWon ? "#ffffff" : "#71717a", flex: 1, textAlign: "right", display: "flex", justifyContent: "flex-end", overflow: "hidden" }}>{truncate(awayName, 18)}</span>
+                    </div>
+                    {hasTop && (
+                      <div style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "2px" }}>
+                        <span style={{ width: "42px", display: "flex" }} />
+                        <span style={{ fontSize: "13px", color: "#52525b", flex: 1, display: "flex", overflow: "hidden" }}>
+                          {truncate(top.hName, 16)} {top.hPts}
+                        </span>
+                        <span style={{ fontSize: "13px", color: "#52525b", flex: 1, textAlign: "right", display: "flex", justifyContent: "flex-end", overflow: "hidden" }}>
+                          {top.aPts} {truncate(top.aName, 16)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               })}

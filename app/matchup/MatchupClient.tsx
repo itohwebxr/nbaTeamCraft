@@ -4,7 +4,29 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GameResult } from "@/lib/simulateGame";
 import { gtm } from "@/lib/gtm";
+import { useDraftStore } from "@/stores/draftStore";
 import ExhibitionMatch from "@/components/cup/ExhibitionMatch";
+
+// CTA that drops the user into the Roster Builder to create their own lineup.
+// Surfaced on the picker and on result screens to convert simulator play into
+// team creation.
+function BuildOwnTeamCTA({ className = "" }: { className?: string }) {
+  const router = useRouter();
+  const { setMode, reset } = useDraftStore();
+  const go = () => {
+    reset();
+    setMode("sandbox");
+    router.push("/draft");
+  };
+  return (
+    <button
+      onClick={go}
+      className={`block w-full py-3 rounded-xl border border-zinc-700 hover:border-orange-500/60 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-sm text-center transition-colors ${className}`}
+    >
+      🔧 Want a custom contender? Build your own team →
+    </button>
+  );
+}
 
 type TeamPick = {
   id: string;
@@ -12,10 +34,37 @@ type TeamPick = {
   overall: number;
   tier: string;
   is_sandbox: boolean;
+  is_historical?: boolean;
   created_at: string;
 };
 
+// Source label shown under a team in the picker.
+function sourceLabel(t: { is_historical?: boolean; is_sandbox: boolean }): string {
+  if (t.is_historical) return "🏀 Real NBA Team";
+  return t.is_sandbox ? "Roster Builder" : "Dream Draft";
+}
+
 type SimMeta = { id: string; name: string; overall: number; tier: string };
+
+// Top scorer line from a box score (highest points; first on ties).
+function topScorer(box: { name: string; pts: number }[]): { name: string; pts: number } {
+  return box.reduce(
+    (best, l) => (l.pts > best.pts ? { name: l.name, pts: l.pts } : best),
+    { name: "", pts: -1 }
+  );
+}
+
+// Encode per-game top scorers for the share URL: "hName~hPts~aName~aPts" per
+// game, games joined by ",". Player names don't contain "~" or ",".
+function encodeTops(games: GameResult[]): string {
+  return games
+    .map((g) => {
+      const h = topScorer(g.homeBox);
+      const a = topScorer(g.awayBox);
+      return `${h.name}~${h.pts}~${a.name}~${a.pts}`;
+    })
+    .join(",");
+}
 
 // Open the X intent composer. The shared URL points to /matchup/result with the
 // result encoded in the query string, so the link carries a rich VS-scoreboard
@@ -30,6 +79,8 @@ function shareToX(
     kind: "single" | "series";
     /** Per-game scores for a series, e.g. "102-112,117-107,..." */
     games?: string;
+    /** Per-game top scorers, e.g. "LeBron~34~Curry~29,..." */
+    tops?: string;
   }
 ) {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -41,6 +92,7 @@ function shareToX(
     kind: result.kind,
   });
   if (result.games) qs.set("games", result.games);
+  if (result.tops) qs.set("tops", result.tops);
   const url = `${origin}/matchup/result?${qs.toString()}`;
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
     `${text}\n#NBATeamCraft #NBA @nbaTeamCraft\n`
@@ -160,7 +212,7 @@ function TeamPicker({
           </div>
           <div className="flex items-center justify-between mt-1">
             <span className="text-[10px] text-zinc-500 uppercase tracking-wider">
-              {selected.is_sandbox ? "Roster Builder" : "Dream Draft"}
+              {sourceLabel(selected)}
             </span>
             <span className="font-display text-sm font-black text-orange-400">{selected.overall}</span>
           </div>
@@ -209,8 +261,8 @@ function TeamPicker({
                       <span className="font-display text-xs font-black text-orange-400">{t.overall}</span>
                     </span>
                   </div>
-                  <span className="text-[10px] text-zinc-600 uppercase tracking-wider">
-                    {t.is_sandbox ? "Roster Builder" : "Dream Draft"}
+                  <span className={`text-[10px] uppercase tracking-wider ${t.is_historical ? "text-orange-400/80" : "text-zinc-600"}`}>
+                    {sourceLabel(t)}
                   </span>
                 </button>
               ))}
@@ -266,21 +318,34 @@ function SeriesResult({
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl divide-y divide-zinc-800/60">
           {games.map((g, i) => {
             const homeWon = g.winner === "home";
+            const ht = topScorer(g.homeBox);
+            const at = topScorer(g.awayBox);
             return (
-              <div key={i} className="flex items-center gap-3 px-4 py-3">
-                <span className="font-display text-xs font-bold text-zinc-500 w-12 shrink-0">G{i + 1}</span>
-                <span className={`flex-1 text-sm font-bold truncate ${homeWon ? "text-white" : "text-zinc-500"}`}>
-                  {home.name}
-                </span>
-                <span className="font-display text-sm font-black tabular-nums shrink-0">
-                  <span className={homeWon ? "text-orange-400" : "text-zinc-500"}>{g.homeTotal}</span>
-                  <span className="text-zinc-700 mx-1.5">-</span>
-                  <span className={!homeWon ? "text-orange-400" : "text-zinc-500"}>{g.awayTotal}</span>
-                </span>
-                <span className={`flex-1 text-sm font-bold truncate text-right ${!homeWon ? "text-white" : "text-zinc-500"}`}>
-                  {away.name}
-                </span>
-                {g.overtime && <span className="text-[10px] text-amber-400 font-bold shrink-0">OT</span>}
+              <div key={i} className="px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="font-display text-xs font-bold text-zinc-500 w-12 shrink-0">G{i + 1}</span>
+                  <span className={`flex-1 text-sm font-bold truncate ${homeWon ? "text-white" : "text-zinc-500"}`}>
+                    {home.name}
+                  </span>
+                  <span className="font-display text-sm font-black tabular-nums shrink-0">
+                    <span className={homeWon ? "text-orange-400" : "text-zinc-500"}>{g.homeTotal}</span>
+                    <span className="text-zinc-700 mx-1.5">-</span>
+                    <span className={!homeWon ? "text-orange-400" : "text-zinc-500"}>{g.awayTotal}</span>
+                  </span>
+                  <span className={`flex-1 text-sm font-bold truncate text-right ${!homeWon ? "text-white" : "text-zinc-500"}`}>
+                    {away.name}
+                  </span>
+                  {g.overtime && <span className="text-[10px] text-amber-400 font-bold shrink-0">OT</span>}
+                </div>
+                {/* Top scorer of each team for this game */}
+                <div className="flex items-center gap-2 mt-1.5 pl-12 text-[11px] text-zinc-500">
+                  <span className="flex-1 truncate">
+                    🏀 {ht.name} <span className="font-bold text-zinc-300">{ht.pts}</span>
+                  </span>
+                  <span className="flex-1 truncate text-right">
+                    <span className="font-bold text-zinc-300">{at.pts}</span> {at.name} 🏀
+                  </span>
+                </div>
               </div>
             );
           })}
@@ -297,6 +362,7 @@ function SeriesResult({
                 as: wins.away,
                 kind: "series",
                 games: games.map((g) => `${g.homeTotal}-${g.awayTotal}`).join(","),
+                tops: encodeTops(games),
               }
             )
           }
@@ -310,6 +376,7 @@ function SeriesResult({
         >
           New Matchup
         </button>
+        <BuildOwnTeamCTA />
       </div>
     </div>
   );
@@ -390,6 +457,7 @@ export default function MatchupClient() {
             kind: "single",
           })
         }
+        footer={<BuildOwnTeamCTA />}
       />
     );
   }
@@ -469,6 +537,13 @@ export default function MatchupClient() {
             "⚔️ Simulate"
           )}
         </button>
+
+        <div className="pt-2">
+          <p className="text-center text-xs text-zinc-600 mb-2">
+            Can&apos;t find the perfect roster?
+          </p>
+          <BuildOwnTeamCTA />
+        </div>
       </div>
     </div>
   );
