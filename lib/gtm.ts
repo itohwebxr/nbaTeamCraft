@@ -178,4 +178,9 @@ export const gtm = {
     mode: "single" | "series";
     winner: string;
   }) => push({ event: "simulate_match", ...params }),
+
+  seriesPlaybackSkip: (params: {
+    games_revealed: number;
+    games_total: number;
+  }) => push({ event: "series_playback_skip", ...params }),
 };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { GameResult } from "@/lib/simulateGame";
 import { gtm } from "@/lib/gtm";
@@ -432,6 +432,243 @@ function SeriesResult({
   );
 }
 
+// ── Series playback (game-by-game animated reveal) ──────────────────
+// Plays the already-computed series one game at a time so the result builds
+// tension instead of dropping all at once — designed to be screen-recorded
+// for short-form video. When playback finishes it hands off to SeriesResult,
+// which is the unchanged final/share screen.
+
+function usePrefersReducedMotion(): boolean {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReduce(mq.matches);
+    const on = () => setReduce(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return reduce;
+}
+
+// Eased count-up toward `target`; only runs while `active`.
+function useCountUp(target: number, active: boolean, duration = 1000): number {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    let raf = 0;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setVal(Math.round(eased * target));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, active, duration]);
+  return val;
+}
+
+function ScoreNum({ value, animate }: { value: number; animate: boolean }) {
+  const shown = useCountUp(value, animate);
+  return <>{animate ? shown : value}</>;
+}
+
+function PlayGameRow({
+  g,
+  index,
+  home,
+  away,
+  animate,
+  settled,
+}: {
+  g: GameResult;
+  index: number;
+  home: SimMeta;
+  away: SimMeta;
+  animate: boolean;
+  settled: boolean;
+}) {
+  const homeWon = g.winner === "home";
+  // While the active row is still counting up, keep both sides neutral so the
+  // winner only "pops" once the final score lands.
+  const decided = settled || !animate;
+  const ht = topScorer(g.homeBox);
+  const at = topScorer(g.awayBox);
+  return (
+    <div
+      className={`px-4 py-3 gp-rise transition-colors ${
+        animate ? "bg-orange-500/5 ring-1 ring-inset ring-orange-500/30 rounded-xl" : ""
+      }`}
+    >
+      <div className="flex items-center gap-3">
+        <span className="font-display text-xs font-bold text-zinc-500 w-12 shrink-0">G{index + 1}</span>
+        <span className={`flex-1 text-sm font-bold truncate ${decided && homeWon ? "text-white" : "text-zinc-500"}`}>
+          {home.name}
+        </span>
+        <span className="font-display text-sm font-black tabular-nums shrink-0">
+          <span className={decided && homeWon ? "text-orange-400" : "text-zinc-400"}>
+            <ScoreNum value={g.homeTotal} animate={animate && !settled} />
+          </span>
+          <span className="text-zinc-700 mx-1.5">-</span>
+          <span className={decided && !homeWon ? "text-orange-400" : "text-zinc-400"}>
+            <ScoreNum value={g.awayTotal} animate={animate && !settled} />
+          </span>
+        </span>
+        <span className={`flex-1 text-sm font-bold truncate text-right ${decided && !homeWon ? "text-white" : "text-zinc-500"}`}>
+          {away.name}
+        </span>
+        {g.overtime && decided && <span className="text-[10px] text-amber-400 font-bold shrink-0">OT</span>}
+      </div>
+      {decided && (
+        <div className="flex items-center gap-3 mt-1.5 pl-12 text-[11px] text-zinc-500 gp-fade">
+          <span className="flex-1 min-w-0 flex items-center gap-1">
+            <span className="shrink-0">🏀</span>
+            <span className="truncate">{shortScorer(ht.name)}</span>
+            <span className="font-bold text-zinc-300 shrink-0">{ht.pts}</span>
+          </span>
+          <span className="flex-1 min-w-0 flex items-center justify-end gap-1">
+            <span className="font-bold text-zinc-300 shrink-0">{at.pts}</span>
+            <span className="truncate">{shortScorer(at.name)}</span>
+            <span className="shrink-0">🏀</span>
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Per-game pacing (ms): time the scores count up, then time before the next
+// game drops in.
+const SETTLE_MS = 1100;
+const ADVANCE_MS = 2700;
+
+function SeriesPlayback(props: {
+  home: SimMeta;
+  away: SimMeta;
+  games: GameResult[];
+  wins: { home: number; away: number };
+  winner: "home" | "away";
+  onReset: () => void;
+  onRematch: () => void;
+}) {
+  const { home, away, games } = props;
+  const reduce = usePrefersReducedMotion();
+  const [current, setCurrent] = useState(0); // index of the game animating now
+  const [settled, setSettled] = useState(false); // active game's score landed?
+  const [done, setDone] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  // Drive the reveal: settle the active game, then advance to the next.
+  useEffect(() => {
+    if (done) return;
+    if (current >= games.length) {
+      const t = setTimeout(() => setDone(true), reduce ? 0 : 900);
+      return () => clearTimeout(t);
+    }
+    setSettled(false);
+    const t1 = setTimeout(() => setSettled(true), reduce ? 0 : SETTLE_MS);
+    const t2 = setTimeout(() => setCurrent((c) => c + 1), reduce ? 250 : ADVANCE_MS);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [current, done, games.length, reduce]);
+
+  // Keep the newest game in view as the list grows.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "end" });
+  }, [current, settled, reduce]);
+
+  // Running series score: count games whose reveal has completed. The active
+  // game joins the tally the moment its score settles, so the number pops in
+  // sync with the winner lighting up.
+  const tally = useMemo(() => {
+    let h = 0;
+    let a = 0;
+    const upto = Math.min(settled ? current + 1 : current, games.length);
+    for (let i = 0; i < upto; i++) {
+      if (games[i].winner === "home") h++;
+      else a++;
+    }
+    return { h, a };
+  }, [current, settled, games]);
+
+  if (done) return <SeriesResult {...props} />;
+
+  const leadHome = tally.h > tally.a;
+  const leadAway = tally.a > tally.h;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur overflow-y-auto">
+      <style>{`
+        @keyframes gp-rise { 0% { transform: translateY(16px); opacity: 0 } 100% { transform: translateY(0); opacity: 1 } }
+        @keyframes gp-pop  { 0% { transform: scale(.55); opacity: 0 } 60% { transform: scale(1.18) } 100% { transform: scale(1); opacity: 1 } }
+        @keyframes gp-fade { 0% { opacity: 0 } 100% { opacity: 1 } }
+        .gp-rise { animation: gp-rise .45s cubic-bezier(.2,.7,.2,1) both }
+        .gp-pop  { animation: gp-pop  .5s  cubic-bezier(.2,.9,.3,1.25) both }
+        .gp-fade { animation: gp-fade .4s ease both }
+        @media (prefers-reduced-motion: reduce) { .gp-rise,.gp-pop,.gp-fade { animation: none } }
+      `}</style>
+
+      <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
+        <div className="flex items-center justify-between">
+          <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em]">
+            Series · Best of 7
+          </p>
+          <button
+            onClick={() => {
+              gtm.seriesPlaybackSkip({ games_revealed: Math.min(current + 1, games.length), games_total: games.length });
+              setDone(true);
+            }}
+            className="text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
+          >
+            Skip ⏭
+          </button>
+        </div>
+
+        {/* Live series scoreboard — pops on each change */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0 text-center">
+              <p className={`text-xs font-bold truncate ${leadHome ? "text-white" : "text-zinc-400"}`}>{home.name}</p>
+              <p key={`h-${tally.h}`} className={`gp-pop font-display text-6xl font-black mt-1 ${leadHome ? "text-orange-400" : "text-zinc-500"}`}>
+                {tally.h}
+              </p>
+            </div>
+            <span className="font-display text-lg font-black text-zinc-600 shrink-0">–</span>
+            <div className="flex-1 min-w-0 text-center">
+              <p className={`text-xs font-bold truncate ${leadAway ? "text-white" : "text-zinc-400"}`}>{away.name}</p>
+              <p key={`a-${tally.a}`} className={`gp-pop font-display text-6xl font-black mt-1 ${leadAway ? "text-orange-400" : "text-zinc-500"}`}>
+                {tally.a}
+              </p>
+            </div>
+          </div>
+          <p className="text-center text-[11px] text-zinc-500 mt-4 pt-3 border-t border-zinc-800 font-display uppercase tracking-[0.2em]">
+            {current < games.length ? `Game ${Math.min(current + 1, games.length)} of ${games.length}` : "Series complete"}
+          </p>
+        </div>
+
+        {/* Games revealed so far (active one animates) */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl divide-y divide-zinc-800/60">
+          {games.slice(0, Math.min(current + 1, games.length)).map((g, i) => (
+            <PlayGameRow
+              key={i}
+              g={g}
+              index={i}
+              home={home}
+              away={away}
+              animate={i === current}
+              settled={i === current ? settled : true}
+            />
+          ))}
+        </div>
+        <div ref={endRef} />
+      </div>
+    </div>
+  );
+}
+
 export default function MatchupClient() {
   const router = useRouter();
   const params = useSearchParams();
@@ -524,7 +761,9 @@ export default function MatchupClient() {
 
   if (sim?.mode === "series") {
     return (
-      <SeriesResult
+      <SeriesPlayback
+        // Remount per simulation so a rematch replays from Game 1.
+        key={`${sim.home.id}-${sim.away.id}-${sim.games.length}-${sim.seriesWins.home}-${sim.seriesWins.away}`}
         home={sim.home}
         away={sim.away}
         games={sim.games}
