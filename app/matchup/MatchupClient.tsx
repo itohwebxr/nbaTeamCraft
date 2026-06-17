@@ -58,6 +58,16 @@ function sourceLabel(t: { is_historical?: boolean; is_sandbox: boolean; id: stri
 
 type SimMeta = { id: string; name: string; overall: number; tier: string };
 
+// Shorten a player name so the points stay visible: first name → initial,
+// then hard-cap the remainder so long family names get an ellipsis.
+// e.g. "Giannis Antetokounmpo" → "G. Antetokoun…"
+function shortScorer(name: string, max = 13, ellipsis = true): string {
+  const parts = name.trim().split(/\s+/);
+  let s = parts.length >= 2 ? `${parts[0][0]}. ${parts.slice(1).join(" ")}` : name;
+  if (s.length > max) s = ellipsis ? `${s.slice(0, max - 1)}…` : s.slice(0, max);
+  return s;
+}
+
 // Top scorer line from a box score (highest points; first on ties).
 function topScorer(box: { name: string; pts: number }[]): { name: string; pts: number } {
   return box.reduce(
@@ -67,13 +77,14 @@ function topScorer(box: { name: string; pts: number }[]): { name: string; pts: n
 }
 
 // Encode per-game top scorers for the share URL: "hName~hPts~aName~aPts" per
-// game, games joined by ",". Player names don't contain "~" or ",".
+// game, games joined by ",". Names are shortened (first-initial + capped, no
+// ellipsis) so the URL stays well under X's character limit.
 function encodeTops(games: GameResult[]): string {
   return games
     .map((g) => {
       const h = topScorer(g.homeBox);
       const a = topScorer(g.awayBox);
-      return `${h.name}~${h.pts}~${a.name}~${a.pts}`;
+      return `${shortScorer(h.name, 13, false)}~${h.pts}~${shortScorer(a.name, 13, false)}~${a.pts}`;
     })
     .join(",");
 }
@@ -365,13 +376,18 @@ function SeriesResult({
                   </span>
                   {g.overtime && <span className="text-[10px] text-amber-400 font-bold shrink-0">OT</span>}
                 </div>
-                {/* Top scorer of each team for this game */}
-                <div className="flex items-center gap-2 mt-1.5 pl-12 text-[11px] text-zinc-500">
-                  <span className="flex-1 truncate">
-                    🏀 {ht.name} <span className="font-bold text-zinc-300">{ht.pts}</span>
+                {/* Top scorer of each team for this game. Name truncates while
+                    the points stay pinned (shrink-0) so they're always visible. */}
+                <div className="flex items-center gap-3 mt-1.5 pl-12 text-[11px] text-zinc-500">
+                  <span className="flex-1 min-w-0 flex items-center gap-1">
+                    <span className="shrink-0">🏀</span>
+                    <span className="truncate">{shortScorer(ht.name)}</span>
+                    <span className="font-bold text-zinc-300 shrink-0">{ht.pts}</span>
                   </span>
-                  <span className="flex-1 truncate text-right">
-                    <span className="font-bold text-zinc-300">{at.pts}</span> {at.name} 🏀
+                  <span className="flex-1 min-w-0 flex items-center justify-end gap-1">
+                    <span className="font-bold text-zinc-300 shrink-0">{at.pts}</span>
+                    <span className="truncate">{shortScorer(at.name)}</span>
+                    <span className="shrink-0">🏀</span>
                   </span>
                 </div>
               </div>

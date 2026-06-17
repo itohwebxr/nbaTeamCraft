@@ -22,6 +22,15 @@ function one(v: string | string[] | undefined, fallback = ""): string {
   return v ?? fallback;
 }
 
+// Shorten a player name so the points stay visible: first name → initial,
+// then hard-cap the remainder. e.g. "Giannis Antetokounmpo" → "G. Antetokoun…"
+function shortScorer(name: string, max = 13): string {
+  const parts = name.trim().split(/\s+/);
+  let s = parts.length >= 2 ? `${parts[0][0]}. ${parts.slice(1).join(" ")}` : name;
+  if (s.length > max) s = `${s.slice(0, max - 1)}…`;
+  return s;
+}
+
 // Reads the matchup result encoded in the query string. The result itself is
 // ephemeral (not persisted), so the shareable summary lives in the URL.
 function parse(sp: SP) {
@@ -158,12 +167,16 @@ export default async function MatchupResultPage({
                       <span className={`flex-1 text-xs font-bold truncate text-right ${!hWon ? "text-white" : "text-zinc-500"}`}>{away}</span>
                     </div>
                     {g.top && (g.top.hName || g.top.aName) && (
-                      <div className="flex items-center gap-2 mt-1 pl-10 text-[11px] text-zinc-500">
-                        <span className="flex-1 truncate">
-                          🏀 {g.top.hName} <span className="font-bold text-zinc-300">{g.top.hPts}</span>
+                      <div className="flex items-center gap-3 mt-1 pl-10 text-[11px] text-zinc-500">
+                        <span className="flex-1 min-w-0 flex items-center gap-1">
+                          <span className="shrink-0">🏀</span>
+                          <span className="truncate">{shortScorer(g.top.hName)}</span>
+                          <span className="font-bold text-zinc-300 shrink-0">{g.top.hPts}</span>
                         </span>
-                        <span className="flex-1 truncate text-right">
-                          <span className="font-bold text-zinc-300">{g.top.aPts}</span> {g.top.aName} 🏀
+                        <span className="flex-1 min-w-0 flex items-center justify-end gap-1">
+                          <span className="font-bold text-zinc-300 shrink-0">{g.top.aPts}</span>
+                          <span className="truncate">{shortScorer(g.top.aName)}</span>
+                          <span className="shrink-0">🏀</span>
                         </span>
                       </div>
                     )}
