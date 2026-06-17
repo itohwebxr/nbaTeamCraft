@@ -82,28 +82,28 @@ export async function GET(req: NextRequest) {
                 const hWon = parseInt(h, 10) >= parseInt(a, 10);
                 const top = tops[i] ?? { hName: "", hPts: "", aName: "", aPts: "" };
                 return (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "4px 16px", background: i % 2 === 0 ? "#18181b" : "transparent", borderRadius: "8px" }}>
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "8px 16px", background: i % 2 === 0 ? "#18181b" : "transparent", borderRadius: "8px" }}>
                     <span style={{ fontSize: "15px", fontWeight: 700, color: "#71717a", width: "34px", display: "flex" }}>G{i + 1}</span>
-                    {/* Home: team name + top scorer beside it */}
-                    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
-                      <span style={{ fontSize: "19px", fontWeight: hWon ? 700 : 400, color: hWon ? "#ffffff" : "#71717a", display: "flex" }}>{truncate(homeName, 18)}</span>
+                    {/* Home: team name with top scorer inline to its right */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, overflow: "hidden" }}>
+                      <span style={{ fontSize: "19px", fontWeight: hWon ? 700 : 400, color: hWon ? "#ffffff" : "#71717a", display: "flex" }}>{truncate(homeName, 14)}</span>
                       {top.hName && (
-                        <span style={{ fontSize: "15px", fontWeight: 700, color: "#fbbf24", display: "flex" }}>
-                          {truncate(top.hName, 16)} {top.hPts}<span style={{ fontSize: "11px", color: "#a16207", marginLeft: "3px", display: "flex" }}>PTS</span>
+                        <span style={{ fontSize: "16px", fontWeight: 700, color: "#fbbf24", display: "flex", alignItems: "center" }}>
+                          {truncate(top.hName, 12)} {top.hPts}<span style={{ fontSize: "11px", color: "#a16207", marginLeft: "3px", display: "flex" }}>PTS</span>
                         </span>
                       )}
                     </div>
                     <span style={{ fontSize: "25px", fontWeight: 900, color: hWon ? "#f97316" : "#71717a", display: "flex" }}>{h}</span>
                     <span style={{ fontSize: "15px", color: "#3f3f46", display: "flex" }}>-</span>
                     <span style={{ fontSize: "25px", fontWeight: 900, color: !hWon ? "#f97316" : "#71717a", display: "flex" }}>{a}</span>
-                    {/* Away: team name + top scorer beside it */}
-                    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden", alignItems: "flex-end" }}>
-                      <span style={{ fontSize: "19px", fontWeight: !hWon ? 700 : 400, color: !hWon ? "#ffffff" : "#71717a", display: "flex" }}>{truncate(awayName, 18)}</span>
+                    {/* Away: top scorer inline to the left of the team name */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, overflow: "hidden", justifyContent: "flex-end" }}>
                       {top.aName && (
-                        <span style={{ fontSize: "15px", fontWeight: 700, color: "#fbbf24", display: "flex" }}>
-                          {top.aPts}<span style={{ fontSize: "11px", color: "#a16207", margin: "0 3px", display: "flex" }}>PTS</span>{truncate(top.aName, 16)}
+                        <span style={{ fontSize: "16px", fontWeight: 700, color: "#fbbf24", display: "flex", alignItems: "center" }}>
+                          {top.aPts}<span style={{ fontSize: "11px", color: "#a16207", margin: "0 3px", display: "flex" }}>PTS</span>{truncate(top.aName, 12)}
                         </span>
                       )}
+                      <span style={{ fontSize: "19px", fontWeight: !hWon ? 700 : 400, color: !hWon ? "#ffffff" : "#71717a", display: "flex" }}>{truncate(awayName, 14)}</span>
                     </div>
                   </div>
                 );
