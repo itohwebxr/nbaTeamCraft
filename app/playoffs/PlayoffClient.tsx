@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { gtm } from "@/lib/gtm";
 import type { PlayoffResult, SeriesSummary } from "@/app/api/playoff/simulate/route";
 import { TeamPicker, TeamPick, RANDOM_ID, RANDOM_PICK } from "@/components/sim/TeamPicker";
@@ -430,8 +430,24 @@ const SIZE_OPTIONS: BracketSize[] = [4, 8, 16];
 
 export default function PlayoffClient() {
   const router = useRouter();
+  const params = useSearchParams();
   const [size, setSize] = useState<BracketSize>(8);
-  const [teams, setTeams] = useState<(TeamPick | null)[]>(() => Array(8).fill(null));
+
+  // When arriving from a team / result page, seed Group A's first slot (A1)
+  // with the created team and fill the rest with random picks.
+  const [teams, setTeams] = useState<(TeamPick | null)[]>(() => {
+    const id = params.get("teamId");
+    if (!id) return Array(8).fill(null);
+    const created: TeamPick = {
+      id,
+      name: params.get("teamName") ?? "Selected Team",
+      overall: Number(params.get("teamOverall")) || 0,
+      tier: params.get("teamTier") ?? "C",
+      is_sandbox: params.get("teamSandbox") === "1",
+      created_at: "",
+    };
+    return [created, ...Array(7).fill(RANDOM_PICK)];
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PlayoffResult | null>(null);
