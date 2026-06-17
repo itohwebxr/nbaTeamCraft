@@ -88,27 +88,28 @@ export default function Home() {
           {/* Roster Builder CTA */}
           <div className="fade-up fade-up-2 space-y-2.5">
             <ModeSelector variant="builder" />
+
+            {/* Match Simulator — sits directly under the Roster Builder button */}
+            <a
+              href="/matchup"
+              className="group w-full block bg-gradient-to-br from-orange-500/15 via-zinc-900 to-zinc-900 border border-orange-500/30 hover:border-orange-500/60 rounded-2xl p-5 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                <span className="text-3xl shrink-0">⚔️</span>
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="font-display text-sm font-black text-white">Match Simulator</p>
+                  <p className="text-xs text-zinc-400 leading-relaxed mt-0.5">
+                    Pit any two lineups against each other — single game or 4-win series.
+                  </p>
+                </div>
+                <span className="font-display text-orange-400 group-hover:translate-x-0.5 transition-transform shrink-0">→</span>
+              </div>
+            </a>
+
             <p className="text-xs text-zinc-500 leading-relaxed">
               Test any trade or FA rumor — build the roster &amp; see how strong it is
             </p>
           </div>
-
-          {/* Match Simulator — head-to-head between any two saved teams */}
-          <a
-            href="/matchup"
-            className="fade-up fade-up-3 group w-full block bg-gradient-to-br from-orange-500/15 via-zinc-900 to-zinc-900 border border-orange-500/30 hover:border-orange-500/60 rounded-2xl p-5 transition-colors"
-          >
-            <div className="flex items-center gap-4">
-              <span className="text-3xl shrink-0">⚔️</span>
-              <div className="min-w-0 flex-1 text-left">
-                <p className="font-display text-sm font-black text-white">Match Simulator</p>
-                <p className="text-xs text-zinc-400 leading-relaxed mt-0.5">
-                  Pit any two lineups against each other — single game or 4-win series.
-                </p>
-              </div>
-              <span className="font-display text-orange-400 group-hover:translate-x-0.5 transition-transform shrink-0">→</span>
-            </div>
-          </a>
 
           {/* Latest Builds — visible proof of the trade-scenario loop */}
           <Suspense fallback={null}>
