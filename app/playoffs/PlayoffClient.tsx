@@ -4,30 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { gtm } from "@/lib/gtm";
 import type { PlayoffResult, SeriesSummary } from "@/app/api/playoff/simulate/route";
+import { TeamPicker, TeamPick, RANDOM_ID, RANDOM_PICK } from "@/components/sim/TeamPicker";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
 type BracketSize = 4 | 8 | 16;
-
-type TeamPick = {
-  id: string;
-  name: string;
-  overall: number;
-  tier: string;
-  is_historical?: boolean;
-  is_sandbox: boolean;
-  created_at: string;
-};
-
-const RANDOM_ID = "__random__";
-const RANDOM_PICK: TeamPick = {
-  id: RANDOM_ID,
-  name: "🎲 Random",
-  overall: 0,
-  tier: "C",
-  is_sandbox: false,
-  created_at: "",
-};
 
 // All-Time presets. IDs are resolved server-side — we pass __random__ and the
 // server picks real historical teams. The preset names are stored only for GTM.
@@ -57,6 +38,19 @@ function TierBadge({ tier }: { tier: string }) {
   return (
     <span className={`font-display text-[10px] font-bold px-1.5 py-0.5 rounded border ${TIER_COLORS[tier] ?? TIER_COLORS.D}`}>
       {tier}
+    </span>
+  );
+}
+
+function GroupChip({ group }: { group: "A" | "B" | null }) {
+  if (!group) return null;
+  const color =
+    group === "A"
+      ? "text-sky-400 border-sky-400/40 bg-sky-400/10"
+      : "text-rose-400 border-rose-400/40 bg-rose-400/10";
+  return (
+    <span className={`font-display text-[9px] font-bold px-1 py-0.5 rounded border shrink-0 ${color}`}>
+      {group}
     </span>
   );
 }
@@ -133,164 +127,14 @@ async function shareToX(result: PlayoffResult) {
   else window.open(tweetUrl, "_blank", "noopener");
 }
 
-// ── TeamPicker ─────────────────────────────────────────────────────────
-
-function TeamPicker({
-  slot,
-  selected,
-  onSelect,
-  usedIds,
-}: {
-  slot: number;
-  selected: TeamPick | null;
-  onSelect: (t: TeamPick | null) => void;
-  usedIds: Set<string>;
-}) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<TeamPick[]>([]);
-  const [hasMore, setHasMore] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [dropTop, setDropTop] = useState(0);
-  const boxRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const runSearch = useCallback(async (q: string) => {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/matchup/search?q=${encodeURIComponent(q)}&limit=10`);
-      const json = await res.json();
-      setResults((json.teams ?? []).filter((t: TeamPick) => !usedIds.has(t.id) || t.id === selected?.id));
-      setHasMore(!!json.hasMore);
-    } catch {
-      setResults([]);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-    }
-  }, [usedIds, selected]);
-
-  const positionDropdown = useCallback(() => {
-    const r = inputRef.current?.getBoundingClientRect();
-    if (r) setDropTop(r.bottom + 6);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const id = setTimeout(() => runSearch(query.trim()), 220);
-    return () => clearTimeout(id);
-  }, [query, open, runSearch]);
-
-  useEffect(() => {
-    if (!open) return;
-    positionDropdown();
-    window.addEventListener("scroll", positionDropdown, true);
-    window.addEventListener("resize", positionDropdown);
-    return () => {
-      window.removeEventListener("scroll", positionDropdown, true);
-      window.removeEventListener("resize", positionDropdown);
-    };
-  }, [open, positionDropdown]);
-
-  useEffect(() => {
-    const onDoc = (e: MouseEvent) => {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, []);
-
-  const seedLabel = `#${slot + 1}`;
-
-  return (
-    <div className="flex items-center gap-2">
-      <span className="font-display text-xs font-bold text-zinc-500 w-6 shrink-0">{seedLabel}</span>
-      {selected ? (
-        <button
-          onClick={() => onSelect(null)}
-          className="group flex-1 text-left bg-zinc-900 border border-zinc-700 hover:border-zinc-500 rounded-lg px-2.5 py-2 transition-colors"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xs font-bold text-white truncate">{selected.name}</span>
-            {selected.id !== RANDOM_ID && <TierBadge tier={selected.tier} />}
-          </div>
-          <span className="block text-[10px] text-zinc-600 mt-0.5 group-hover:text-zinc-400">Tap to change</span>
-        </button>
-      ) : (
-        <div ref={boxRef} className="flex-1">
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => {
-              setOpen(true);
-              positionDropdown();
-              if (results.length === 0) runSearch("");
-            }}
-            placeholder="Search team…"
-            className="w-full bg-zinc-900 border border-zinc-700 focus:border-orange-500/60 rounded-lg px-2.5 py-2 text-xs text-white placeholder:text-zinc-600 outline-none transition-colors"
-          />
-          {open && (
-            <div
-              className="fixed left-1/2 -translate-x-1/2 z-30 w-[calc(100vw-1.5rem)] max-w-lg max-h-[60vh] overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl"
-              style={{ top: dropTop }}
-            >
-              {!query && (
-                <button
-                  onClick={() => { onSelect(RANDOM_PICK); setOpen(false); }}
-                  className="w-full text-left px-3 py-2.5 hover:bg-zinc-800 border-b border-zinc-800/60 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-white">🎲 Random</span>
-                  </div>
-                  <span className="text-[10px] text-zinc-500">Any team, chosen at random</span>
-                </button>
-              )}
-              {loading && <p className="px-3 py-3 text-xs text-zinc-500">Searching…</p>}
-              {!loading && results.length === 0 && query && (
-                <p className="px-3 py-3 text-xs text-zinc-500">No teams found.</p>
-              )}
-              {results.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => { onSelect(t); setOpen(false); setQuery(""); }}
-                  className="w-full text-left px-3 py-2.5 hover:bg-zinc-800 border-b border-zinc-800/60 last:border-0 transition-colors"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-white truncate">{t.name}</span>
-                    <span className="flex items-center gap-1.5 shrink-0">
-                      <TierBadge tier={t.tier} />
-                      <span className="font-display text-xs font-black text-orange-400">{t.overall}</span>
-                    </span>
-                  </div>
-                  <span className={`text-[10px] uppercase tracking-wider ${t.is_historical ? "text-orange-400/80" : "text-zinc-600"}`}>
-                    {t.is_historical ? "🏀 Real NBA Team" : t.is_sandbox ? "Roster Builder" : "Dream Draft"}
-                  </span>
-                </button>
-              ))}
-              {!loading && hasMore && (
-                <p className="px-3 py-2.5 text-center text-[11px] text-zinc-500 border-t border-zinc-800">
-                  Showing {results.length} — search to find more
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Series card (collapsed / expanded) ─────────────────────────────────
 
 function SeriesCard({
   s,
-  roundLabel,
   expanded,
   onToggle,
 }: {
   s: SeriesSummary;
-  roundLabel: string;
   expanded: boolean;
   onToggle: () => void;
 }) {
@@ -301,7 +145,7 @@ function SeriesCard({
         onClick={onToggle}
         className="w-full px-3 py-2.5 flex items-center gap-2 hover:bg-zinc-800/60 transition-colors text-left"
       >
-        <span className="font-display text-[10px] font-bold text-zinc-500 w-24 shrink-0">{roundLabel}</span>
+        <GroupChip group={s.group} />
         <span className={`flex-1 text-xs font-bold truncate ${homeWon ? "text-white" : "text-zinc-500"}`}>{s.home.name}</span>
         <span className="font-display text-xs font-black tabular-nums shrink-0">
           <span className={homeWon ? "text-orange-400" : "text-zinc-500"}>{s.wins.home}</span>
@@ -393,7 +237,6 @@ function PlayoffResults({
                   <SeriesCard
                     key={key}
                     s={s}
-                    roundLabel={`${label} G`}
                     expanded={expandedKey === key}
                     onToggle={() => setExpandedKey(expandedKey === key ? null : key)}
                   />
@@ -548,6 +391,7 @@ function PlayoffPlayback({
                 return (
                   <div key={si} className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2.5">
                     <div className="flex items-center gap-2">
+                      <GroupChip group={s.group} />
                       <span className={`flex-1 text-xs font-bold truncate ${homeWon ? "text-white" : "text-zinc-500"}`}>{s.home.name}</span>
                       <span className="font-display text-sm font-black tabular-nums shrink-0">
                         <span className={homeWon ? "text-orange-400" : "text-zinc-500"}>{s.wins.home}</span>
@@ -705,20 +549,46 @@ export default function PlayoffClient() {
           🎲 Fill All with Random Teams
         </button>
 
-        {/* Team pickers */}
+        {/* Team pickers — split into two groups (think East / West). The two
+            group winners meet in the Finals. */}
         <div>
-          <p className="font-display text-xs font-bold text-zinc-500 uppercase tracking-[0.2em] mb-3">
-            Teams ({filledCount}/{size})
-          </p>
-          <div className="space-y-2">
-            {teams.map((t, i) => (
-              <TeamPicker
-                key={i}
-                slot={i}
-                selected={t}
-                onSelect={(pick) => updateTeam(i, pick)}
-                usedIds={usedIds}
-              />
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-display text-xs font-bold text-zinc-500 uppercase tracking-[0.2em]">
+              Teams ({filledCount}/{size})
+            </p>
+            <p className="text-[10px] text-zinc-600">Group winners meet in the Finals</p>
+          </div>
+          <div className="space-y-5">
+            {([
+              { group: "A" as const, accent: "text-sky-400", start: 0 },
+              { group: "B" as const, accent: "text-rose-400", start: size / 2 },
+            ]).map(({ group, accent, start }) => (
+              <div key={group}>
+                <div className="flex items-center gap-2 mb-2">
+                  <GroupChip group={group} />
+                  <span className={`font-display text-xs font-bold uppercase tracking-[0.2em] ${accent}`}>
+                    Group {group}
+                  </span>
+                  <span className="text-[10px] text-zinc-600">
+                    (seeds {group}1–{group}{size / 2})
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {Array.from({ length: size / 2 }, (_, j) => {
+                    const i = start + j;
+                    return (
+                      <TeamPicker
+                        key={i}
+                        variant="inline"
+                        seedLabel={`${group}${j + 1}`}
+                        selected={teams[i] ?? null}
+                        onSelect={(pick) => updateTeam(i, pick)}
+                        usedIds={usedIds}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
         </div>
