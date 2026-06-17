@@ -12,12 +12,31 @@ type PlayoffShareData = {
   finals: { home: string; away: string; hw: number; aw: number };
 };
 
+type SeasonShareData = {
+  kind: "season";
+  team: { name: string; tier: string; overall: number };
+  wins: number;
+  losses: number;
+  label: string;
+  blurb: string;
+};
+
 const TIER_COLORS: Record<string, string> = {
   S: "#f59e0b",
   A: "#22c55e",
   B: "#3b82f6",
   C: "#a855f7",
   D: "#6b7280",
+};
+
+const GRADE_COLORS: Record<string, string> = {
+  DYNASTY: "#f59e0b",
+  ELITE: "#f97316",
+  CONTENDER: "#22c55e",
+  PLAYOFF: "#3b82f6",
+  FRINGE: "#0ea5e9",
+  LOTTERY: "#a855f7",
+  REBUILD: "#6b7280",
 };
 
 const SLOT_ORDER = ["PG", "SG", "SF", "PF", "C", "6TH"];
@@ -48,6 +67,58 @@ export async function GET(req: NextRequest) {
       season: p.get(`${key}_s`) || "",
     };
   }).filter((e) => e.name);
+
+  // Season result OG — the projected 82-game record + grade. Stored in `shares`
+  // and referenced by id to keep the URL short.
+  if (p.get("mode") === "season") {
+    const shareId = p.get("id") || "";
+    let share: SeasonShareData | null = null;
+    try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      const { data } = await supabase.from("shares").select("data").eq("id", shareId).single();
+      const d = data?.data as SeasonShareData | undefined;
+      if (d?.kind === "season") share = d;
+    } catch {
+      share = null;
+    }
+
+    if (share) {
+      const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+      const gradeColor = GRADE_COLORS[share.label] ?? "#f97316";
+      const cTier = TIER_COLORS[share.team.tier] ?? "#6b7280";
+      return new ImageResponse(
+        (
+          <div style={{ width: "1200px", height: "630px", background: "#09090b", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "56px 64px", fontFamily: "sans-serif" }}>
+            <span style={{ fontSize: "22px", fontWeight: 900, color: "#f59e0b", letterSpacing: "0.3em", textTransform: "uppercase", marginBottom: "8px", display: "flex" }}>
+              82-Game Season
+            </span>
+            <span style={{ fontSize: "52px", fontWeight: 900, color: "#ffffff", marginBottom: "16px", display: "flex" }}>
+              {truncate(share.team.name, 26)}
+            </span>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "24px", marginBottom: "20px" }}>
+              <span style={{ fontSize: "160px", fontWeight: 900, color: "#f97316", lineHeight: 1, display: "flex" }}>{share.wins}</span>
+              <span style={{ fontSize: "70px", fontWeight: 900, color: "#3f3f46", display: "flex" }}>—</span>
+              <span style={{ fontSize: "160px", fontWeight: 900, color: "#52525b", lineHeight: 1, display: "flex" }}>{share.losses}</span>
+            </div>
+            <span style={{ fontSize: "48px", fontWeight: 900, color: gradeColor, letterSpacing: "0.1em", display: "flex" }}>{share.label}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "16px" }}>
+              <span style={{ background: cTier, color: "#000", fontWeight: 900, fontSize: "18px", padding: "4px 14px", borderRadius: "8px", display: "flex" }}>{share.team.tier} Tier</span>
+              <span style={{ fontSize: "20px", color: "#52525b", display: "flex" }}>OVR {share.team.overall}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", width: "100%", position: "absolute", bottom: "40px", left: 0, padding: "0 64px" }}>
+              <span style={{ fontSize: "16px", color: "#52525b", letterSpacing: "0.1em", textTransform: "uppercase", display: "flex" }}>NBA TeamCraft</span>
+              <span style={{ fontSize: "16px", color: "#3f3f46", display: "flex" }}>#NBATeamCraft</span>
+            </div>
+          </div>
+        ),
+        { width: 1200, height: 630, headers: { "Cache-Control": "public, max-age=3600" } }
+      );
+    }
+    // Fall through to the default card if the share can't be loaded.
+  }
 
   // Playoff result OG — champion + road-to-the-title. The bracket is too large
   // for query params, so the result is stored in `shares` and referenced by id.
