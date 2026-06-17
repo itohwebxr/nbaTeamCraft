@@ -76,17 +76,61 @@ function roundName(roundIdx: number, totalRounds: number): string {
   return `Round ${roundIdx + 1}`;
 }
 
-// Share to X with bracket summary
-function shareToX(result: PlayoffResult) {
-  const { champion, size, rounds } = result;
-  const finalSeries = rounds[rounds.length - 1][0];
-  const finalsWins = finalSeries.wins;
-  const runnerUpName = finalSeries.winner === "home" ? finalSeries.away.name : finalSeries.home.name;
-  const text = `🏆 ${champion.name} wins the ${size}-Team Playoff!\nFinals: ${champion.name} ${finalsWins[finalSeries.winner]}-${finalsWins[finalSeries.winner === "home" ? "away" : "home"]} ${runnerUpName}\nSimulated on NBA TeamCraft ⚔️`;
+// Build a compact, OGP-friendly summary: the champion's road to the title.
+function buildShareData(result: PlayoffResult) {
+  const champId = result.champion.id;
+  const totalRounds = result.rounds.length;
+  const path = result.rounds
+    .map((round, roundIdx) => {
+      const s = round.find((x) => x.homeId === champId || x.awayId === champId);
+      if (!s) return null;
+      const champIsHome = s.homeId === champId;
+      const opp = champIsHome ? s.away.name : s.home.name;
+      const champWins = champIsHome ? s.wins.home : s.wins.away;
+      const oppWins = champIsHome ? s.wins.away : s.wins.home;
+      return { round: roundName(roundIdx, totalRounds), opp, score: `${champWins}-${oppWins}` };
+    })
+    .filter((x): x is { round: string; opp: string; score: string } => x !== null);
+  const finalSeries = result.rounds[totalRounds - 1][0];
+  return {
+    kind: "playoff" as const,
+    size: result.size,
+    champion: { name: result.champion.name, tier: result.champion.tier, overall: result.champion.overall },
+    path,
+    finals: {
+      home: finalSeries.home.name,
+      away: finalSeries.away.name,
+      hw: finalSeries.wins.home,
+      aw: finalSeries.wins.away,
+    },
+  };
+}
+
+// Persist the result to get a short URL (the full bracket is too large for
+// query params), then open the X composer with that link so it carries the
+// champion OGP image.
+async function shareToX(result: PlayoffResult) {
+  const { champion, size } = result;
+  const text = `🏆 ${champion.name} wins the ${size}-Team Playoff!\nSimulated on NBA TeamCraft ⚔️`;
+  // Open the window synchronously to dodge popup blockers, then redirect it.
+  const win = window.open("", "_blank", "noopener");
+  let shareUrl = window.location.origin + "/playoffs";
+  try {
+    const res = await fetch("/api/playoff/share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(buildShareData(result)),
+    });
+    const json = await res.json();
+    if (res.ok && json.url) shareUrl = json.url;
+  } catch {
+    // fall back to the generic playoffs URL
+  }
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
     `${text}\n#NBATeamCraft #NBA @nbaTeamCraft\n`
-  )}&url=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`;
-  window.open(tweetUrl, "_blank", "noopener");
+  )}&url=${encodeURIComponent(shareUrl)}`;
+  if (win) win.location.href = tweetUrl;
+  else window.open(tweetUrl, "_blank", "noopener");
 }
 
 // ── TeamPicker ─────────────────────────────────────────────────────────
@@ -397,26 +441,35 @@ function PlayoffPlayback({
   onRematch: () => void;
 }) {
   const [revealedRounds, setRevealedRounds] = useState(0);
+  const [championReveal, setChampionReveal] = useState(false);
   const [done, setDone] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const totalRounds = result.rounds.length;
 
   useEffect(() => {
-    if (done || revealedRounds >= totalRounds) return;
+    if (done || championReveal || revealedRounds >= totalRounds) return;
     // Reveal one round at a time with a pause between
     const gamesInRound = result.rounds[revealedRounds].length;
     // 1.2s per matchup in the round, minimum 2s, maximum 6s
     const delay = Math.min(6000, Math.max(2000, gamesInRound * 1200));
     const t = setTimeout(() => setRevealedRounds((r) => r + 1), delay);
     return () => clearTimeout(t);
-  }, [revealedRounds, done, totalRounds, result.rounds]);
+  }, [revealedRounds, done, championReveal, totalRounds, result.rounds]);
 
+  // Once every round is revealed, hold on a champion celebration screen before
+  // dropping into the full results — the climactic beat for video.
   useEffect(() => {
-    if (revealedRounds > 0 && revealedRounds >= totalRounds) {
-      const t = setTimeout(() => setDone(true), 1200);
+    if (revealedRounds > 0 && revealedRounds >= totalRounds && !championReveal) {
+      const t = setTimeout(() => setChampionReveal(true), 700);
       return () => clearTimeout(t);
     }
-  }, [revealedRounds, totalRounds]);
+  }, [revealedRounds, totalRounds, championReveal]);
+
+  useEffect(() => {
+    if (!championReveal) return;
+    const t = setTimeout(() => setDone(true), 3400);
+    return () => clearTimeout(t);
+  }, [championReveal]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -424,6 +477,43 @@ function PlayoffPlayback({
 
   if (done) {
     return <PlayoffResults result={result} onReset={onReset} onRematch={onRematch} />;
+  }
+
+  if (championReveal) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950 overflow-hidden px-6">
+        <style>{`
+          @keyframes ch-pop { 0% { transform: scale(.5); opacity: 0 } 55% { transform: scale(1.12) } 100% { transform: scale(1); opacity: 1 } }
+          @keyframes ch-glow { 0%,100% { opacity: .35 } 50% { opacity: .7 } }
+          @keyframes ch-fade { 0% { opacity: 0; transform: translateY(10px) } 100% { opacity: 1; transform: translateY(0) } }
+          .ch-pop { animation: ch-pop .7s cubic-bezier(.2,.9,.3,1.25) both }
+          .ch-glow { animation: ch-glow 2.4s ease-in-out infinite }
+          .ch-fade { animation: ch-fade .6s ease .4s both }
+        `}</style>
+        <div
+          aria-hidden
+          className="ch-glow absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(249,115,22,0.35) 0%, rgba(245,158,11,0.12) 40%, transparent 70%)" }}
+        />
+        <button
+          onClick={() => setDone(true)}
+          className="absolute top-5 right-5 text-[11px] font-bold text-zinc-500 hover:text-white transition-colors z-10"
+        >
+          Skip ⏭
+        </button>
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <span className="ch-pop text-7xl mb-3">🏆</span>
+          <p className="ch-fade font-display text-sm font-bold text-orange-400 uppercase tracking-[0.4em] mb-2">
+            {result.size}-Team Playoff Champion
+          </p>
+          <h2 className="ch-pop font-display text-5xl font-black text-white leading-tight">{result.champion.name}</h2>
+          <div className="ch-fade flex items-center justify-center gap-3 mt-4">
+            <TierBadge tier={result.champion.tier} />
+            <span className="font-display text-lg font-black text-orange-400">{result.champion.overall} OVR</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
