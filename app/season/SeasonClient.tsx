@@ -6,6 +6,7 @@ import { gtm } from "@/lib/gtm";
 import { seasonGrade } from "@/lib/season";
 import type { SeasonResult } from "@/app/api/season/simulate/route";
 import { TeamPicker, TeamPick, RANDOM_ID } from "@/components/sim/TeamPicker";
+import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -348,12 +349,7 @@ export default function SeasonClient() {
           )}
         </button>
 
-        {/* Match / Playoff cross-links */}
-        <div className="pt-2 flex items-center justify-center gap-4 text-xs">
-          <a href="/matchup" className="text-zinc-500 hover:text-orange-400 transition-colors">⚔️ Match Simulator</a>
-          <span className="text-zinc-700">·</span>
-          <a href="/playoffs" className="text-zinc-500 hover:text-orange-400 transition-colors">🏆 Playoff Simulator</a>
-        </div>
+        <SimCrossLinks current="season" />
       </div>
     </div>
   );

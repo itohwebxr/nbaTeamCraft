@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { gtm } from "@/lib/gtm";
 import type { PlayoffResult, SeriesSummary } from "@/app/api/playoff/simulate/route";
 import { TeamPicker, TeamPick, RANDOM_ID, RANDOM_PICK } from "@/components/sim/TeamPicker";
+import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -648,6 +649,8 @@ export default function PlayoffClient() {
             `🏆 Simulate ${size}-Team Playoff`
           )}
         </button>
+
+        <SimCrossLinks current="playoff" />
       </div>
     </div>
   );
