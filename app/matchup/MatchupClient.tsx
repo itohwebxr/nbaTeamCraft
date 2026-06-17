@@ -38,8 +38,20 @@ type TeamPick = {
   created_at: string;
 };
 
+// Sentinel id used when the user wants a random opponent resolved server-side.
+const RANDOM_ID = "__random__";
+const RANDOM_PICK: TeamPick = {
+  id: RANDOM_ID,
+  name: "🎲 Random",
+  overall: 0,
+  tier: "C",
+  is_sandbox: false,
+  created_at: "",
+};
+
 // Source label shown under a team in the picker.
-function sourceLabel(t: { is_historical?: boolean; is_sandbox: boolean }): string {
+function sourceLabel(t: { is_historical?: boolean; is_sandbox: boolean; id: string }): string {
+  if (t.id === RANDOM_ID) return "Any team, chosen at random";
   if (t.is_historical) return "🏀 Real NBA Team";
   return t.is_sandbox ? "Roster Builder" : "Dream Draft";
 }
@@ -208,13 +220,15 @@ function TeamPicker({
         >
           <div className="flex items-center justify-between gap-2">
             <span className="text-sm font-bold text-white truncate">{selected.name}</span>
-            <TierBadge tier={selected.tier} />
+            {selected.id !== RANDOM_ID && <TierBadge tier={selected.tier} />}
           </div>
           <div className="flex items-center justify-between mt-1">
             <span className="text-[10px] text-zinc-500 uppercase tracking-wider">
               {sourceLabel(selected)}
             </span>
-            <span className="font-display text-sm font-black text-orange-400">{selected.overall}</span>
+            {selected.id !== RANDOM_ID && (
+              <span className="font-display text-sm font-black text-orange-400">{selected.overall}</span>
+            )}
           </div>
           <span className="block text-[10px] text-zinc-600 mt-1 group-hover:text-zinc-400">Tap to change</span>
         </button>
@@ -240,8 +254,20 @@ function TeamPicker({
               className="fixed left-1/2 -translate-x-1/2 z-30 w-[calc(100vw-1.5rem)] max-w-lg max-h-[60vh] overflow-y-auto bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl"
               style={{ top: dropTop }}
             >
+              {/* Random pick — always shown at the top, hidden when searching */}
+              {!query && (
+                <button
+                  onClick={() => { onSelect(RANDOM_PICK); setOpen(false); }}
+                  className="w-full text-left px-3 py-2.5 hover:bg-zinc-800 border-b border-zinc-800/60 transition-colors bg-zinc-900/80"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-white">🎲 Random</span>
+                  </div>
+                  <span className="text-[10px] text-zinc-500">Any team, chosen at random</span>
+                </button>
+              )}
               {loading && <p className="px-3 py-3 text-xs text-zinc-500">Searching…</p>}
-              {!loading && results.length === 0 && (
+              {!loading && results.length === 0 && query && (
                 <p className="px-3 py-3 text-xs text-zinc-500">No teams found.</p>
               )}
               {results.map((t) => (
@@ -445,7 +471,8 @@ export default function MatchupClient() {
         opponent={{ id: sim.away.id, name: sim.away.name, overall: sim.away.overall, tier: sim.away.tier }}
         result={sim.result}
         sessionRecord={{ wins: 0, losses: 0 }}
-        onRematch={simulate}
+        onRematch={reset}
+        rematchLabel="⚔️ New Matchup"
         onClose={reset}
         defaultShowBox
         onShare={() =>

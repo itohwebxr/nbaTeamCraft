@@ -18,21 +18,40 @@ export async function POST(req: NextRequest) {
     if (!homeTeamId || !awayTeamId) {
       return NextResponse.json({ error: "Missing team ids" }, { status: 400 });
     }
-    if (homeTeamId === awayTeamId) {
-      return NextResponse.json({ error: "Pick two different teams" }, { status: 400 });
-    }
 
     const supabase = createServerClient();
+
+    // Resolve "__random__" sentinel: pick a random public_teams row that is
+    // neither a legend nor the other team.
+    async function resolveId(id: string, excludeId: string): Promise<string> {
+      if (id !== "__random__") return id;
+      const { data } = await supabase
+        .from("public_teams")
+        .select("id")
+        .neq("id", excludeId)
+        .neq("created_by_browser_id", "__legend__")
+        .limit(300);
+      const rows = (data ?? []) as { id: string }[];
+      if (rows.length === 0) throw new Error("No teams available for random pick");
+      return rows[Math.floor(Math.random() * rows.length)].id;
+    }
+
+    const resolvedHomeId = await resolveId(homeTeamId, awayTeamId);
+    const resolvedAwayId = await resolveId(awayTeamId, resolvedHomeId);
+
+    if (resolvedHomeId === resolvedAwayId) {
+      return NextResponse.json({ error: "Pick two different teams" }, { status: 400 });
+    }
 
     const { data, error } = await supabase
       .from("public_teams")
       .select("*")
-      .in("id", [homeTeamId, awayTeamId]);
+      .in("id", [resolvedHomeId, resolvedAwayId]);
     if (error) throw error;
 
     const rows = (data ?? []) as PublicTeam[];
-    const homeRow = rows.find((t) => t.id === homeTeamId);
-    const awayRow = rows.find((t) => t.id === awayTeamId);
+    const homeRow = rows.find((t) => t.id === resolvedHomeId);
+    const awayRow = rows.find((t) => t.id === resolvedAwayId);
     if (!homeRow || !awayRow) {
       return NextResponse.json({ error: "Team not found" }, { status: 404 });
     }
@@ -52,7 +71,7 @@ export async function POST(req: NextRequest) {
       const wins = { home: 0, away: 0 };
       let g = 0;
       while (wins.home < SERIES_TARGET && wins.away < SERIES_TARGET) {
-        const seed = `${homeTeamId}|${awayTeamId}|g${g}|${Date.now()}|${Math.random()}`;
+        const seed = `${resolvedHomeId}|${resolvedAwayId}|g${g}|${Date.now()}|${Math.random()}`;
         const result = simulateGame(homeTeam, awayTeam, seed);
         if (result.winner === "home") wins.home++;
         else wins.away++;
@@ -70,7 +89,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const seed = `${homeTeamId}|${awayTeamId}|${crypto.randomUUID()}`;
+    const seed = `${resolvedHomeId}|${resolvedAwayId}|${crypto.randomUUID()}`;
     const result = simulateGame(homeTeam, awayTeam, seed);
     return NextResponse.json({ mode: "single", ...meta, result });
   } catch (e) {

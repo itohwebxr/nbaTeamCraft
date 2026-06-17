@@ -47,7 +47,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ teams: rows.slice(0, limit), hasMore: rows.length > limit });
     }
 
-    const needle = q.toLowerCase();
+    // Normalize season notation: "2025-2026" or "2025/26" → "2025-26" so
+    // users can type either style and still match historical team names.
+    const normQ = q.replace(/(\d{4})[-\/]20(\d{2})/g, "$1-$2").replace(/(\d{4})[-\/](\d{4})/g, (_, y1, y2) => `${y1}-${y2.slice(2)}`);
+    const needle = normQ.toLowerCase();
 
     // 1) NBA team name / abbreviation -> matching team_ids (used to match a team
     //    by one of its players' real NBA team).

@@ -28,6 +28,8 @@ interface Props {
   onShare?: () => void;
   /** Optional extra content rendered below the action buttons on the final screen */
   footer?: React.ReactNode;
+  /** Label for the rematch/play-again button. Defaults to "⚔️ Play Again" */
+  rematchLabel?: string;
 }
 
 type Phase = "vs" | "playing" | "final";
@@ -136,6 +138,7 @@ export default function ExhibitionMatch({
   defaultShowBox = false,
   onShare,
   footer,
+  rematchLabel = "⚔️ Play Again",
 }: Props) {
   const [phase, setPhase] = useState<Phase>("vs");
   // Number of quarters currently revealed during the "playing" phase
@@ -381,7 +384,7 @@ export default function ExhibitionMatch({
                         onClick={onRematch}
                         className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
                       >
-                        ⚔️ Play Again
+                        {rematchLabel}
                       </button>
                     </>
                   )}
