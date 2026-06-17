@@ -87,6 +87,7 @@ export default function ResultPage() {
   const [recentOpponentIds, setRecentOpponentIds] = useState<string[]>([]);
   // Sandbox save state
   const [sandboxSaved, setSandboxSaved] = useState(false);
+  const [savedTeamId, setSavedTeamId] = useState<string | null>(null);
   const [sandboxSaving, setSandboxSaving] = useState(false);
   const [sandboxError, setSandboxError] = useState(false);
   const [xLoginLoading, setXLoginLoading] = useState(false);
@@ -531,6 +532,8 @@ export default function ResultPage() {
         }),
       });
       if (res.ok) {
+        const json = await res.json().catch(() => null);
+        if (json?.id) setSavedTeamId(json.id);
         setSandboxSaved(true);
         gtm.sandboxSave({ team_name: name, overall: evaluation.overall, tier: evaluation.tier, has_description: descriptionOverride.trim().length > 0 });
       } else {
@@ -789,42 +792,61 @@ export default function ResultPage() {
           </div>
         )}
 
-        {/* Simulators — same entry points as the home page */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-          <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">🎮 Simulators</p>
-          <div className="grid grid-cols-3 gap-2">
-            <Link
-              href="/matchup"
-              className="group block bg-gradient-to-br from-orange-500/15 via-zinc-900 to-zinc-900 border border-orange-500/30 hover:border-orange-500/60 rounded-xl p-3 transition-colors"
-            >
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xl">⚔️</span>
-                <p className="font-display text-[13px] font-black text-white leading-tight">Match Simulator</p>
-                <p className="text-[10px] text-zinc-400 leading-snug">1v1 · game or series</p>
+        {/* Simulators — same entry points as the home page. When the team has
+            been saved/published it has an id, so we pre-select it in each sim. */}
+        {(() => {
+          const simTeamId = publishedId ?? savedTeamId;
+          // Matchup pre-selects via home* keys; playoff/season use team* keys.
+          const q = (idKey: "homeTeamId" | "teamId", prefix: "home" | "team") => {
+            if (!simTeamId) return "";
+            const p = new URLSearchParams();
+            p.set(idKey, simTeamId);
+            p.set(`${prefix}Name`, teamName || "My Team");
+            if (evaluation) {
+              p.set(`${prefix}Overall`, String(evaluation.overall));
+              p.set(`${prefix}Tier`, evaluation.tier);
+            }
+            if (isSandbox) p.set(`${prefix}Sandbox`, "1");
+            return `?${p.toString()}`;
+          };
+          return (
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">🎮 Simulators</p>
+              <div className="grid grid-cols-3 gap-2">
+                <Link
+                  href={`/matchup${q("homeTeamId", "home")}`}
+                  className="group block bg-gradient-to-br from-orange-500/15 via-zinc-900 to-zinc-900 border border-orange-500/30 hover:border-orange-500/60 rounded-xl p-3 transition-colors"
+                >
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xl">⚔️</span>
+                    <p className="font-display text-[13px] font-black text-white leading-tight">Match Simulator</p>
+                    <p className="text-[10px] text-zinc-400 leading-snug">1v1 · game or series</p>
+                  </div>
+                </Link>
+                <Link
+                  href={`/playoffs${q("teamId", "team")}`}
+                  className="group block bg-gradient-to-br from-yellow-500/10 via-zinc-900 to-zinc-900 border border-yellow-500/20 hover:border-yellow-500/40 rounded-xl p-3 transition-colors"
+                >
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xl">🏆</span>
+                    <p className="font-display text-[13px] font-black text-white leading-tight">Playoff Simulator</p>
+                    <p className="text-[10px] text-zinc-400 leading-snug">4/8/16 · full bracket</p>
+                  </div>
+                </Link>
+                <Link
+                  href={`/season${q("teamId", "team")}`}
+                  className="group block bg-gradient-to-br from-sky-500/10 via-zinc-900 to-zinc-900 border border-sky-500/20 hover:border-sky-500/40 rounded-xl p-3 transition-colors"
+                >
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xl">📅</span>
+                    <p className="font-display text-[13px] font-black text-white leading-tight">Season Simulator</p>
+                    <p className="text-[10px] text-zinc-400 leading-snug">82 games · W-L record</p>
+                  </div>
+                </Link>
               </div>
-            </Link>
-            <Link
-              href="/playoffs"
-              className="group block bg-gradient-to-br from-yellow-500/10 via-zinc-900 to-zinc-900 border border-yellow-500/20 hover:border-yellow-500/40 rounded-xl p-3 transition-colors"
-            >
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xl">🏆</span>
-                <p className="font-display text-[13px] font-black text-white leading-tight">Playoff Simulator</p>
-                <p className="text-[10px] text-zinc-400 leading-snug">4/8/16 · full bracket</p>
-              </div>
-            </Link>
-            <Link
-              href="/season"
-              className="group block bg-gradient-to-br from-sky-500/10 via-zinc-900 to-zinc-900 border border-sky-500/20 hover:border-sky-500/40 rounded-xl p-3 transition-colors"
-            >
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xl">📅</span>
-                <p className="font-display text-[13px] font-black text-white leading-tight">Season Simulator</p>
-                <p className="text-[10px] text-zinc-400 leading-snug">82 games · W-L record</p>
-              </div>
-            </Link>
-          </div>
-        </div>
+            </div>
+          );
+        })()}
 
         {/* Actions */}
         <div className="flex gap-3">
