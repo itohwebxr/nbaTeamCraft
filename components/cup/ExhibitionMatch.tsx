@@ -30,6 +30,12 @@ interface Props {
   footer?: React.ReactNode;
   /** Label for the rematch/play-again button. Defaults to "⚔️ Play Again" */
   rematchLabel?: string;
+  /**
+   * Matchup mode: when provided, the final screen drops the "Back" button and
+   * shows a same-teams rematch button (below Share) plus this "New Matchup"
+   * action in a normal color.
+   */
+  onNewMatchup?: () => void;
 }
 
 type Phase = "vs" | "playing" | "final";
@@ -139,6 +145,7 @@ export default function ExhibitionMatch({
   onShare,
   footer,
   rematchLabel = "⚔️ Play Again",
+  onNewMatchup,
 }: Props) {
   const [phase, setPhase] = useState<Phase>("vs");
   // Number of quarters currently revealed during the "playing" phase
@@ -360,35 +367,54 @@ export default function ExhibitionMatch({
                     Share on 𝕏
                   </button>
                 )}
-                <div className="flex gap-3">
-                  {cupMode ? (
+                {onNewMatchup ? (
+                  // Matchup mode: rematch (same teams) below share, then a
+                  // normal-colored "New Matchup" button. No "Back".
+                  <>
                     <button
-                      onClick={onClose}
-                      className={`flex-1 py-3 rounded-xl font-bold text-sm transition-colors ${
-                        onShare
-                          ? "bg-zinc-800 hover:bg-zinc-700 text-white"
-                          : "bg-orange-500 hover:bg-orange-400 text-white"
-                      }`}
+                      onClick={onRematch}
+                      className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
                     >
-                      Done
+                      {rematchLabel}
                     </button>
-                  ) : (
-                    <>
+                    <button
+                      onClick={onNewMatchup}
+                      className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+                    >
+                      ⚔️ New Matchup
+                    </button>
+                  </>
+                ) : (
+                  <div className="flex gap-3">
+                    {cupMode ? (
                       <button
                         onClick={onClose}
-                        className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+                        className={`flex-1 py-3 rounded-xl font-bold text-sm transition-colors ${
+                          onShare
+                            ? "bg-zinc-800 hover:bg-zinc-700 text-white"
+                            : "bg-orange-500 hover:bg-orange-400 text-white"
+                        }`}
                       >
-                        Back
+                        Done
                       </button>
-                      <button
-                        onClick={onRematch}
-                        className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
-                      >
-                        {rematchLabel}
-                      </button>
-                    </>
-                  )}
-                </div>
+                    ) : (
+                      <>
+                        <button
+                          onClick={onClose}
+                          className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+                        >
+                          Back
+                        </button>
+                        <button
+                          onClick={onRematch}
+                          className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+                        >
+                          {rematchLabel}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
                 {footer}
               </div>
             </div>

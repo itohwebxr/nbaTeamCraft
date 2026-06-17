@@ -312,6 +312,7 @@ function SeriesResult({
   wins,
   winner,
   onReset,
+  onRematch,
 }: {
   home: SimMeta;
   away: SimMeta;
@@ -319,6 +320,7 @@ function SeriesResult({
   wins: { home: number; away: number };
   winner: "home" | "away";
   onReset: () => void;
+  onRematch: () => void;
 }) {
   const winnerName = winner === "home" ? home.name : away.name;
   return (
@@ -397,10 +399,16 @@ function SeriesResult({
           Share on 𝕏
         </button>
         <button
+          onClick={onRematch}
+          className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
+        >
+          🔄 Rematch (Same Teams)
+        </button>
+        <button
           onClick={onReset}
           className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
         >
-          New Matchup
+          ⚔️ New Matchup
         </button>
         <BuildOwnTeamCTA />
       </div>
@@ -444,6 +452,14 @@ export default function MatchupClient() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Failed to simulate");
       setSim(json as SimResponse);
+      // If a random pick was used, lock in the resolved team so a "Rematch
+      // (Same Teams)" replays the actual teams instead of re-randomizing.
+      if (home.id === RANDOM_ID) {
+        setHome({ id: json.home.id, name: json.home.name, overall: json.home.overall, tier: json.home.tier, is_sandbox: false, created_at: "" });
+      }
+      if (away.id === RANDOM_ID) {
+        setAway({ id: json.away.id, name: json.away.name, overall: json.away.overall, tier: json.away.tier, is_sandbox: false, created_at: "" });
+      }
       const winnerName =
         json.mode === "series"
           ? json.seriesWinner === "home" ? home.name : away.name
@@ -471,8 +487,9 @@ export default function MatchupClient() {
         opponent={{ id: sim.away.id, name: sim.away.name, overall: sim.away.overall, tier: sim.away.tier }}
         result={sim.result}
         sessionRecord={{ wins: 0, losses: 0 }}
-        onRematch={reset}
-        rematchLabel="⚔️ New Matchup"
+        onRematch={simulate}
+        rematchLabel="🔄 Rematch (Same Teams)"
+        onNewMatchup={reset}
         onClose={reset}
         defaultShowBox
         onShare={() =>
@@ -498,6 +515,7 @@ export default function MatchupClient() {
         wins={sim.seriesWins}
         winner={sim.seriesWinner}
         onReset={reset}
+        onRematch={simulate}
       />
     );
   }
