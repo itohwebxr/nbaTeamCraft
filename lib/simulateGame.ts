@@ -87,17 +87,18 @@ const BASE_POINTS = 105;
 
 // Expected points for `team` against `opp`. The headline `overall` is the
 // dominant strength signal (it's what users read on the card), with the four
-// sub-ratings adding texture. Coefficients are tuned so a clearly better team
-// reliably wins: a 5-overall edge ≈ +5.5 expected margin, a 10-overall edge
-// ≈ +11 — meaningful against the ~13pt single-game margin noise below (so the
-// favorite still loses sometimes, but no longer near a coin flip).
+// sub-ratings adding texture. Coefficients are intentionally modest relative to
+// the per-game noise below so that even a clear favorite is far from a lock in
+// any single game: a 10-overall edge ≈ +6 expected margin against a ~16pt
+// single-game margin stddev. This keeps best-of-7 series competitive — sweeps
+// become the exception and series regularly stretch to six or seven games.
 function expectedPoints(team: SimTeamEvaluation, opp: SimTeamEvaluation): number {
   return (
     BASE_POINTS +
-    (team.overall - opp.overall) * 0.55 +
-    (team.offense - opp.defense) * 0.33 +
-    (team.rebound - opp.rebound) * 0.12 +
-    (team.playmaking - opp.playmaking) * 0.08
+    (team.overall - opp.overall) * 0.36 +
+    (team.offense - opp.defense) * 0.22 +
+    (team.rebound - opp.rebound) * 0.09 +
+    (team.playmaking - opp.playmaking) * 0.06
   );
 }
 
@@ -207,12 +208,13 @@ export function simulateGame(home: SimTeam, away: SimTeam, seed: string): GameRe
   let homeTotal = 0;
   let awayTotal = 0;
 
-  // Per-quarter noise of 4.6 → full-game margin stddev ≈ 13pts, matching real
-  // NBA single-game variance. Higher values drown out the rating edge and make
-  // outcomes feel like coin flips.
+  // Per-quarter noise of 5.7 → full-game margin stddev ≈ 16pts. Higher than
+  // real NBA single-game variance on purpose: it keeps the favorite winning
+  // more often than not while leaving plenty of room for upsets, so best-of-7
+  // series stay dramatic and frequently reach game six or seven.
   for (let q = 0; q < 4; q++) {
-    const h = Math.max(12, Math.round(homeExp / 4 + gaussian(rng) * 4.6));
-    const a = Math.max(12, Math.round(awayExp / 4 + gaussian(rng) * 4.6));
+    const h = Math.max(12, Math.round(homeExp / 4 + gaussian(rng) * 5.7));
+    const a = Math.max(12, Math.round(awayExp / 4 + gaussian(rng) * 5.7));
     quarters.push({ home: h, away: a });
     homeTotal += h;
     awayTotal += a;
