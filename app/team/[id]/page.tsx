@@ -367,6 +367,14 @@ export default async function TeamDetailPage({
           roster={team.roster_json}
         />
 
+        {/* Match Simulator — pit this team against any other lineup */}
+        <Link
+          href={`/matchup?homeTeamId=${team.id}&homeName=${encodeURIComponent(team.name)}&homeOverall=${team.overall}&homeTier=${team.tier}${team.is_sandbox ? "&homeSandbox=1" : ""}`}
+          className="block w-full py-3 rounded-xl border border-zinc-700 hover:border-orange-500/50 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-orange-300 font-bold text-sm text-center transition-colors"
+        >
+          ⚔️ Simulate a Matchup →
+        </Link>
+
         {/* Discussion */}
         <TeamComments teamId={team.id} />
 

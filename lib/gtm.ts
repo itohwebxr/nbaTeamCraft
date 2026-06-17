@@ -171,4 +171,11 @@ export const gtm = {
   likeComment: (params: {
     team_id: string;
   }) => push({ event: "like_comment", ...params }),
+
+  simulateMatch: (params: {
+    home_team: string;
+    away_team: string;
+    mode: "single" | "series";
+    winner: string;
+  }) => push({ event: "simulate_match", ...params }),
 };
