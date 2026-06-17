@@ -63,6 +63,12 @@ export async function GET(req: NextRequest) {
 
     if (isSeries && games.length > 0) {
       const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+      // Scorer names: first name → initial, then cap so points stay visible.
+      const shortScorer = (name: string, max = 13) => {
+        const parts = name.trim().split(/\s+/);
+        const s = parts.length >= 2 ? `${parts[0][0]}. ${parts.slice(1).join(" ")}` : name;
+        return truncate(s, max);
+      };
       return new ImageResponse(
         (
           <div style={{ width: "1200px", height: "630px", background: "#09090b", display: "flex", flexDirection: "column", padding: "36px 64px", fontFamily: "sans-serif" }}>
@@ -89,7 +95,7 @@ export async function GET(req: NextRequest) {
                       <span style={{ fontSize: "19px", fontWeight: hWon ? 700 : 400, color: hWon ? "#ffffff" : "#71717a", display: "flex" }}>{truncate(homeName, 14)}</span>
                       {top.hName && (
                         <span style={{ fontSize: "16px", fontWeight: 700, color: "#fbbf24", display: "flex", alignItems: "center" }}>
-                          {truncate(top.hName, 12)} {top.hPts}<span style={{ fontSize: "11px", color: "#a16207", marginLeft: "3px", display: "flex" }}>PTS</span>
+                          {shortScorer(top.hName)} {top.hPts}<span style={{ fontSize: "11px", color: "#a16207", marginLeft: "3px", display: "flex" }}>PTS</span>
                         </span>
                       )}
                     </div>
@@ -100,7 +106,7 @@ export async function GET(req: NextRequest) {
                     <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, overflow: "hidden", justifyContent: "flex-end" }}>
                       {top.aName && (
                         <span style={{ fontSize: "16px", fontWeight: 700, color: "#fbbf24", display: "flex", alignItems: "center" }}>
-                          {top.aPts}<span style={{ fontSize: "11px", color: "#a16207", margin: "0 3px", display: "flex" }}>PTS</span>{truncate(top.aName, 12)}
+                          {top.aPts}<span style={{ fontSize: "11px", color: "#a16207", margin: "0 3px", display: "flex" }}>PTS</span>{shortScorer(top.aName)}
                         </span>
                       )}
                       <span style={{ fontSize: "19px", fontWeight: !hWon ? 700 : 400, color: !hWon ? "#ffffff" : "#71717a", display: "flex" }}>{truncate(awayName, 14)}</span>
