@@ -12,6 +12,7 @@ import HeaderAuth from "@/components/auth/HeaderAuth";
 import CupPlayPanel from "@/components/cup/CupPlayPanel";
 import TeamActions from "@/components/team/TeamActions";
 import TeamComments from "@/components/team/TeamComments";
+import BuildTeamButton from "@/components/team/BuildTeamButton";
 
 export const dynamic = "force-dynamic";
 
@@ -368,6 +369,9 @@ export default async function TeamDetailPage({
 
         {/* Discussion */}
         <TeamComments teamId={team.id} />
+
+        {/* Build CTA — bottom of page so it doesn't interrupt discussion */}
+        <BuildTeamButton isSandbox={!!team.is_sandbox} />
       </div>
     </div>
   );
