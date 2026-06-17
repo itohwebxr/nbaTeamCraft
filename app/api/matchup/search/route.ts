@@ -16,44 +16,64 @@ type TeamPick = {
 const SELECT = "id, name, overall, tier, is_sandbox, created_at";
 const LEGEND = "__legend__";
 const HISTORICAL = "__historical__";
-// Pool size scanned in-process for player / NBA-team substring matching. Small
-// scale, so a JS filter over recent teams is simpler and far more robust than
-// fragile jsonb-text casting inside PostgREST.
+// Pool size scanned in-process for player / NBA-team substring matching.
 const POOL = 300;
 
-// GET /api/matchup/search?q=...&limit=10
-// Empty q -> latest teams (Dream Draft + Roster Builder mixed). With q, matches
-// on team name, player name, or NBA team name. Returns { teams, hasMore }.
+type Filter = "all" | "real" | "built";
+
+// GET /api/matchup/search?q=...&limit=20&filter=all|real|built
+// filter: "all" = real NBA + user-made mixed (user-made first), "real" =
+// historical NBA teams only, "built" = user-made (Dream Draft + Roster
+// Builder) only. Empty q -> a browseable list; with q, matches on team name,
+// player name, or NBA team name. Returns { teams, hasMore }.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
     const q = (searchParams.get("q") ?? "").trim();
-    const limit = Math.min(Math.max(Number(searchParams.get("limit")) || 10, 1), 25);
+    const limit = Math.min(Math.max(Number(searchParams.get("limit")) || 20, 1), 200);
+    const filterParam = (searchParams.get("filter") ?? "all") as Filter;
+    const filter: Filter = ["all", "real", "built"].includes(filterParam) ? filterParam : "all";
+
+    const includeUser = filter === "all" || filter === "built";
+    const includeHist = filter === "all" || filter === "real";
 
     const supabase = createServerClient();
 
+    // ── Empty query: browseable list (no needle matching) ──────────────
     if (!q) {
-      // Default suggestion list: user-made teams only. Legend and historical
-      // (real NBA) teams are surfaced exclusively via explicit search.
-      // Fetch one extra to tell whether more exist beyond the shown list.
-      const { data, error } = await supabase
-        .from("public_teams")
-        .select(SELECT)
-        .not("created_by_browser_id", "in", `(${LEGEND},${HISTORICAL})`)
-        .order("created_at", { ascending: false })
-        .limit(limit + 1);
-      if (error) throw error;
-      const rows = (data ?? []) as TeamPick[];
-      return NextResponse.json({ teams: rows.slice(0, limit), hasMore: rows.length > limit });
+      const fetchUser = async (): Promise<TeamPick[]> => {
+        if (!includeUser) return [];
+        const { data } = await supabase
+          .from("public_teams")
+          .select(SELECT)
+          .not("created_by_browser_id", "in", `(${LEGEND},${HISTORICAL})`)
+          .order("created_at", { ascending: false })
+          .limit(limit + 1);
+        return ((data ?? []) as TeamPick[]).map((r) => ({ ...r, is_historical: false }));
+      };
+      const fetchHist = async (): Promise<TeamPick[]> => {
+        if (!includeHist) return [];
+        const { data } = await supabase
+          .from("public_teams")
+          .select(SELECT)
+          .eq("created_by_browser_id", HISTORICAL)
+          .order("overall", { ascending: false })
+          .limit(limit + 1);
+        return ((data ?? []) as TeamPick[]).map((r) => ({ ...r, is_historical: true }));
+      };
+
+      const [userRows, histRows] = await Promise.all([fetchUser(), fetchHist()]);
+      // User-made first, then real NBA teams (strongest first).
+      const combined = [...userRows, ...histRows];
+      return NextResponse.json({ teams: combined.slice(0, limit), hasMore: combined.length > limit });
     }
 
-    // Normalize season notation: "2025-2026" or "2025/26" → "2025-26" so
-    // users can type either style and still match historical team names.
-    const normQ = q.replace(/(\d{4})[-\/]20(\d{2})/g, "$1-$2").replace(/(\d{4})[-\/](\d{4})/g, (_, y1, y2) => `${y1}-${y2.slice(2)}`);
+    // ── Query present: match on name / player / NBA team ───────────────
+    const normQ = q
+      .replace(/(\d{4})[-\/]20(\d{2})/g, "$1-$2")
+      .replace(/(\d{4})[-\/](\d{4})/g, (_, y1, y2) => `${y1}-${y2.slice(2)}`);
     const needle = normQ.toLowerCase();
 
-    // 1) NBA team name / abbreviation -> matching team_ids (used to match a team
-    //    by one of its players' real NBA team).
     const { data: nbaTeams } = await supabase
       .from("teams")
       .select("id")
@@ -77,25 +97,6 @@ export async function GET(req: NextRequest) {
       return !!(nameHit || playerHit || nbaTeamHit);
     };
 
-    // 2) User-made teams: scan a recent pool and filter in JS.
-    const { data: userPool, error } = await supabase
-      .from("public_teams")
-      .select(`${SELECT}, roster_json, metadata`)
-      .not("created_by_browser_id", "in", `(${LEGEND},${HISTORICAL})`)
-      .order("created_at", { ascending: false })
-      .limit(POOL);
-    if (error) throw error;
-
-    // 3) Historical (real NBA) teams: queried separately so their bulk doesn't
-    //    crowd the user pool. Bounded set (≈one row per real team), so a full
-    //    JS scan is fine.
-    const { data: histPool, error: histErr } = await supabase
-      .from("public_teams")
-      .select(`${SELECT}, roster_json, metadata`)
-      .eq("created_by_browser_id", HISTORICAL)
-      .limit(2000);
-    if (histErr) throw histErr;
-
     const toPick = (row: PoolRow, historical: boolean): TeamPick => ({
       id: row.id,
       name: row.name,
@@ -106,19 +107,35 @@ export async function GET(req: NextRequest) {
       created_at: row.created_at,
     });
 
-    const userMatches = ((userPool ?? []) as PoolRow[]).filter(rowMatches).map((r) => toPick(r, false));
-    const histMatches = ((histPool ?? []) as PoolRow[])
-      .filter(rowMatches)
-      .sort((a, b) => b.overall - a.overall)
-      .map((r) => toPick(r, true));
+    let userMatches: TeamPick[] = [];
+    let histMatches: TeamPick[] = [];
 
-    // User-made teams first, then real NBA teams (strongest first).
+    if (includeUser) {
+      const { data: userPool, error } = await supabase
+        .from("public_teams")
+        .select(`${SELECT}, roster_json, metadata`)
+        .not("created_by_browser_id", "in", `(${LEGEND},${HISTORICAL})`)
+        .order("created_at", { ascending: false })
+        .limit(POOL);
+      if (error) throw error;
+      userMatches = ((userPool ?? []) as PoolRow[]).filter(rowMatches).map((r) => toPick(r, false));
+    }
+
+    if (includeHist) {
+      const { data: histPool, error: histErr } = await supabase
+        .from("public_teams")
+        .select(`${SELECT}, roster_json, metadata`)
+        .eq("created_by_browser_id", HISTORICAL)
+        .limit(2000);
+      if (histErr) throw histErr;
+      histMatches = ((histPool ?? []) as PoolRow[])
+        .filter(rowMatches)
+        .sort((a, b) => b.overall - a.overall)
+        .map((r) => toPick(r, true));
+    }
+
     const matched = [...userMatches, ...histMatches];
-
-    return NextResponse.json({
-      teams: matched.slice(0, limit),
-      hasMore: matched.length > limit,
-    });
+    return NextResponse.json({ teams: matched.slice(0, limit), hasMore: matched.length > limit });
   } catch (e) {
     console.error("[matchup search]", e);
     const detail = e instanceof Error ? e.message : JSON.stringify(e);

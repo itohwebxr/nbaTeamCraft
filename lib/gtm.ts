@@ -203,4 +203,12 @@ export const gtm = {
     round: number;
     size: number;
   }) => push({ event: "playoff_round_skip", ...params }),
+
+  teamSearchFilter: (params: {
+    filter: "all" | "real" | "built";
+  }) => push({ event: "team_search_filter", ...params }),
+
+  teamSearchShowMore: (params: {
+    shown: number;
+  }) => push({ event: "team_search_show_more", ...params }),
 };
