@@ -19,6 +19,7 @@ export async function fetchHomeTeams(opts: {
         .from("public_teams")
         .select("*")
         .neq("created_by_browser_id", "__legend__")
+        .neq("created_by_browser_id", "__historical__")
         .order(orderBy, { ascending: false })
         .limit(limit);
 
