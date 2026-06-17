@@ -7,6 +7,7 @@ import { gtm } from "@/lib/gtm";
 import { useDraftStore } from "@/stores/draftStore";
 import ExhibitionMatch from "@/components/cup/ExhibitionMatch";
 import { TeamPicker, TeamPick, RANDOM_ID } from "@/components/sim/TeamPicker";
+import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
 
 // CTA that drops the user into the Roster Builder to create their own lineup.
 // Surfaced on the picker and on result screens to convert simulator play into
@@ -654,20 +655,14 @@ export default function MatchupClient() {
           )}
         </button>
 
-        <a
-          href="/playoffs"
-          className="group block w-full py-3 rounded-xl border border-zinc-700 hover:border-orange-500/40 bg-zinc-900/60 hover:bg-zinc-900 text-center transition-colors"
-        >
-          <span className="font-display text-sm font-black text-zinc-300 group-hover:text-white">🏆 Try Playoff Simulator →</span>
-          <p className="text-[11px] text-zinc-600 mt-0.5">4 / 8 / 16 teams · best-of-7 bracket</p>
-        </a>
-
         <div className="pt-2">
           <p className="text-center text-xs text-zinc-600 mb-2">
             Can&apos;t find the perfect roster?
           </p>
           <BuildOwnTeamCTA />
         </div>
+
+        <SimCrossLinks current="match" />
       </div>
     </div>
   );
