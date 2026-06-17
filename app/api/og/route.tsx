@@ -1,7 +1,16 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "edge";
+
+type PlayoffShareData = {
+  kind: "playoff";
+  size: number;
+  champion: { name: string; tier: string; overall: number };
+  path: { round: string; opp: string; score: string }[];
+  finals: { home: string; away: string; hw: number; aw: number };
+};
 
 const TIER_COLORS: Record<string, string> = {
   S: "#f59e0b",
@@ -39,6 +48,65 @@ export async function GET(req: NextRequest) {
       season: p.get(`${key}_s`) || "",
     };
   }).filter((e) => e.name);
+
+  // Playoff result OG — champion + road-to-the-title. The bracket is too large
+  // for query params, so the result is stored in `shares` and referenced by id.
+  if (p.get("mode") === "playoff") {
+    const shareId = p.get("id") || "";
+    const tier = (name: string) => TIER_COLORS[name] ?? "#6b7280";
+    let share: PlayoffShareData | null = null;
+    try {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+      const { data } = await supabase.from("shares").select("data").eq("id", shareId).single();
+      const d = data?.data as PlayoffShareData | undefined;
+      if (d?.kind === "playoff") share = d;
+    } catch {
+      share = null;
+    }
+
+    if (share) {
+      const truncate = (s: string, n: number) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+      const cTier = tier(share.champion.tier);
+      return new ImageResponse(
+        (
+          <div style={{ width: "1200px", height: "630px", background: "#09090b", display: "flex", flexDirection: "column", padding: "44px 64px", fontFamily: "sans-serif" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "6px" }}>
+              <span style={{ fontSize: "20px", fontWeight: 900, color: "#f59e0b", letterSpacing: "0.25em", textTransform: "uppercase", display: "flex" }}>
+                {share.size}-Team Playoff · Champion
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", marginBottom: "4px" }}>
+              <span style={{ fontSize: "64px", display: "flex" }}>🏆</span>
+              <span style={{ fontSize: "60px", fontWeight: 900, color: "#ffffff", display: "flex" }}>{truncate(share.champion.name, 22)}</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "18px" }}>
+              <span style={{ fontSize: "22px", fontWeight: 900, color: cTier, display: "flex" }}>{share.champion.tier} TIER</span>
+              <span style={{ fontSize: "22px", color: "#52525b", display: "flex" }}>·</span>
+              <span style={{ fontSize: "22px", fontWeight: 900, color: "#f97316", display: "flex" }}>{share.champion.overall} OVR</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", flex: 1, justifyContent: "center", gap: "8px" }}>
+              {share.path.map((rp, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: "16px", padding: "9px 20px", background: i % 2 === 0 ? "#18181b" : "transparent", borderRadius: "8px" }}>
+                  <span style={{ fontSize: "16px", fontWeight: 700, color: "#71717a", width: "220px", textTransform: "uppercase", letterSpacing: "0.08em", display: "flex" }}>{rp.round}</span>
+                  <span style={{ fontSize: "22px", fontWeight: 700, color: "#e4e4e7", flex: 1, display: "flex" }}>def. {truncate(rp.opp, 22)}</span>
+                  <span style={{ fontSize: "24px", fontWeight: 900, color: "#f97316", display: "flex" }}>{rp.score}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: "10px" }}>
+              <span style={{ fontSize: "16px", color: "#52525b", letterSpacing: "0.1em", textTransform: "uppercase", display: "flex" }}>NBA TeamCraft</span>
+              <span style={{ fontSize: "16px", color: "#3f3f46", display: "flex" }}>#NBATeamCraft</span>
+            </div>
+          </div>
+        ),
+        { width: 1200, height: 630, headers: { "Cache-Control": "public, max-age=3600" } }
+      );
+    }
+    // Fall through to default card if the share can't be loaded.
+  }
 
   // Matchup result OG — VS scoreboard for the Match Simulator
   if (p.get("mode") === "matchup") {

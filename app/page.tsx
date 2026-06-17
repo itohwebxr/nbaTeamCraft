@@ -90,21 +90,32 @@ export default function Home() {
             <ModeSelector variant="builder" />
 
             {/* Match Simulator — sits directly under the Roster Builder button */}
-            <a
-              href="/matchup"
-              className="group w-full block bg-gradient-to-br from-orange-500/15 via-zinc-900 to-zinc-900 border border-orange-500/30 hover:border-orange-500/60 rounded-2xl p-5 transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <span className="text-3xl shrink-0">⚔️</span>
-                <div className="min-w-0 flex-1 text-left">
+            <div className="grid grid-cols-2 gap-2">
+              <a
+                href="/matchup"
+                className="group block bg-gradient-to-br from-orange-500/15 via-zinc-900 to-zinc-900 border border-orange-500/30 hover:border-orange-500/60 rounded-2xl p-4 transition-colors"
+              >
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-2xl">⚔️</span>
                   <p className="font-display text-sm font-black text-white">Match Simulator</p>
-                  <p className="text-xs text-zinc-400 leading-relaxed mt-0.5">
-                    Pit any two lineups against each other — single game or 4-win series.
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    1v1 · single game or series
                   </p>
                 </div>
-                <span className="font-display text-orange-400 group-hover:translate-x-0.5 transition-transform shrink-0">→</span>
-              </div>
-            </a>
+              </a>
+              <a
+                href="/playoffs"
+                className="group block bg-gradient-to-br from-yellow-500/10 via-zinc-900 to-zinc-900 border border-yellow-500/20 hover:border-yellow-500/40 rounded-2xl p-4 transition-colors"
+              >
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-2xl">🏆</span>
+                  <p className="font-display text-sm font-black text-white">Playoff Simulator</p>
+                  <p className="text-[11px] text-zinc-400 leading-relaxed">
+                    4/8/16 teams · full bracket
+                  </p>
+                </div>
+              </a>
+            </div>
 
             <p className="text-xs text-zinc-500 leading-relaxed">
               Test any trade or FA rumor — build the roster &amp; see how strong it is
