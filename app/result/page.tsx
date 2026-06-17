@@ -789,34 +789,41 @@ export default function ResultPage() {
           </div>
         )}
 
-        {/* Match Simulator — try your team before committing to the Cup */}
+        {/* Simulators — same entry points as the home page */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">⚔️ Match Simulator</p>
-            {(sessionRecord.wins > 0 || sessionRecord.losses > 0) && (
-              <p className="text-xs text-zinc-500">
-                <span className="text-white font-bold">{sessionRecord.wins}W–{sessionRecord.losses}L</span>
-              </p>
-            )}
-          </div>
-          <p className="text-xs text-zinc-600 mb-3">
-            Simulate against other rosters — quarter scores + box score. No stakes, unlimited.
-          </p>
-          {publishedId ? (
+          <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-3">🎮 Simulators</p>
+          <div className="grid grid-cols-3 gap-2">
             <Link
-              href={`/matchup?homeTeamId=${publishedId}&homeName=${encodeURIComponent(teamName || "My Team")}${evaluation ? `&homeOverall=${evaluation.overall}&homeTier=${evaluation.tier}` : ""}${isSandbox ? "&homeSandbox=1" : ""}`}
-              className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-orange-500/60 text-zinc-300 hover:text-white font-bold text-sm text-center transition-colors flex items-center justify-center gap-2"
+              href="/matchup"
+              className="group block bg-gradient-to-br from-orange-500/15 via-zinc-900 to-zinc-900 border border-orange-500/30 hover:border-orange-500/60 rounded-xl p-3 transition-colors"
             >
-              ⚔️ Quick Match (Random Opponent)
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xl">⚔️</span>
+                <p className="font-display text-[13px] font-black text-white leading-tight">Match Simulator</p>
+                <p className="text-[10px] text-zinc-400 leading-snug">1v1 · game or series</p>
+              </div>
             </Link>
-          ) : (
-            <button
-              disabled
-              className="w-full py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-300 font-bold text-sm transition-colors flex items-center justify-center gap-2"
+            <Link
+              href="/playoffs"
+              className="group block bg-gradient-to-br from-yellow-500/10 via-zinc-900 to-zinc-900 border border-yellow-500/20 hover:border-yellow-500/40 rounded-xl p-3 transition-colors"
             >
-              ⚔️ Quick Match (Random Opponent)
-            </button>
-          )}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xl">🏆</span>
+                <p className="font-display text-[13px] font-black text-white leading-tight">Playoff Simulator</p>
+                <p className="text-[10px] text-zinc-400 leading-snug">4/8/16 · full bracket</p>
+              </div>
+            </Link>
+            <Link
+              href="/season"
+              className="group block bg-gradient-to-br from-sky-500/10 via-zinc-900 to-zinc-900 border border-sky-500/20 hover:border-sky-500/40 rounded-xl p-3 transition-colors"
+            >
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xl">📅</span>
+                <p className="font-display text-[13px] font-black text-white leading-tight">Season Simulator</p>
+                <p className="text-[10px] text-zinc-400 leading-snug">82 games · W-L record</p>
+              </div>
+            </Link>
+          </div>
         </div>
 
         {/* Actions */}
