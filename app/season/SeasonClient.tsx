@@ -6,6 +6,7 @@ import { gtm } from "@/lib/gtm";
 import { seasonGrade } from "@/lib/season";
 import type { SeasonResult } from "@/app/api/season/simulate/route";
 import { TeamPicker, TeamPick, RANDOM_ID } from "@/components/sim/TeamPicker";
+import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -123,7 +124,7 @@ function SeasonPlayback({
   const gradeClass = GRADE_TEXT[grade.label] ?? "text-white";
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950 overflow-y-auto px-5 py-8">
+    <div className="fixed inset-0 z-50 bg-zinc-950 overflow-y-auto">
       <style>{`
         @keyframes sz-pop { 0% { transform: scale(.6); opacity: 0 } 55% { transform: scale(1.12) } 100% { transform: scale(1); opacity: 1 } }
         @keyframes sz-glow { 0%,100% { opacity: .3 } 50% { opacity: .65 } }
@@ -133,25 +134,38 @@ function SeasonPlayback({
         .sz-fade { animation: sz-fade .6s ease .3s both }
       `}</style>
 
-      {done && (
-        <div
-          aria-hidden
-          className="sz-glow absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none"
-          style={{ background: `radial-gradient(circle, ${grade.color}55 0%, ${grade.color}1f 40%, transparent 70%)` }}
-        />
-      )}
+      {/* Header — Back returns to the picker (same as the TOP screen). */}
+      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
+        <div className="max-w-lg mx-auto flex items-center gap-4">
+          <button
+            onClick={onReset}
+            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+          >
+            ← Back
+          </button>
+          <h1 className="font-display text-sm font-black uppercase tracking-widest">📅 Season Simulator</h1>
+          {!done && (
+            <button
+              onClick={() => setDone(true)}
+              className="ml-auto text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
+            >
+              Skip ⏭
+            </button>
+          )}
+        </div>
+      </header>
 
-      {!done && (
-        <button
-          onClick={() => setDone(true)}
-          className="absolute top-5 right-5 text-[11px] font-bold text-zinc-500 hover:text-white transition-colors z-10"
-        >
-          Skip ⏭
-        </button>
-      )}
+      <div className="relative flex flex-col items-center justify-center min-h-[calc(100vh-3.25rem)] px-5 py-8">
+        {done && (
+          <div
+            aria-hidden
+            className="sz-glow absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none"
+            style={{ background: `radial-gradient(circle, ${grade.color}55 0%, ${grade.color}1f 40%, transparent 70%)` }}
+          />
+        )}
 
-      <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center">
-        <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em] mb-1">
+        <div className="relative z-10 w-full max-w-md flex flex-col items-center text-center">
+          <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em] mb-1">
           82-Game Season
         </p>
         <h2 className="font-display text-2xl font-black text-white leading-tight mb-5">{result.team.name}</h2>
@@ -227,6 +241,7 @@ function SeasonPlayback({
             <span className="text-xs text-zinc-500 font-display">Playing the season…</span>
           </div>
         )}
+        </div>
       </div>
     </div>
   );
@@ -334,12 +349,7 @@ export default function SeasonClient() {
           )}
         </button>
 
-        {/* Match / Playoff cross-links */}
-        <div className="pt-2 flex items-center justify-center gap-4 text-xs">
-          <a href="/matchup" className="text-zinc-500 hover:text-orange-400 transition-colors">⚔️ Match Simulator</a>
-          <span className="text-zinc-700">·</span>
-          <a href="/playoffs" className="text-zinc-500 hover:text-orange-400 transition-colors">🏆 Playoff Simulator</a>
-        </div>
+        <SimCrossLinks current="season" />
       </div>
     </div>
   );

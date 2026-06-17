@@ -36,6 +36,13 @@ interface Props {
    * action in a normal color.
    */
   onNewMatchup?: () => void;
+  /**
+   * When provided, renders a sticky top nav header (← Back + title) matching
+   * the simulator TOP screens. Used by the Match Simulator; the Cup omits it.
+   */
+  onBack?: () => void;
+  /** Title shown in the nav header when onBack is set. */
+  navTitle?: string;
 }
 
 type Phase = "vs" | "playing" | "final";
@@ -146,6 +153,8 @@ export default function ExhibitionMatch({
   footer,
   rematchLabel = "⚔️ Play Again",
   onNewMatchup,
+  onBack,
+  navTitle = "⚔️ Match Simulator",
 }: Props) {
   const [phase, setPhase] = useState<Phase>("vs");
   // Number of quarters currently revealed during the "playing" phase
@@ -182,6 +191,19 @@ export default function ExhibitionMatch({
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950/97 backdrop-blur-sm overflow-y-auto">
       {phase === "final" && won && <Confetti />}
+      {onBack && (
+        <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
+          <div className="max-w-lg mx-auto flex items-center gap-4">
+            <button
+              onClick={onBack}
+              className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+            >
+              ← Back
+            </button>
+            <h1 className="font-display text-sm font-black uppercase tracking-widest">{navTitle}</h1>
+          </div>
+        </header>
+      )}
       <div className="min-h-full flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-lg">
           {/* VS header — always visible */}

@@ -7,6 +7,7 @@ import { gtm } from "@/lib/gtm";
 import { useDraftStore } from "@/stores/draftStore";
 import ExhibitionMatch from "@/components/cup/ExhibitionMatch";
 import { TeamPicker, TeamPick, RANDOM_ID } from "@/components/sim/TeamPicker";
+import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
 
 // CTA that drops the user into the Roster Builder to create their own lineup.
 // Surfaced on the picker and on result screens to convert simulator play into
@@ -127,7 +128,18 @@ function SeriesResult({
 }) {
   const winnerName = winner === "home" ? home.name : away.name;
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-zinc-950 overflow-y-auto">
+      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
+        <div className="max-w-lg mx-auto flex items-center gap-4">
+          <button
+            onClick={onReset}
+            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+          >
+            ← Back
+          </button>
+          <h1 className="font-display text-sm font-black uppercase tracking-widest">⚔️ Match Simulator</h1>
+        </div>
+      </header>
       <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
         <div className="text-center">
           <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em] mb-2">
@@ -392,7 +404,7 @@ function SeriesPlayback(props: {
   const leadAway = tally.a > tally.h;
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-zinc-950 overflow-y-auto">
       <style>{`
         @keyframes gp-rise { 0% { transform: translateY(16px); opacity: 0 } 100% { transform: translateY(0); opacity: 1 } }
         @keyframes gp-pop  { 0% { transform: scale(.55); opacity: 0 } 60% { transform: scale(1.18) } 100% { transform: scale(1); opacity: 1 } }
@@ -403,20 +415,32 @@ function SeriesPlayback(props: {
         @media (prefers-reduced-motion: reduce) { .gp-rise,.gp-pop,.gp-fade { animation: none } }
       `}</style>
 
-      <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
-        <div className="flex items-center justify-between">
-          <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em]">
-            Series · Best of 7
-          </p>
+      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
+        <div className="max-w-lg mx-auto flex items-center gap-4">
+          <button
+            onClick={props.onReset}
+            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+          >
+            ← Back
+          </button>
+          <h1 className="font-display text-sm font-black uppercase tracking-widest">⚔️ Match Simulator</h1>
           <button
             onClick={() => {
               gtm.seriesPlaybackSkip({ games_revealed: Math.min(current + 1, games.length), games_total: games.length });
               setDone(true);
             }}
-            className="text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
+            className="ml-auto text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
           >
             Skip ⏭
           </button>
+        </div>
+      </header>
+
+      <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
+        <div className="flex items-center justify-between">
+          <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em]">
+            Series · Best of 7
+          </p>
         </div>
 
         {/* Live series scoreboard — pops on each change */}
@@ -536,6 +560,7 @@ export default function MatchupClient() {
         rematchLabel="🔄 Rematch (Same Teams)"
         onNewMatchup={reset}
         onClose={reset}
+        onBack={reset}
         defaultShowBox
         onShare={() =>
           shareToX(shareText, {
@@ -630,20 +655,14 @@ export default function MatchupClient() {
           )}
         </button>
 
-        <a
-          href="/playoffs"
-          className="group block w-full py-3 rounded-xl border border-zinc-700 hover:border-orange-500/40 bg-zinc-900/60 hover:bg-zinc-900 text-center transition-colors"
-        >
-          <span className="font-display text-sm font-black text-zinc-300 group-hover:text-white">🏆 Try Playoff Simulator →</span>
-          <p className="text-[11px] text-zinc-600 mt-0.5">4 / 8 / 16 teams · best-of-7 bracket</p>
-        </a>
-
         <div className="pt-2">
           <p className="text-center text-xs text-zinc-600 mb-2">
             Can&apos;t find the perfect roster?
           </p>
           <BuildOwnTeamCTA />
         </div>
+
+        <SimCrossLinks current="match" />
       </div>
     </div>
   );
