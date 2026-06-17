@@ -18,6 +18,23 @@ export async function GET(req: NextRequest) {
 
     const supabase = createServerClient();
 
+    // Claim this device's browser_id records for the logged-in user, so teams
+    // saved on one device (before/without this user_id link) surface on every
+    // device the user signs in on. Best-effort: ignore errors (e.g. missing
+    // column on a pending migration).
+    if (userId && browserId) {
+      await supabase
+        .from("public_teams")
+        .update({ user_id: userId })
+        .eq("created_by_browser_id", browserId)
+        .is("user_id", null);
+      await supabase
+        .from("cup_entries")
+        .update({ user_id: userId })
+        .eq("browser_id", browserId)
+        .is("user_id", null);
+    }
+
     const orFilter = [
       userId ? `user_id.eq.${userId}` : null,
       browserId ? `created_by_browser_id.eq.${browserId}` : null,
@@ -26,7 +43,7 @@ export async function GET(req: NextRequest) {
     type TeamRow = {
       id: string; name: string; overall: number; tier: string;
       offense: number; defense: number; rebound: number; playmaking: number;
-      like_count: number; created_at: string; is_sandbox?: boolean;
+      like_count: number; created_at: string; is_sandbox?: boolean; comment_count?: number;
     };
 
     // Try to include is_sandbox; fall back if migration hasn't been applied yet
@@ -35,7 +52,7 @@ export async function GET(req: NextRequest) {
 
     const fullRes = await supabase
       .from("public_teams")
-      .select("id, name, overall, tier, offense, defense, rebound, playmaking, like_count, created_at, is_sandbox")
+      .select("id, name, overall, tier, offense, defense, rebound, playmaking, like_count, created_at, is_sandbox, comment_count")
       .or(orFilter)
       .order("created_at", { ascending: false })
       .limit(50);

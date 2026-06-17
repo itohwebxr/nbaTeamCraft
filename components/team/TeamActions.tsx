@@ -22,10 +22,7 @@ const slotLabel = (slot: string) => (slot === "BENCH1" ? "6TH" : slot);
 
 // Client-side actions for the team detail page.
 // - Share on X (orange, primary)
-// - Build Your Own Team (secondary). Its destination mode mirrors the source
-//   team: a Roster Builder team launches the Builder, a Dream Draft team
-//   launches the Draft. `/draft` reads mode from the persisted store, so we
-//   set it here before navigating.
+// - Remix This Roster (secondary)
 export default function TeamActions({
   teamId,
   teamName,
@@ -45,7 +42,7 @@ export default function TeamActions({
 }) {
   const router = useRouter();
   const { user } = useAuth();
-  const { setMode, reset, loadRoster, sandboxConfig } = useDraftStore();
+  const { loadRoster } = useDraftStore();
   const [remixing, setRemixing] = useState(false);
   const [remixError, setRemixError] = useState(false);
 
@@ -84,18 +81,7 @@ export default function TeamActions({
     }
   };
 
-  const handleBuild = () => {
-    reset();
-    if (isSandbox) {
-      setMode("sandbox");
-      gtm.sandboxStart({ team_filter: sandboxConfig.teamFilter, season_filter: sandboxConfig.seasonFilter });
-    } else {
-      setMode("draft");
-    }
-    router.push("/draft");
-  };
-
-  return (
+return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <LikeButton teamId={teamId} initialCount={likeCount} />
@@ -120,12 +106,6 @@ export default function TeamActions({
           "Start from this lineup and swap a player to make your counter."
         )}
       </p>
-      <button
-        onClick={handleBuild}
-        className="block w-full py-3 rounded-xl border border-zinc-700 hover:border-zinc-500 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-sm text-center transition-colors"
-      >
-        {isSandbox ? "🔧 Build Your Own Team →" : "🏀 Build Your Own Team →"}
-      </button>
     </div>
   );
 }

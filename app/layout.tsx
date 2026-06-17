@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, DM_Sans } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 
 const barlow = Barlow_Condensed({
@@ -25,7 +24,7 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: "/favicon.ico",
-    apple: "/logo.png",
+    apple: "/logo.png?v=2",
   },
   openGraph: {
     title: "NBA TeamCraft",
@@ -57,7 +56,15 @@ export default function RootLayout({
       className={`${barlow.variable} ${dmSans.variable} h-full antialiased bg-zinc-950`}
     >
       <head>
-        <Script id="gtm" strategy="beforeInteractive">{`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-K6P8WDXB');`}</Script>
+        {/* Google Tag Manager — native inline script so it renders into the
+            server HTML and executes (next/script with inline children inside
+            <head> is not executed on the client). */}
+        <script
+          id="gtm"
+          dangerouslySetInnerHTML={{
+            __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-K6P8WDXB');`,
+          }}
+        />
       </head>
       <body className="min-h-full flex flex-col bg-zinc-950 text-white">
         <noscript>

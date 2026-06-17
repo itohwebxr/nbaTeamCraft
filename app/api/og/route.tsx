@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
   const cupLosses = p.get("cup_losses") ?? "0";
   const cupWeek = p.get("cup_week") ?? "";
 
-  const logoUrl = `${req.nextUrl.origin}/logo.png`;
+  const logoUrl = `${req.nextUrl.origin}/logo.png?v=2`;
   const logoData = await fetch(logoUrl)
     .then((r) => r.arrayBuffer())
     .then((buf) => `data:image/png;base64,${Buffer.from(buf).toString("base64")}`)

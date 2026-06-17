@@ -81,6 +81,7 @@ export const gtm = {
     overall: number;
     tier: string;
     rank_overall: number;
+    has_description?: boolean;
   }) => push({ event: "enter_rankings", ...params }),
 
   shareRanking: (params: {
@@ -153,6 +154,7 @@ export const gtm = {
     team_name: string;
     overall: number;
     tier: string;
+    has_description?: boolean;
   }) => push({ event: "sandbox_save", ...params }),
 
   remixTeam: (params: {
@@ -160,4 +162,13 @@ export const gtm = {
     overall: number;
     tier: string;
   }) => push({ event: "remix_team", ...params }),
+
+  postComment: (params: {
+    team_id: string;
+    logged_in: boolean;
+  }) => push({ event: "post_comment", ...params }),
+
+  likeComment: (params: {
+    team_id: string;
+  }) => push({ event: "like_comment", ...params }),
 };

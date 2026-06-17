@@ -79,6 +79,13 @@ export default function RankingRow({ team, rank, sortKey, highlightStat = false 
         </span>
       </div>
 
+      {/* Comment count */}
+      {(team.comment_count ?? 0) > 0 && (
+        <span className="shrink-0 text-xs text-zinc-500 flex items-center gap-0.5">
+          💬 {team.comment_count}
+        </span>
+      )}
+
       {/* Likes */}
       <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
         <LikeButton teamId={team.id} initialCount={team.like_count} size="sm" />

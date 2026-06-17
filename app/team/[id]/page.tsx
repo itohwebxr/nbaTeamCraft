@@ -5,12 +5,14 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/lib/supabase";
 import { overallColor } from "@/lib/overallColor";
-import { PublicTeam, STARTER_SLOTS } from "@/types";
+import { PublicTeam, TeamCreator, STARTER_SLOTS } from "@/types";
 import { currentCupWeek } from "@/lib/cupWeek";
 import RadarChart from "@/components/result/RadarChart";
 import HeaderAuth from "@/components/auth/HeaderAuth";
 import CupPlayPanel from "@/components/cup/CupPlayPanel";
 import TeamActions from "@/components/team/TeamActions";
+import TeamComments from "@/components/team/TeamComments";
+import BuildTeamButton from "@/components/team/BuildTeamButton";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +59,27 @@ async function getTeam(id: string): Promise<PublicTeam | null> {
     .single();
   if (error || !data) return null;
   return data as PublicTeam;
+}
+
+// Resolve the creator's public profile so logged-in builders get attribution.
+async function getCreator(userId: string | null | undefined): Promise<TeamCreator | null> {
+  if (!userId) return null;
+  try {
+    const supabase = createServerClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("x_handle, display_name, avatar_url")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return {
+      xHandle: data.x_handle ?? null,
+      displayName: data.display_name ?? null,
+      avatarUrl: data.avatar_url ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 const OG_SLOT_KEY: Record<string, string> = { PG: "pg", SG: "sg", SF: "sf", PF: "pf", C: "c", BENCH1: "6th" };
@@ -139,6 +162,8 @@ export default async function TeamDetailPage({
   const [team, cupRecord] = await Promise.all([getTeam(id), getCupRecord(id)]);
   if (!team) notFound();
 
+  const creator = await getCreator(team.user_id);
+
   const starters = STARTER_SLOTS.map((slot) =>
     team.roster_json.find((e) => e.slot === slot)
   );
@@ -151,7 +176,7 @@ export default async function TeamDetailPage({
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
           <Link href="/">
-            <Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
+            <Image src="/logo.png?v=2" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/ranking" className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">
@@ -208,6 +233,46 @@ export default async function TeamDetailPage({
               );
             })}
           </div>
+
+          {/* Creator attribution + description — the seed for discussion */}
+          {(creator || team.description) && (
+            <div className="mt-5 pt-4 border-t border-zinc-800 space-y-3">
+              {creator && (
+                <a
+                  href={creator.xHandle ? `https://x.com/${creator.xHandle}` : undefined}
+                  target={creator.xHandle ? "_blank" : undefined}
+                  rel="noopener noreferrer"
+                  className={`flex items-center gap-2.5 ${creator.xHandle ? "group" : "pointer-events-none"}`}
+                >
+                  {creator.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={creator.avatarUrl}
+                      alt={creator.displayName ?? "Creator"}
+                      className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs text-zinc-500 shrink-0">
+                      {(creator.displayName ?? creator.xHandle ?? "?").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-white truncate group-hover:text-orange-400 transition-colors">
+                      {creator.displayName ?? (creator.xHandle ? `@${creator.xHandle}` : "Anonymous")}
+                    </p>
+                    {creator.xHandle && (
+                      <p className="text-xs text-zinc-500 truncate">@{creator.xHandle}</p>
+                    )}
+                  </div>
+                </a>
+              )}
+              {team.description && (
+                <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                  {team.description}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/*
@@ -301,6 +366,12 @@ export default async function TeamDetailPage({
           isSandbox={!!team.is_sandbox}
           roster={team.roster_json}
         />
+
+        {/* Discussion */}
+        <TeamComments teamId={team.id} />
+
+        {/* Build CTA — bottom of page so it doesn't interrupt discussion */}
+        <BuildTeamButton isSandbox={!!team.is_sandbox} />
       </div>
     </div>
   );

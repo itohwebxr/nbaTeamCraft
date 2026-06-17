@@ -295,7 +295,8 @@ export default function ResultPage() {
   // on success, or null on failure. Sets the related state as a side effect so
   // callers can chain the cup entry without waiting on React state updates.
   const publishToRankings = async (
-    name: string
+    name: string,
+    description = ""
   ): Promise<{ id: string; rank: PublicTeamRank } | null> => {
     if (!evaluation) return null;
 
@@ -350,6 +351,8 @@ export default function ResultPage() {
           evaluation,
           roster,
           created_by_browser_id: getBrowserId(),
+          user_id: user?.id ?? null,
+          description,
         }),
       });
       const json = await res.json();
@@ -362,6 +365,7 @@ export default function ResultPage() {
           overall: evaluation.overall,
           tier: evaluation.tier,
           rank_overall: json.rank.overall,
+          has_description: description.trim().length > 0,
         });
         return { id: json.id, rank: json.rank };
       }
@@ -374,11 +378,11 @@ export default function ResultPage() {
   // Single-action onboarding: publish to rankings → enter the Cup → auto-play
   // match 1, then surface the live match animation. The ranking listing is a
   // side effect surfaced afterwards in the published panel.
-  const handleEnterCupFlow = async (name: string) => {
+  const handleEnterCupFlow = async (name: string, description = "") => {
     if (isPublishing || !evaluation) return;
     setIsPublishing(true);
     try {
-      const published = await publishToRankings(name);
+      const published = await publishToRankings(name, description);
       if (!published) return;
 
       // Enter the Cup for this freshly published team
@@ -461,7 +465,7 @@ export default function ResultPage() {
     window.open(tweetUrl, "_blank", "noopener");
   };
 
-  const handleSandboxSave = async (nameOverride?: string) => {
+  const handleSandboxSave = async (nameOverride?: string, descriptionOverride = "") => {
     if (sandboxSaving || sandboxSaved || !evaluation) return;
     setSandboxSaving(true);
     setSandboxError(false);
@@ -521,12 +525,14 @@ export default function ResultPage() {
           evaluation,
           roster,
           created_by_browser_id: getBrowserId(),
+          user_id: user?.id ?? null,
+          description: descriptionOverride,
           is_sandbox: true,
         }),
       });
       if (res.ok) {
         setSandboxSaved(true);
-        gtm.sandboxSave({ team_name: name, overall: evaluation.overall, tier: evaluation.tier });
+        gtm.sandboxSave({ team_name: name, overall: evaluation.overall, tier: evaluation.tier, has_description: descriptionOverride.trim().length > 0 });
       } else {
         setSandboxError(true);
       }
@@ -555,7 +561,7 @@ export default function ResultPage() {
     <div className="min-h-screen bg-zinc-950 text-white">
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
-          <Link href="/"><Image src="/logo.png" alt="NBA TeamCraft" height={32} width={60} className="object-contain" /></Link>
+          <Link href="/"><Image src="/logo.png?v=2" alt="NBA TeamCraft" height={32} width={60} className="object-contain" /></Link>
           <div className="flex items-center gap-3">
             {!isSandbox && (
               <span className="text-xs text-zinc-500">Budget used: {usedBudget}/{TOTAL_BUDGET}</span>
@@ -753,7 +759,7 @@ export default function ResultPage() {
             ) : (
               <div className="space-y-2">
                 <button
-                  onClick={() => handleSandboxSave()}
+                  onClick={() => setShowSaveModal(true)}
                   disabled={sandboxSaving || !evaluation || loading}
                   className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-sm transition-colors"
                 >
@@ -881,10 +887,10 @@ export default function ResultPage() {
       {showSaveModal && (
         <SaveBuildModal
           initialName={teamName}
-          onConfirm={(name) => {
+          onConfirm={(name, description) => {
             setTeamName(name);
             setShowSaveModal(false);
-            handleSandboxSave(name);
+            handleSandboxSave(name, description);
           }}
           onCancel={() => setShowSaveModal(false)}
           isSubmitting={sandboxSaving}
