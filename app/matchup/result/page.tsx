@@ -30,7 +30,15 @@ function parse(sp: SP) {
   const as = one(sp.as, "0");
   const kind = one(sp.kind) === "series" ? "series" : "single";
   const homeWon = parseInt(hs, 10) >= parseInt(as, 10);
-  return { home, away, hs, as, kind, homeWon };
+  const gamesRaw = one(sp.games);
+  const games = gamesRaw
+    ? gamesRaw
+        .split(",")
+        .map((g) => g.split("-"))
+        .filter((pair) => pair.length === 2 && pair[0] !== "")
+        .map(([h, a]) => ({ h, a }))
+    : [];
+  return { home, away, hs, as, kind, homeWon, games };
 }
 
 export async function generateMetadata({
@@ -39,7 +47,7 @@ export async function generateMetadata({
   searchParams: Promise<SP>;
 }): Promise<Metadata> {
   const sp = await searchParams;
-  const { home, away, hs, as, kind, homeWon } = parse(sp);
+  const { home, away, hs, as, kind, homeWon, games } = parse(sp);
   const siteUrl = await getSiteUrl();
 
   const winner = homeWon ? home : away;
@@ -50,6 +58,7 @@ export async function generateMetadata({
       : `${winner} wins ${hs}–${as} — simulated on NBA TeamCraft`;
 
   const qs = new URLSearchParams({ mode: "matchup", home, away, hs, as, kind });
+  if (games.length > 0) qs.set("games", games.map((g) => `${g.h}-${g.a}`).join(","));
   const ogImageUrl = `${siteUrl}/api/og?${qs.toString()}`;
 
   return {
@@ -75,7 +84,7 @@ export default async function MatchupResultPage({
   searchParams: Promise<SP>;
 }) {
   const sp = await searchParams;
-  const { home, away, hs, as, kind, homeWon } = parse(sp);
+  const { home, away, hs, as, kind, homeWon, games } = parse(sp);
   const winner = homeWon ? home : away;
 
   return (
@@ -111,6 +120,27 @@ export default async function MatchupResultPage({
             🏆 <span className="text-white font-bold">{winner}</span>{" "}
             {kind === "series" ? "takes the series" : "wins"}
           </p>
+
+          {/* Per-game series breakdown */}
+          {kind === "series" && games.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-zinc-800 divide-y divide-zinc-800/60">
+              {games.map((g, i) => {
+                const hWon = parseInt(g.h, 10) >= parseInt(g.a, 10);
+                return (
+                  <div key={i} className="flex items-center gap-3 py-2">
+                    <span className="font-display text-xs font-bold text-zinc-500 w-7 shrink-0">G{i + 1}</span>
+                    <span className={`flex-1 text-xs font-bold truncate ${hWon ? "text-white" : "text-zinc-500"}`}>{home}</span>
+                    <span className="font-display text-sm font-black tabular-nums shrink-0">
+                      <span className={hWon ? "text-orange-400" : "text-zinc-500"}>{g.h}</span>
+                      <span className="text-zinc-700 mx-1.5">-</span>
+                      <span className={!hWon ? "text-orange-400" : "text-zinc-500"}>{g.a}</span>
+                    </span>
+                    <span className={`flex-1 text-xs font-bold truncate text-right ${!hWon ? "text-white" : "text-zinc-500"}`}>{away}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* CTA into the simulator */}
