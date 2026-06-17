@@ -209,7 +209,18 @@ function PlayoffResults({
   const totalRounds = result.rounds.length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-zinc-950 overflow-y-auto">
+      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
+        <div className="max-w-lg mx-auto flex items-center gap-4">
+          <button
+            onClick={onReset}
+            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+          >
+            ← Back
+          </button>
+          <h1 className="font-display text-sm font-black uppercase tracking-widest">🏆 Playoff Simulator</h1>
+        </div>
+      </header>
       <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
 
         {/* Champion */}
@@ -339,6 +350,12 @@ function PlayoffPlayback({
           style={{ background: "radial-gradient(circle, rgba(249,115,22,0.35) 0%, rgba(245,158,11,0.12) 40%, transparent 70%)" }}
         />
         <button
+          onClick={onReset}
+          className="absolute top-5 left-5 text-[11px] font-bold text-zinc-500 hover:text-white transition-colors z-10"
+        >
+          ← Back
+        </button>
+        <button
           onClick={() => setDone(true)}
           className="absolute top-5 right-5 text-[11px] font-bold text-zinc-500 hover:text-white transition-colors z-10"
         >
@@ -360,26 +377,32 @@ function PlayoffPlayback({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-950/95 backdrop-blur overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-zinc-950 overflow-y-auto">
       <style>{`
         @keyframes rd-rise { 0% { transform: translateY(20px); opacity: 0 } 100% { transform: translateY(0); opacity: 1 } }
         .rd-rise { animation: rd-rise .5s cubic-bezier(.2,.7,.2,1) both }
       `}</style>
-      <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
-        <div className="flex items-center justify-between">
-          <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em]">
-            🏆 {result.size}-Team Playoff
-          </p>
+      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
+        <div className="max-w-lg mx-auto flex items-center gap-4">
+          <button
+            onClick={onReset}
+            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+          >
+            ← Back
+          </button>
+          <h1 className="font-display text-sm font-black uppercase tracking-widest">🏆 Playoff Simulator</h1>
           <button
             onClick={() => {
               gtm.playoffRoundSkip({ round: revealedRounds, size: result.size });
               setDone(true);
             }}
-            className="text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
+            className="ml-auto text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
           >
             Skip ⏭
           </button>
         </div>
+      </header>
+      <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
 
         {result.rounds.slice(0, revealedRounds).map((round, roundIdx) => {
           const label = roundName(roundIdx, totalRounds);
