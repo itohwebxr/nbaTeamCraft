@@ -183,4 +183,24 @@ export const gtm = {
     games_revealed: number;
     games_total: number;
   }) => push({ event: "series_playback_skip", ...params }),
+
+  playoffStart: (params: {
+    size: number;
+    preset: string;
+  }) => push({ event: "playoff_start", ...params }),
+
+  playoffComplete: (params: {
+    size: number;
+    champion: string;
+  }) => push({ event: "playoff_complete", ...params }),
+
+  playoffShare: (params: {
+    size: number;
+    champion: string;
+  }) => push({ event: "playoff_share", ...params }),
+
+  playoffRoundSkip: (params: {
+    round: number;
+    size: number;
+  }) => push({ event: "playoff_round_skip", ...params }),
 };
