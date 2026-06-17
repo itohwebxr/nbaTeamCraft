@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
-import { loadSimTeam, simulateSeries, TeamMeta, SeriesResult } from "@/lib/loadSimTeam";
+import { loadSimTeam, simulateSeries, TeamMeta } from "@/lib/loadSimTeam";
 import { SimTeam } from "@/lib/simulateGame";
 
 export const dynamic = "force-dynamic";
@@ -8,26 +8,23 @@ export const dynamic = "force-dynamic";
 // POST /api/playoff/simulate
 // Body: { teamIds: string[], size: 4 | 8 | 16 }
 //
-// Runs a single-elimination tournament with best-of-7 series for each matchup.
-// Seeds are assigned in the order the IDs are provided (seed 1 = teamIds[0]).
-// The bracket is structured as:
-//   Round 1: (1v16, 2v15, 3v14, 4v13, 5v12, 6v11, 7v10, 8v9) — for size 16
-//   Round 1: (1v8,  2v7,  3v6,  4v5)                          — for size 8
-//   Round 1: (1v4,  2v3)                                       — for size 4
-//
-// Returns every round with series results so the client can render a full bracket.
+// Conference-style single-elimination bracket with best-of-7 series. The field
+// is split into two groups (East/West feel, but neutrally named A / B):
+//   teamIds[0 .. size/2-1]      → Group A  (seeds A1..A8)
+//   teamIds[size/2 .. size-1]   → Group B  (seeds B1..B8)
+// Each group plays its own bracket; the two group winners meet in the Finals.
 
 const VALID_SIZES = [4, 8, 16] as const;
 type BracketSize = (typeof VALID_SIZES)[number];
 
 export type SeriesSummary = {
+  group: "A" | "B" | null; // null = the cross-group Finals
   homeId: string;
   awayId: string;
   home: TeamMeta;
   away: TeamMeta;
   wins: { home: number; away: number };
   winner: "home" | "away";
-  // Per-game scores and top scorer (enough to render the bracket + OGP)
   games: Array<{
     homeTotal: number;
     awayTotal: number;
@@ -43,15 +40,80 @@ export type SeriesSummary = {
 export type PlayoffResult = {
   size: BracketSize;
   champion: TeamMeta;
-  // rounds[0] = first round, rounds[last] = finals
+  // rounds[0] = first round, rounds[last] = Finals. Non-final rounds contain
+  // both groups' matches (each tagged with its group).
   rounds: SeriesSummary[][];
 };
+
+type Contestant = { meta: TeamMeta; simTeam: SimTeam; id: string };
 
 function topScorer(box: { name: string; pts: number }[]): { name: string; pts: number } {
   return box.reduce(
     (best, l) => (l.pts > best.pts ? { name: l.name, pts: l.pts } : best),
     { name: "", pts: -1 }
   );
+}
+
+function playSeries(
+  home: Contestant,
+  away: Contestant,
+  seriesKey: string,
+  group: "A" | "B" | null
+): { summary: SeriesSummary; winner: Contestant } {
+  const sr = simulateSeries(home.simTeam, home.id, away.simTeam, away.id, seriesKey);
+  const summary: SeriesSummary = {
+    group,
+    homeId: home.id,
+    awayId: away.id,
+    home: home.meta,
+    away: away.meta,
+    wins: sr.wins,
+    winner: sr.winner,
+    games: sr.games.map((g) => {
+      const ht = topScorer(g.homeBox);
+      const at = topScorer(g.awayBox);
+      return {
+        homeTotal: g.homeTotal,
+        awayTotal: g.awayTotal,
+        winner: g.winner,
+        overtime: g.overtime,
+        hTopName: ht.name,
+        hTopPts: ht.pts,
+        aTopName: at.name,
+        aTopPts: at.pts,
+      };
+    }),
+  };
+  return { summary, winner: sr.winner === "home" ? home : away };
+}
+
+// Run a single-group bracket (fold seeding: 1vN, 2v(N-1), …) to a single
+// winner, returning each round's series.
+function simulateGroupBracket(
+  contestants: Contestant[],
+  group: "A" | "B"
+): { rounds: SeriesSummary[][]; winner: Contestant } {
+  const rounds: SeriesSummary[][] = [];
+  let current = contestants;
+  let roundIndex = 0;
+
+  while (current.length > 1) {
+    const roundSeries: SeriesSummary[] = [];
+    const next: Contestant[] = [];
+    const half = current.length / 2;
+    for (let i = 0; i < half; i++) {
+      const home = current[i];
+      const away = current[current.length - 1 - i];
+      const { summary, winner } = playSeries(home, away, `playoff|${group}|r${roundIndex}|m${i}`, group);
+      roundSeries.push(summary);
+      next.push(winner);
+    }
+    rounds.push(roundSeries);
+    current = next;
+    roundIndex++;
+  }
+
+  return { rounds, winner: current[0] };
 }
 
 export async function POST(req: NextRequest) {
@@ -63,10 +125,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "size must be 4, 8, or 16" }, { status: 400 });
     }
     if (!Array.isArray(teamIds) || teamIds.length !== size) {
-      return NextResponse.json(
-        { error: `Provide exactly ${size} team IDs` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `Provide exactly ${size} team IDs` }, { status: 400 });
     }
 
     const supabase = createServerClient();
@@ -78,7 +137,6 @@ export async function POST(req: NextRequest) {
         resolved.push(id);
         continue;
       }
-      // Pick a random team not already in the bracket
       const { data } = await supabase
         .from("public_teams")
         .select("id")
@@ -90,86 +148,35 @@ export async function POST(req: NextRequest) {
       resolved.push(pool[Math.floor(Math.random() * pool.length)].id);
     }
 
-    // Load all teams in parallel
-    const loaded = await Promise.all(
-      resolved.map((id) => loadSimTeam(supabase, id))
-    );
+    const loaded = await Promise.all(resolved.map((id) => loadSimTeam(supabase, id)));
+    const contestants: Contestant[] = loaded.map((l, i) => ({
+      meta: l.meta,
+      simTeam: l.simTeam,
+      id: resolved[i],
+    }));
 
-    const metas = loaded.map((l) => l.meta);
-    const simTeams = loaded.map((l) => l.simTeam);
+    // Split into Group A (first half) and Group B (second half)
+    const half = size / 2;
+    const groupA = simulateGroupBracket(contestants.slice(0, half), "A");
+    const groupB = simulateGroupBracket(contestants.slice(half), "B");
 
-    // Single-elimination bracket: higher seed (lower index) is home.
-    // Pairing: 0v(n-1), 1v(n-2), 2v(n-3), …
-    // e.g. 8-team: [0v7, 1v6, 2v5, 3v4]
+    // Combine each group's rounds side by side, then add the cross-group Finals.
     const rounds: SeriesSummary[][] = [];
-    let currentMetas = metas;
-    let currentSimTeams = simTeams;
-    let currentIds = resolved;
-    let roundIndex = 0;
-
-    while (currentMetas.length > 1) {
-      const roundSeries: SeriesSummary[] = [];
-      const nextMetas: TeamMeta[] = [];
-      const nextSimTeams: SimTeam[] = [];
-      const nextIds: string[] = [];
-      const half = currentMetas.length / 2;
-
-      for (let i = 0; i < half; i++) {
-        const hiIdx = i;
-        const loIdx = currentMetas.length - 1 - i;
-        const homeMeta = currentMetas[hiIdx];
-        const awayMeta = currentMetas[loIdx];
-        const homeSimTeam = currentSimTeams[hiIdx];
-        const awaySimTeam = currentSimTeams[loIdx];
-        const homeId = currentIds[hiIdx];
-        const awayId = currentIds[loIdx];
-
-        const seriesKey = `playoff|r${roundIndex}|m${i}`;
-        const sr: SeriesResult = simulateSeries(homeSimTeam, homeId, awaySimTeam, awayId, seriesKey);
-
-        const summary: SeriesSummary = {
-          homeId,
-          awayId,
-          home: homeMeta,
-          away: awayMeta,
-          wins: sr.wins,
-          winner: sr.winner,
-          games: sr.games.map((g) => {
-            const ht = topScorer(g.homeBox);
-            const at = topScorer(g.awayBox);
-            return {
-              homeTotal: g.homeTotal,
-              awayTotal: g.awayTotal,
-              winner: g.winner,
-              overtime: g.overtime,
-              hTopName: ht.name,
-              hTopPts: ht.pts,
-              aTopName: at.name,
-              aTopPts: at.pts,
-            };
-          }),
-        };
-
-        roundSeries.push(summary);
-
-        const winnerMeta = sr.winner === "home" ? homeMeta : awayMeta;
-        const winnerSimTeam = sr.winner === "home" ? homeSimTeam : awaySimTeam;
-        const winnerId = sr.winner === "home" ? homeId : awayId;
-        nextMetas.push(winnerMeta);
-        nextSimTeams.push(winnerSimTeam);
-        nextIds.push(winnerId);
-      }
-
-      rounds.push(roundSeries);
-      currentMetas = nextMetas;
-      currentSimTeams = nextSimTeams;
-      currentIds = nextIds;
-      roundIndex++;
+    const groupRoundCount = groupA.rounds.length; // === groupB.rounds.length
+    for (let i = 0; i < groupRoundCount; i++) {
+      rounds.push([...groupA.rounds[i], ...groupB.rounds[i]]);
     }
+    const { summary: finalSummary, winner: champion } = playSeries(
+      groupA.winner,
+      groupB.winner,
+      "playoff|final",
+      null
+    );
+    rounds.push([finalSummary]);
 
     const result: PlayoffResult = {
       size: size as BracketSize,
-      champion: currentMetas[0],
+      champion: champion.meta,
       rounds,
     };
 
