@@ -802,27 +802,20 @@ export default function ResultPage() {
           <p className="text-xs text-zinc-600 mb-3">
             Simulate against other rosters — quarter scores + box score. No stakes, unlimited.
           </p>
-          <button
-            onClick={handleExhibition}
-            disabled={!evaluation || loading || matchLoading}
-            className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-orange-500/60 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-300 hover:text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
-          >
-            {matchLoading ? (
-              <>
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Finding opponent...
-              </>
-            ) : (
-              <>⚔️ Quick Match (Random Opponent)</>
-            )}
-          </button>
-          {publishedId && (
+          {publishedId ? (
             <Link
               href={`/matchup?homeTeamId=${publishedId}&homeName=${encodeURIComponent(teamName || "My Team")}${evaluation ? `&homeOverall=${evaluation.overall}&homeTier=${evaluation.tier}` : ""}${isSandbox ? "&homeSandbox=1" : ""}`}
-              className="mt-2 block w-full py-2.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/40 hover:border-orange-500/70 text-orange-300 hover:text-orange-200 font-bold text-sm text-center transition-colors"
+              className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-orange-500/60 text-zinc-300 hover:text-white font-bold text-sm text-center transition-colors flex items-center justify-center gap-2"
             >
-              ⚔️ Choose Your Opponent →
+              ⚔️ Quick Match (Random Opponent)
             </Link>
+          ) : (
+            <button
+              disabled
+              className="w-full py-2.5 rounded-xl bg-zinc-800 border border-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed text-zinc-300 font-bold text-sm transition-colors flex items-center justify-center gap-2"
+            >
+              ⚔️ Quick Match (Random Opponent)
+            </button>
           )}
         </div>
 
