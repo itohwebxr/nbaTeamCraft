@@ -26,6 +26,8 @@ interface Props {
   defaultShowBox?: boolean;
   /** When provided, renders a "Share on X" button on the final screen */
   onShare?: () => void;
+  /** Optional extra content rendered below the action buttons on the final screen */
+  footer?: React.ReactNode;
 }
 
 type Phase = "vs" | "playing" | "final";
@@ -133,6 +135,7 @@ export default function ExhibitionMatch({
   cupMode,
   defaultShowBox = false,
   onShare,
+  footer,
 }: Props) {
   const [phase, setPhase] = useState<Phase>("vs");
   // Number of quarters currently revealed during the "playing" phase
@@ -383,6 +386,7 @@ export default function ExhibitionMatch({
                     </>
                   )}
                 </div>
+                {footer}
               </div>
             </div>
           )}
