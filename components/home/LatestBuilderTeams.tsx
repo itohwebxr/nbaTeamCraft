@@ -12,7 +12,7 @@ export default async function LatestBuilderTeams() {
         <p className="font-display text-xs font-bold text-zinc-400 uppercase tracking-[0.2em]">
           🔥 Latest Builds
         </p>
-        <Link href="/ranking?tab=builder" className="text-xs text-orange-400 hover:text-orange-300 font-bold transition-colors">
+        <Link href="/feed?tab=builder" className="text-xs text-orange-400 hover:text-orange-300 font-bold transition-colors">
           View All →
         </Link>
       </div>
