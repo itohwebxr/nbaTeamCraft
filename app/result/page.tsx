@@ -12,7 +12,6 @@ import TeamNameInput from "@/components/result/TeamNameInput";
 import EnterRankingsModal from "@/components/result/EnterRankingsModal";
 import SaveBuildModal from "@/components/result/SaveBuildModal";
 import ExhibitionMatch from "@/components/cup/ExhibitionMatch";
-import CupStatus from "@/components/cup/CupStatus";
 import { GameResult } from "@/lib/simulateGame";
 import { gtm } from "@/lib/gtm";
 import HeaderAuth from "@/components/auth/HeaderAuth";
@@ -91,15 +90,6 @@ export default function ResultPage() {
   const [sandboxSaving, setSandboxSaving] = useState(false);
   const [sandboxError, setSandboxError] = useState(false);
   const [xLoginLoading, setXLoginLoading] = useState(false);
-  // Cup state
-  const [cupEntryId, setCupEntryId] = useState<string | null>(null);
-  const [isEnteringCup, setIsEnteringCup] = useState(false);
-  // Auto-played first cup match (shown as an overlay right after entering)
-  const [cupMatch, setCupMatch] = useState<{
-    opponent: { id: string; name: string; overall: number; tier: string; isLegend?: boolean };
-    result: GameResult;
-    record: { wins: number; losses: number };
-  } | null>(null);
   // Wait for zustand persist rehydration before judging roster emptiness —
   // on a full page load (e.g. returning from OAuth) roster is [] until then.
   const [hydrated, setHydrated] = useState(useDraftStore.persist?.hasHydrated?.() ?? false);
@@ -261,26 +251,6 @@ export default function ResultPage() {
     }
   };
 
-  const handleEnterCup = async () => {
-    if (isEnteringCup || !publishedId) return;
-    setIsEnteringCup(true);
-    try {
-      const res = await fetch("/api/cup/enter", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ publicTeamId: publishedId, browserId: getBrowserId() }),
-      });
-      const json = await res.json();
-      if (json.entry?.id) {
-        setCupEntryId(json.entry.id);
-        gtm.cupEnter({ team_overall: evaluation?.overall ?? 0, tier: evaluation?.tier ?? "D", cup_week: json.cupWeek ?? "" });
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setIsEnteringCup(false);
-    }
-  };
 
   const getBrowserId = (): string => {
     const key = "nba_tc_browser_id";
@@ -376,80 +346,13 @@ export default function ResultPage() {
     return null;
   };
 
-  // Single-action onboarding: publish to rankings → enter the Cup → auto-play
-  // match 1, then surface the live match animation. The ranking listing is a
-  // side effect surfaced afterwards in the published panel.
+  // Publish to feed then redirect to team detail page.
   const handleEnterCupFlow = async (name: string, description = "") => {
     if (isPublishing || !evaluation) return;
     setIsPublishing(true);
     try {
       const published = await publishToRankings(name, description);
       if (!published) return;
-
-      // Enter the Cup for this freshly published team
-      let entryId: string | null = null;
-      let cupWeek = "";
-      try {
-        const res = await fetch("/api/cup/enter", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ publicTeamId: published.id, browserId: getBrowserId() }),
-        });
-        const json = await res.json();
-        if (json.entry?.id) {
-          entryId = json.entry.id;
-          cupWeek = json.cupWeek ?? json.entry.cup_week ?? "";
-          gtm.cupEnter({ team_overall: evaluation.overall, tier: evaluation.tier, cup_week: cupWeek });
-        }
-      } catch {
-        // cup entry failed — published panel still offers a manual retry button
-      }
-
-      // Auto-play match 1
-      if (entryId) {
-        try {
-          const res = await fetch("/api/cup/daily-match", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ entryId, browserId: getBrowserId() }),
-          });
-          const json = await res.json();
-          if (json.result) {
-            const record = json.updatedEntry ?? { wins: json.result.won ? 1 : 0, losses: json.result.won ? 0 : 1 };
-            gtm.cupDailyMatch({
-              result: json.result.won ? "win" : "loss",
-              score_for: json.result.userScore,
-              score_against: json.result.oppScore,
-              opponent_name: json.opponent.name,
-              is_legend_opponent: !!json.opponent.isLegend,
-              match_number: 1,
-              cup_week: cupWeek,
-            });
-            setCupMatch({
-              opponent: json.opponent,
-              result: {
-                quarters: json.result.quarters,
-                homeTotal: json.result.userScore,
-                awayTotal: json.result.oppScore,
-                winner: json.result.won ? "home" : "away",
-                overtime: json.result.overtime ?? false,
-                homeBox: json.result.userBox,
-                awayBox: json.result.oppBox,
-              },
-              record,
-            });
-          }
-        } catch {
-          // match failed — CupStatus in the published panel lets them play manually
-        }
-      }
-
-      // Mount CupStatus only after match 1 is recorded, so its initial status
-      // fetch already reflects today's played match (otherwise it would briefly
-      // show the "Play Today's Match" button for a match that just happened).
-      if (entryId) setCupEntryId(entryId);
-
-      // Redirect to team detail — social page for likes/comments
       router.push(`/team/${published.id}`);
     } finally {
       setIsPublishing(false);
@@ -617,29 +520,6 @@ export default function ResultPage() {
                 <span>𝕏</span> Share Ranking
               </button>
             </div>
-            {/* Enter the Cup */}
-            {!cupEntryId ? (
-              <button
-                onClick={handleEnterCup}
-                disabled={isEnteringCup}
-                className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-sm transition-colors flex items-center justify-center gap-2"
-              >
-                {isEnteringCup ? (
-                  <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Entering Cup...</>
-                ) : (
-                  <>🏆 Enter the Cup — compete all week</>
-                )}
-              </button>
-            ) : (
-              <CupStatus
-                entryId={cupEntryId}
-                browserId={getBrowserId()}
-                teamName={teamName || "My Team"}
-                teamOverall={evaluation?.overall ?? 0}
-                teamTier={evaluation?.tier ?? "D"}
-                sharePageUrl={sharePageUrl}
-              />
-            )}
           </div>
         )}
 
@@ -895,19 +775,6 @@ export default function ResultPage() {
             handleExhibition();
           }}
           onClose={() => setMatch(null)}
-        />
-      )}
-      {cupMatch && evaluation && (
-        <ExhibitionMatch
-          userTeamName={teamName || "My Team"}
-          userOverall={evaluation.overall}
-          userTier={evaluation.tier}
-          opponent={cupMatch.opponent}
-          result={cupMatch.result}
-          sessionRecord={cupMatch.record}
-          onRematch={() => setCupMatch(null)}
-          onClose={() => setCupMatch(null)}
-          cupMode
         />
       )}
       {showEnterModal && (

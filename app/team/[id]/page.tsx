@@ -320,44 +320,7 @@ export default async function TeamDetailPage({
           )}
         </div>
 
-        {/*
-          Cup section:
-          - Owner sees CupPlayPanel (resolves their entry, shows record + match history + play button)
-          - Non-owner (or no entry this week) sees the static summary if cupRecord exists
-          CupPlayPanel self-gates (renders null) when the viewer has no entry for this team.
-        */}
-        <CupPlayPanel
-          teamId={team.id}
-          teamName={team.name}
-          teamOverall={team.overall}
-          teamTier={team.tier}
-          hideSelector=".js-cup-static"
-        />
-        {cupRecord && (
-          <div className="bg-zinc-900 border border-amber-700/30 rounded-2xl p-5 js-cup-static">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">🏆 TeamCraft Cup · {cupRecord.cupWeek}</p>
-              <a href="/cup" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">Standings →</a>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="font-display text-3xl font-black text-white">{cupRecord.wins}</p>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">W</p>
-              </div>
-              <div className="text-zinc-600 text-xl font-thin">—</div>
-              <div className="text-center">
-                <p className="font-display text-3xl font-black text-zinc-400">{cupRecord.losses}</p>
-                <p className="text-xs text-zinc-500 uppercase tracking-wider">L</p>
-              </div>
-              <div className="ml-auto text-right">
-                <p className={`font-display text-xl font-black ${cupRecord.pointDiff > 0 ? "text-orange-400" : cupRecord.pointDiff < 0 ? "text-zinc-500" : "text-zinc-600"}`}>
-                  {cupRecord.pointDiff > 0 ? "+" : ""}{cupRecord.pointDiff}
-                </p>
-                <p className="text-xs text-zinc-500">Pt Diff</p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Cup section hidden */}
 
         {/* Actions */}
         <TeamActions

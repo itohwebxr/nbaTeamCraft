@@ -22,8 +22,8 @@ export default async function RankingPage({
             <Image src="/logo.png?v=2" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/cup" className="text-xs font-bold text-amber-400 hover:text-amber-300 transition-colors">
-              🏆 Cup
+            <Link href="/trivia" className="text-xs font-bold text-sky-400 hover:text-sky-300 transition-colors">
+              🧠 Trivia
             </Link>
             <Link href="/draft" className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
               Draft →
