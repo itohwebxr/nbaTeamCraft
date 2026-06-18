@@ -54,6 +54,25 @@ export default function MyPage() {
   const [expandedCup, setExpandedCup] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (!user?.id) return;
+    fetch(`/api/notifications?userId=${user.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        setNotifications(data.notifications ?? []);
+        setNotifLoaded(true);
+        // Mark all as read
+        if ((data.unreadCount ?? 0) > 0) {
+          fetch("/api/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: user.id }),
+          }).catch(() => {});
+        }
+      })
+      .catch(() => setNotifLoaded(true));
+  }, [user?.id]);
+
+  useEffect(() => {
     const browserId = getBrowserId();
     const params = new URLSearchParams();
     if (browserId) params.set("browserId", browserId);
@@ -124,6 +143,18 @@ export default function MyPage() {
 
   const [activeTab, setActiveTab] = useState<"dream" | "builds">("dream");
 
+  type NotificationItem = {
+    id: string;
+    type: "like" | "comment";
+    team_id: string | null;
+    team_name: string | null;
+    actor_display_name: string | null;
+    is_read: boolean;
+    created_at: string;
+  };
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifLoaded, setNotifLoaded] = useState(false);
+
   const toggleCup = (teamId: string) => {
     setExpandedCup((prev) => {
       const next = new Set(prev);
@@ -189,6 +220,37 @@ export default function MyPage() {
             </div>
           )}
         </div>
+
+        {/* Notifications — only shown when logged in and there are items */}
+        {user && notifLoaded && notifications.length > 0 && (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+            <div className="px-4 py-3 border-b border-zinc-800">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">🔔 Notifications</p>
+            </div>
+            <div className="divide-y divide-zinc-800">
+              {notifications.slice(0, 10).map((n) => (
+                <div key={n.id} className={`flex items-start gap-3 px-4 py-3 ${n.is_read ? "opacity-60" : ""}`}>
+                  <span className="text-base shrink-0 mt-0.5">{n.type === "like" ? "❤️" : "💬"}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white leading-snug">
+                      {n.type === "like" ? (
+                        <>Someone liked <span className="font-bold">{n.team_name ?? "your team"}</span></>
+                      ) : (
+                        <>{n.actor_display_name ? <span className="font-bold">{n.actor_display_name}</span> : "Someone"} commented on <span className="font-bold">{n.team_name ?? "your team"}</span></>
+                      )}
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-0.5">
+                      {new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                  {n.team_id && (
+                    <a href={`/team/${n.team_id}`} className="text-xs text-zinc-500 hover:text-orange-400 transition-colors shrink-0">View →</a>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Tab bar */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">

@@ -201,12 +201,17 @@ function PlayoffResults({
   result,
   onReset,
   onRematch,
+  sourceTeamId,
 }: {
   result: PlayoffResult;
   onReset: () => void;
   onRematch: () => void;
+  sourceTeamId?: string | null;
 }) {
+  const router = useRouter();
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
+  const [posted, setPosted] = useState(false);
+  const [posting, setPosting] = useState(false);
   const totalRounds = result.rounds.length;
 
   return (
@@ -267,6 +272,36 @@ function PlayoffResults({
         >
           Share on 𝕏
         </button>
+        {sourceTeamId && !posted && (
+          <button
+            onClick={async () => {
+              setPosting(true);
+              try {
+                const isChampion = result.champion.id === sourceTeamId;
+                await fetch(`/api/teams/${sourceTeamId}/simulations`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    type: "playoff",
+                    result_data: {
+                      champion: result.champion.name,
+                      is_champion: isChampion,
+                      bracket_size: result.size,
+                    },
+                  }),
+                });
+                setPosted(true);
+                setTimeout(() => router.push(`/team/${sourceTeamId}`), 800);
+              } catch {
+                setPosting(false);
+              }
+            }}
+            disabled={posting}
+            className="w-full py-3 rounded-xl bg-yellow-500/20 border border-yellow-500/40 hover:bg-yellow-500/30 text-yellow-300 font-bold text-sm transition-colors disabled:opacity-50"
+          >
+            {posted ? "✓ Posted!" : posting ? "Posting…" : "📌 Post to Team Page"}
+          </button>
+        )}
         <button
           onClick={onRematch}
           className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
@@ -290,10 +325,12 @@ function PlayoffPlayback({
   result,
   onReset,
   onRematch,
+  sourceTeamId,
 }: {
   result: PlayoffResult;
   onReset: () => void;
   onRematch: () => void;
+  sourceTeamId?: string | null;
 }) {
   const [revealedRounds, setRevealedRounds] = useState(0);
   const [championReveal, setChampionReveal] = useState(false);
@@ -331,7 +368,7 @@ function PlayoffPlayback({
   }, [revealedRounds]);
 
   if (done) {
-    return <PlayoffResults result={result} onReset={onReset} onRematch={onRematch} />;
+    return <PlayoffResults result={result} onReset={onReset} onRematch={onRematch} sourceTeamId={sourceTeamId} />;
   }
 
   if (championReveal) {
@@ -533,6 +570,8 @@ export default function PlayoffClient() {
   };
 
   if (result) {
+    const sp = params.get("teamId");
+    const sourceId = sp && sp !== RANDOM_ID ? sp : null;
     return (
       <PlayoffPlayback
         // Remount per simulation so a re-run replays from Round 1
@@ -540,6 +579,7 @@ export default function PlayoffClient() {
         result={result}
         onReset={reset}
         onRematch={simulate}
+        sourceTeamId={sourceId}
       />
     );
   }
