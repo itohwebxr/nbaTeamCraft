@@ -1,18 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { getBrowserId } from "@/lib/browserId";
 import { startXLogin } from "@/lib/xLogin";
 import { gtm } from "@/lib/gtm";
 
-// Header auth widget shown on every page:
-// - logged in  → X avatar linking to /me
-// - logged out → small "Sign in" button starting the X OAuth flow
 export default function HeaderAuth() {
   const { user, loading } = useAuth();
   const [connecting, setConnecting] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch(`/api/notifications?userId=${user.id}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        setUnreadCount(json.unreadCount ?? 0);
+      } catch {
+        // ignore
+      }
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 60_000);
+    return () => clearInterval(interval);
+  }, [user?.id]);
 
   if (loading) {
     return <div className="w-8 h-8 rounded-full bg-zinc-900 animate-pulse" />;
@@ -20,7 +35,7 @@ export default function HeaderAuth() {
 
   if (user) {
     return (
-      <Link href="/me" aria-label="My Page" className="shrink-0">
+      <Link href="/me" aria-label="My Page" className="relative shrink-0">
         {user.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -32,6 +47,11 @@ export default function HeaderAuth() {
           <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 hover:border-orange-400 transition-colors flex items-center justify-center text-xs font-bold text-white">
             {(user.displayName ?? "?").charAt(0).toUpperCase()}
           </div>
+        )}
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 rounded-full text-[9px] font-black text-white flex items-center justify-center px-0.5 leading-none">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
         )}
       </Link>
     );

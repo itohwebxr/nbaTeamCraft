@@ -180,8 +180,8 @@ export default function ResultPage() {
       .map((e) => `${slotLabel(e.slot)} : ${formatName(e.playerSeason.name)}`)
       .join("\n");
     const text = evaluation
-      ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\n#NBATeamCraft #NBA @nbaTeamCraft\n`
-      : `🏀 ${label}\n${rosterLines}\n#NBATeamCraft #NBA @nbaTeamCraft\n`;
+      ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\nCreated by #NBATeamCraft`
+      : `🏀 ${label}\n${rosterLines}\nCreated by #NBATeamCraft`;
 
     if (evaluation) {
       gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier, mode });
@@ -448,18 +448,19 @@ export default function ResultPage() {
       // fetch already reflects today's played match (otherwise it would briefly
       // show the "Play Today's Match" button for a match that just happened).
       if (entryId) setCupEntryId(entryId);
+
+      // Redirect to team detail — social page for likes/comments
+      router.push(`/team/${published.id}`);
     } finally {
       setIsPublishing(false);
       setShowEnterModal(false);
-      // Scroll to top so the published panel is in view once the overlay closes
-      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const handleShareRanking = () => {
     if (!evaluation || !publishedRank) return;
     const label = teamName || "My NBA Team";
-    const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\n#NBATeamCraft #NBA @nbaTeamCraft\n`;
+    const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\nCreated by #NBATeamCraft`;
     const url = withShareUtm(sharePageUrl ?? `${window.location.origin}/`, { handle: user?.xHandle, campaign: "ranking_share" });
     gtm.shareRanking({ team_name: label, overall: evaluation.overall, rank_overall: publishedRank.overall });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
@@ -533,9 +534,12 @@ export default function ResultPage() {
       });
       if (res.ok) {
         const json = await res.json().catch(() => null);
-        if (json?.id) setSavedTeamId(json.id);
+        const newId = json?.id ?? null;
+        if (newId) setSavedTeamId(newId);
         setSandboxSaved(true);
         gtm.sandboxSave({ team_name: name, overall: evaluation.overall, tier: evaluation.tier, has_description: descriptionOverride.trim().length > 0 });
+        // Redirect to team detail after brief success pause
+        if (newId) setTimeout(() => router.push(`/team/${newId}`), 1200);
       } else {
         setSandboxError(true);
       }

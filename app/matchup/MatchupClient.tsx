@@ -32,6 +32,38 @@ function BuildOwnTeamCTA({ className = "" }: { className?: string }) {
 
 type SimMeta = { id: string; name: string; overall: number; tier: string };
 
+function PostToTeamButton({ teamId, payload, onPosted }: {
+  teamId: string;
+  payload: { type: string; result_data: Record<string, unknown> };
+  onPosted: () => void;
+}) {
+  const [posted, setPosted] = useState(false);
+  const [posting, setPosting] = useState(false);
+  if (posted) return null;
+  return (
+    <button
+      onClick={async () => {
+        setPosting(true);
+        try {
+          await fetch(`/api/teams/${teamId}/simulations`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          setPosted(true);
+          onPosted();
+        } catch {
+          setPosting(false);
+        }
+      }}
+      disabled={posting}
+      className="block w-full py-3 rounded-xl bg-orange-500/20 border border-orange-500/40 hover:bg-orange-500/30 text-orange-300 font-bold text-sm text-center transition-colors disabled:opacity-50"
+    >
+      {posting ? "Posting…" : "📌 Post to Team Page"}
+    </button>
+  );
+}
+
 // Shorten a player name so the points stay visible: first name → initial,
 // then hard-cap the remainder so long family names get an ellipsis.
 // e.g. "Giannis Antetokounmpo" → "G. Antetokoun…"
@@ -91,10 +123,8 @@ function shareToX(
   if (result.games) qs.set("games", result.games);
   if (result.tops) qs.set("tops", result.tops);
   const url = `${origin}/matchup/result?${qs.toString()}`;
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-    `${text}\n#NBATeamCraft #NBA @nbaTeamCraft\n`
-  )}&url=${encodeURIComponent(url)}`;
-  window.open(tweetUrl, "_blank", "noopener");
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+  window.open(tweetUrl, "_blank");
 }
 
 type SimResponse =
@@ -117,6 +147,7 @@ function SeriesResult({
   winner,
   onReset,
   onRematch,
+  sourceTeamId,
 }: {
   home: SimMeta;
   away: SimMeta;
@@ -125,7 +156,11 @@ function SeriesResult({
   winner: "home" | "away";
   onReset: () => void;
   onRematch: () => void;
+  sourceTeamId?: string | null;
 }) {
+  const router = useRouter();
+  const [posted, setPosted] = useState(false);
+  const [posting, setPosting] = useState(false);
   const winnerName = winner === "home" ? home.name : away.name;
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950 overflow-y-auto">
@@ -202,7 +237,7 @@ function SeriesResult({
         <button
           onClick={() =>
             shareToX(
-              `🏀 ${home.name} ${wins.home}–${wins.away} ${away.name}\n${winnerName} takes the series! ⚔️ Best-of-7 simulated on NBA TeamCraft`,
+              `🏀 ${home.name} ${wins.home}–${wins.away} ${away.name}\n${winnerName} takes the series! Simulated by #NBATeamCraft`,
               {
                 home: home.name,
                 away: away.name,
@@ -218,6 +253,41 @@ function SeriesResult({
         >
           Share on 𝕏
         </button>
+        {sourceTeamId && !posted && (
+          <button
+            onClick={async () => {
+              setPosting(true);
+              try {
+                const isHome = home.id === sourceTeamId;
+                const result = winner === (isHome ? "home" : "away") ? "win" : "loss";
+                const scoreFor = isHome ? wins.home : wins.away;
+                const scoreAgainst = isHome ? wins.away : wins.home;
+                await fetch(`/api/teams/${sourceTeamId}/simulations`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    type: "match",
+                    result_data: {
+                      result,
+                      score_for: scoreFor,
+                      score_against: scoreAgainst,
+                      opponent_name: isHome ? away.name : home.name,
+                      mode: "series",
+                    },
+                  }),
+                });
+                setPosted(true);
+                setTimeout(() => router.push(`/team/${sourceTeamId}`), 800);
+              } catch {
+                setPosting(false);
+              }
+            }}
+            disabled={posting}
+            className="w-full py-3 rounded-xl bg-orange-500/20 border border-orange-500/40 hover:bg-orange-500/30 text-orange-300 font-bold text-sm transition-colors disabled:opacity-50"
+          >
+            {posted ? "✓ Posted!" : posting ? "Posting…" : "📌 Post to Team Page"}
+          </button>
+        )}
         <button
           onClick={onRematch}
           className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
@@ -355,6 +425,7 @@ function SeriesPlayback(props: {
   winner: "home" | "away";
   onReset: () => void;
   onRematch: () => void;
+  sourceTeamId?: string | null;
 }) {
   const { home, away, games } = props;
   const reduce = usePrefersReducedMotion();
@@ -547,7 +618,11 @@ export default function MatchupClient() {
   if (sim?.mode === "single" && home && away) {
     const r = sim.result;
     const winnerName = r.winner === "home" ? sim.home.name : sim.away.name;
-    const shareText = `🏀 ${sim.home.name} ${r.homeTotal}–${r.awayTotal} ${sim.away.name}\n${winnerName} wins! ⚔️ Simulated on NBA TeamCraft`;
+    const shareText = `🏀 ${sim.home.name} ${r.homeTotal}–${r.awayTotal} ${sim.away.name}\n${winnerName} wins! Simulated by #NBATeamCraft`;
+    const singleSourceId = (() => {
+      const sp = params.get("homeTeamId");
+      return sp && sp !== RANDOM_ID ? sp : null;
+    })();
     return (
       <ExhibitionMatch
         userTeamName={sim.home.name}
@@ -571,12 +646,34 @@ export default function MatchupClient() {
             kind: "single",
           })
         }
-        footer={<BuildOwnTeamCTA />}
+        footer={
+          <>
+            {singleSourceId && (
+              <PostToTeamButton
+                teamId={singleSourceId}
+                payload={{
+                  type: "match",
+                  result_data: {
+                    result: r.winner === "home" ? "win" : "loss",
+                    score_for: r.homeTotal,
+                    score_against: r.awayTotal,
+                    opponent_name: sim.away.name,
+                    mode: "single",
+                  },
+                }}
+                onPosted={() => router.push(`/team/${singleSourceId}`)}
+              />
+            )}
+            <BuildOwnTeamCTA />
+          </>
+        }
       />
     );
   }
 
   if (sim?.mode === "series") {
+    const sp = params.get("homeTeamId");
+    const sourceId = sp && sp !== RANDOM_ID ? sp : null;
     return (
       <SeriesPlayback
         // Remount per simulation so a rematch replays from Game 1.
@@ -588,6 +685,7 @@ export default function MatchupClient() {
         winner={sim.seriesWinner}
         onReset={reset}
         onRematch={simulate}
+        sourceTeamId={sourceId}
       />
     );
   }
