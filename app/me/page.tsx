@@ -124,6 +124,7 @@ export default function MyPage() {
   const startRosterBuilder = () => {
     resetDraft();
     setMode("sandbox");
+    gtm.sandboxStart({ team_filter: "Random", season_filter: "Random" });
     router.push("/draft");
   };
 
@@ -371,12 +372,12 @@ export default function MyPage() {
               <div className="text-center py-8 px-4 space-y-3">
                 <p className="text-2xl">🔧</p>
                 <p className="text-sm text-zinc-500">No builds saved yet.</p>
-                <Link
-                  href="/draft?mode=sandbox"
+                <button
+                  onClick={startRosterBuilder}
                   className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
                 >
                   Open Roster Builder →
-                </Link>
+                </button>
               </div>
             ) : (
               <div className="divide-y divide-zinc-800">
