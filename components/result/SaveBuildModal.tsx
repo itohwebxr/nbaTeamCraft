@@ -27,10 +27,10 @@ export default function SaveBuildModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
       <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm">
         <h2 className="font-display text-xl font-black text-white mb-1 tracking-wide">
-          🔧 Name Your Build
+          🔥 Post Your Build
         </h2>
         <p className="text-sm text-zinc-400 mb-5">
-          Give your roster a name before saving it to your My Page.
+          Post it to the feed — get likes and comments from the community.
         </p>
 
         <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
@@ -51,12 +51,12 @@ export default function SaveBuildModal({
         <p className="text-xs text-zinc-600 text-right mb-4">{trimmed.length}/50</p>
 
         <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
-          Description <span className="text-zinc-600 normal-case">(optional)</span>
+          What&apos;s your take? <span className="text-zinc-600 normal-case">(optional)</span>
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value.slice(0, 280))}
-          placeholder="Why this lineup? Start a debate — e.g. &quot;Benched Curry for defense. Crazy?&quot;"
+          placeholder='e.g. "Can Giannis carry a team without a real PG?"'
           maxLength={280}
           rows={3}
           className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-orange-500 mb-1 resize-none"
@@ -79,10 +79,10 @@ export default function SaveBuildModal({
             {isSubmitting ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Saving...
+                Posting...
               </>
             ) : (
-              "Save Team →"
+              "Post to Feed →"
             )}
           </button>
         </div>
