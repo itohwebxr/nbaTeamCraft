@@ -124,7 +124,7 @@ export default function TriviaClient() {
   const shareToX = () => {
     const score = answers.filter((a) => a.correct).length;
     const emoji = score === answers.length ? "🔥" : score >= answers.length / 2 ? "💪" : "📚";
-    const text = `${emoji} NBA Trivia Challenge: ${score}/${answers.length} correct!\nTest your NBA knowledge at #NBATeamCraft`;
+    const text = `${emoji} Trivia Challenge: ${score}/${answers.length} correct!\nTest your NBA knowledge at #NBATeamCraft`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
   };
 
