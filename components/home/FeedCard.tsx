@@ -27,7 +27,7 @@ export default function FeedCard({ team }: { team: HomeTeam }) {
   return (
     <Link
       href={`/team/${team.id}`}
-      className="block px-4 py-4 hover:bg-zinc-800/50 transition-colors border-b border-zinc-800/60 last:border-0"
+      className="block px-4 py-4 hover:bg-zinc-800/50 transition-colors border-b border-zinc-800/60 last:border-0 text-left"
     >
       {/* Header row: creator + time */}
       <div className="flex items-center gap-2 mb-2">
