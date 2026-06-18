@@ -730,13 +730,13 @@ export default function ResultPage() {
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
             <div>
               <p className="font-display text-xs font-bold text-orange-400 tracking-[0.2em] mb-1">🔧 ROSTER BUILDER</p>
-              <p className="text-xs text-zinc-500">Roster Builder teams don't enter the rankings, but you can save this build to your My Page.</p>
+              <p className="text-xs text-zinc-500">Post this build to the feed — get likes and comments from the community.</p>
             </div>
             {sandboxSaved ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 py-2.5 px-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                   <span className="text-emerald-400">✓</span>
-                  <span className="text-sm font-bold text-emerald-400">Team saved to My Page</span>
+                  <span className="text-sm font-bold text-emerald-400">Posted to the feed!</span>
                 </div>
                 {!user && (
                   <div className="bg-zinc-800 rounded-xl p-4 space-y-2">
@@ -773,17 +773,17 @@ export default function ResultPage() {
                   {sandboxSaving ? (
                     <span className="flex items-center justify-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Saving...
+                      Posting...
                     </span>
                   ) : sandboxError ? (
-                    "Retry — Save Team to My Page"
+                    "Retry — Post to Feed"
                   ) : (
-                    "Save Team to My Page"
+                    "🔥 Post to Feed"
                   )}
                 </button>
                 {sandboxError && (
                   <p className="text-center text-xs text-red-400">
-                    Couldn't save. Please try again.
+                    Couldn't post. Please try again.
                   </p>
                 )}
                 {!user && !sandboxError && (
