@@ -448,11 +448,12 @@ export default function ResultPage() {
       // fetch already reflects today's played match (otherwise it would briefly
       // show the "Play Today's Match" button for a match that just happened).
       if (entryId) setCupEntryId(entryId);
+
+      // Redirect to team detail — social page for likes/comments
+      router.push(`/team/${published.id}`);
     } finally {
       setIsPublishing(false);
       setShowEnterModal(false);
-      // Scroll to top so the published panel is in view once the overlay closes
-      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -533,9 +534,12 @@ export default function ResultPage() {
       });
       if (res.ok) {
         const json = await res.json().catch(() => null);
-        if (json?.id) setSavedTeamId(json.id);
+        const newId = json?.id ?? null;
+        if (newId) setSavedTeamId(newId);
         setSandboxSaved(true);
         gtm.sandboxSave({ team_name: name, overall: evaluation.overall, tier: evaluation.tier, has_description: descriptionOverride.trim().length > 0 });
+        // Redirect to team detail after brief success pause
+        if (newId) setTimeout(() => router.push(`/team/${newId}`), 1200);
       } else {
         setSandboxError(true);
       }

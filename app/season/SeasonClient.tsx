@@ -87,14 +87,19 @@ function SeasonPlayback({
   result,
   onReset,
   onRematch,
+  sourceTeamId,
 }: {
   result: SeasonResult;
   onReset: () => void;
   onRematch: () => void;
+  sourceTeamId?: string | null;
 }) {
+  const router = useRouter();
   const reduced = usePrefersReducedMotion();
   const [revealed, setRevealed] = useState(0); // games shown so far
   const [done, setDone] = useState(false);
+  const [posted, setPosted] = useState(false);
+  const [posting, setPosting] = useState(false);
   const total = result.games.length;
 
   // Advance the game ticker. Eases out near the end for a touch of suspense.
@@ -222,6 +227,36 @@ function SeasonPlayback({
             >
               Share on 𝕏
             </button>
+            {sourceTeamId && !posted && (
+              <button
+                onClick={async () => {
+                  setPosting(true);
+                  try {
+                    await fetch(`/api/teams/${sourceTeamId}/simulations`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        type: "season",
+                        result_data: {
+                          wins: result.wins,
+                          losses: result.losses,
+                          label: result.label,
+                          win_rate: result.winRate,
+                        },
+                      }),
+                    });
+                    setPosted(true);
+                    setTimeout(() => router.push(`/team/${sourceTeamId}`), 800);
+                  } catch {
+                    setPosting(false);
+                  }
+                }}
+                disabled={posting}
+                className="w-full py-3 rounded-xl bg-sky-500/20 border border-sky-500/40 hover:bg-sky-500/30 text-sky-300 font-bold text-sm transition-colors disabled:opacity-50"
+              >
+                {posted ? "✓ Posted!" : posting ? "Posting…" : "📌 Post to Team Page"}
+              </button>
+            )}
             <button
               onClick={onRematch}
               className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
@@ -293,12 +328,14 @@ export default function SeasonClient() {
   }, [team]);
 
   if (result) {
+    const sourceId = params.get("teamId");
     return (
       <SeasonPlayback
         key={`${result.team.id}-${result.wins}-${result.losses}`}
         result={result}
         onReset={() => setResult(null)}
         onRematch={simulate}
+        sourceTeamId={sourceId && sourceId !== RANDOM_ID ? sourceId : null}
       />
     );
   }

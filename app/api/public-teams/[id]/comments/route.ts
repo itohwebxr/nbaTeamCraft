@@ -138,7 +138,7 @@ export async function POST(
     await supabase.rpc("increment_team_comment_count", { t_id: teamId });
 
     // Attach author profile for immediate render.
-    let author = null;
+    let author: { xHandle: string | null; displayName: string | null; avatarUrl: string | null } | null = null;
     if (inserted.user_id) {
       const { data: p } = await supabase
         .from("profiles")
@@ -147,6 +147,22 @@ export async function POST(
         .maybeSingle();
       if (p) author = { xHandle: p.x_handle, displayName: p.display_name, avatarUrl: p.avatar_url };
     }
+
+    // Notify team owner (fire-and-forget, skip if commenter is owner)
+    void Promise.resolve(
+      supabase.from("public_teams").select("user_id, name").eq("id", teamId).single()
+    ).then(({ data: team }) => {
+      if (team?.user_id && team.user_id !== userId) {
+        return Promise.resolve(supabase.from("notifications").insert({
+          user_id: team.user_id,
+          type: "comment",
+          team_id: teamId,
+          team_name: team.name,
+          actor_browser_id: browserId,
+          actor_display_name: author?.displayName ?? null,
+        }));
+      }
+    }).catch(() => {});
 
     return NextResponse.json({
       comment: {
