@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useDraftStore } from "@/stores/draftStore";
+import { gtm } from "@/lib/gtm";
 
 export default function BuildTeamButton({ isSandbox }: { isSandbox: boolean }) {
   const router = useRouter();
@@ -10,6 +11,7 @@ export default function BuildTeamButton({ isSandbox }: { isSandbox: boolean }) {
   const handleBuild = () => {
     reset();
     setMode(isSandbox ? "sandbox" : "draft");
+    if (isSandbox) gtm.sandboxStart({ team_filter: "Random", season_filter: "Random" });
     router.push("/draft");
   };
 

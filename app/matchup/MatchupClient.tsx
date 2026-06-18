@@ -18,6 +18,7 @@ function BuildOwnTeamCTA({ className = "" }: { className?: string }) {
   const go = () => {
     reset();
     setMode("sandbox");
+    gtm.sandboxStart({ team_filter: "Random", season_filter: "Random" });
     router.push("/draft");
   };
   return (
