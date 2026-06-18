@@ -123,10 +123,8 @@ function shareToX(
   if (result.games) qs.set("games", result.games);
   if (result.tops) qs.set("tops", result.tops);
   const url = `${origin}/matchup/result?${qs.toString()}`;
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-    `${text}\n#NBATeamCraft #NBA @nbaTeamCraft\n`
-  )}&url=${encodeURIComponent(url)}`;
-  window.open(tweetUrl, "_blank", "noopener");
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+  window.open(tweetUrl, "_blank");
 }
 
 type SimResponse =
@@ -239,7 +237,7 @@ function SeriesResult({
         <button
           onClick={() =>
             shareToX(
-              `🏀 ${home.name} ${wins.home}–${wins.away} ${away.name}\n${winnerName} takes the series! ⚔️ Best-of-7 simulated on NBA TeamCraft`,
+              `🏀 ${home.name} ${wins.home}–${wins.away} ${away.name}\n${winnerName} takes the series! Simulated by #NBATeamCraft`,
               {
                 home: home.name,
                 away: away.name,
@@ -620,7 +618,7 @@ export default function MatchupClient() {
   if (sim?.mode === "single" && home && away) {
     const r = sim.result;
     const winnerName = r.winner === "home" ? sim.home.name : sim.away.name;
-    const shareText = `🏀 ${sim.home.name} ${r.homeTotal}–${r.awayTotal} ${sim.away.name}\n${winnerName} wins! ⚔️ Simulated on NBA TeamCraft`;
+    const shareText = `🏀 ${sim.home.name} ${r.homeTotal}–${r.awayTotal} ${sim.away.name}\n${winnerName} wins! Simulated by #NBATeamCraft`;
     const singleSourceId = (() => {
       const sp = params.get("homeTeamId");
       return sp && sp !== RANDOM_ID ? sp : null;

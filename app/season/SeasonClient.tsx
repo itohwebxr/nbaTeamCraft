@@ -53,8 +53,9 @@ function usePrefersReducedMotion(): boolean {
 // tweet carries the season OGP image.
 async function shareToX(result: SeasonResult) {
   const { team, wins, losses, label } = result;
-  const text = `🏀 ${team.name}: ${wins}-${losses} (${label})\nSimulated my team's full season on NBA TeamCraft`;
-  const win = window.open("", "_blank", "noopener");
+  const text = `🏀 ${team.name}: ${wins}-${losses} (${label})\nSimulated by #NBATeamCraft`;
+  // Open blank tab synchronously (no noopener — we need to set location after await)
+  const win = window.open("", "_blank");
   let shareUrl = window.location.origin + "/season";
   try {
     const res = await fetch("/api/season/share", {
@@ -74,11 +75,9 @@ async function shareToX(result: SeasonResult) {
   } catch {
     // fall back to the generic season URL
   }
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-    `${text}\n#NBATeamCraft #NBA @nbaTeamCraft\n`
-  )}&url=${encodeURIComponent(shareUrl)}`;
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
   if (win) win.location.href = tweetUrl;
-  else window.open(tweetUrl, "_blank", "noopener");
+  else window.open(tweetUrl, "_blank");
 }
 
 // ── Playback: game-by-game reveal building to the final record ───────────
