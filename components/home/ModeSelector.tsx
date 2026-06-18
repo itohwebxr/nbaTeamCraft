@@ -31,7 +31,7 @@ export default function ModeSelector({ variant }: { variant: "builder" | "draft"
         className="block w-full py-4 rounded-2xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600
           text-white font-black text-lg tracking-tight transition-colors"
       >
-        🔧 Roster Builder →
+        🏗️ Craft a Team →
       </button>
     );
   }

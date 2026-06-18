@@ -1,19 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
-import RankingList from "@/components/ranking/RankingList";
 import HeaderAuth from "@/components/auth/HeaderAuth";
+import TriviaClient from "./TriviaClient";
 
 export const metadata = {
-  title: "Rankings — NBA TeamCraft",
-  description: "See the greatest teams ever assembled by NBA TeamCraft players.",
+  title: "NBA Trivia Challenge — NBA TeamCraft",
+  description: "Test your NBA knowledge. Daily questions on stats, trades, and career paths from 2001 to today.",
 };
 
-export default async function RankingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ tab?: string }>;
-}) {
-  const { tab } = await searchParams;
+export default function TriviaPage() {
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
@@ -22,9 +17,6 @@ export default async function RankingPage({
             <Image src="/logo.png?v=2" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/trivia" className="text-xs font-bold text-sky-400 hover:text-sky-300 transition-colors">
-              🧠 Trivia
-            </Link>
             <Link href="/draft" className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
               Draft →
             </Link>
@@ -35,11 +27,11 @@ export default async function RankingPage({
 
       <div className="fade-up fade-up-1 max-w-lg mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="font-display text-3xl font-black text-white tracking-wide">🏆 Rankings</h1>
-          <p className="text-sm text-zinc-500 mt-1">The greatest teams ever assembled.</p>
+          <h1 className="font-display text-3xl font-black text-white tracking-wide">🧠 NBA Trivia Challenge</h1>
+          <p className="text-sm text-zinc-500 mt-1">Test your NBA knowledge. Data from 2001–2026.</p>
         </div>
 
-        <RankingList initialTab={tab} />
+        <TriviaClient />
       </div>
     </div>
   );

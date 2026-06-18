@@ -15,7 +15,7 @@ const dmSans = DM_Sans({
 
 export const metadata: Metadata = {
   title: "NBA TeamCraft",
-  description: "Draft your dream NBA team. Battle it out in the weekly Cup.",
+  description: "Build any NBA roster. Test trades, debate line-ups, prove your NBA knowledge.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -28,13 +28,13 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "NBA TeamCraft",
-    description: "Draft your dream NBA team. Battle it out in the weekly Cup.",
+    description: "Build any NBA roster. Test trades, debate line-ups, prove your NBA knowledge.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
     title: "NBA TeamCraft",
-    description: "Draft your dream NBA team. Battle it out in the weekly Cup.",
+    description: "Build any NBA roster. Test trades, debate line-ups, prove your NBA knowledge.",
   },
 };
 
