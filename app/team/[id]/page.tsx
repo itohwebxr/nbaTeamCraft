@@ -13,6 +13,7 @@ import CupPlayPanel from "@/components/cup/CupPlayPanel";
 import TeamActions from "@/components/team/TeamActions";
 import TeamComments from "@/components/team/TeamComments";
 import BuildTeamButton from "@/components/team/BuildTeamButton";
+import TeamSimHistory from "@/components/team/TeamSimHistory";
 
 export const dynamic = "force-dynamic";
 
@@ -408,6 +409,9 @@ export default async function TeamDetailPage({
             </div>
           );
         })()}
+
+        {/* Sim history posted by team owner */}
+        <TeamSimHistory teamId={team.id} />
 
         {/* Discussion */}
         <TeamComments teamId={team.id} />
