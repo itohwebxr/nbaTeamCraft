@@ -106,9 +106,9 @@ function buildShareData(result: PlayoffResult) {
 // champion OGP image.
 async function shareToX(result: PlayoffResult) {
   const { champion, size } = result;
-  const text = `🏆 ${champion.name} wins the ${size}-Team Playoff!\nSimulated on NBA TeamCraft ⚔️`;
-  // Open the window synchronously to dodge popup blockers, then redirect it.
-  const win = window.open("", "_blank", "noopener");
+  const text = `🏆 ${champion.name} wins the ${size}-Team Playoff!\nSimulated by #NBATeamCraft`;
+  // Open blank tab synchronously (no noopener — we need to set location after await)
+  const win = window.open("", "_blank");
   let shareUrl = window.location.origin + "/playoffs";
   try {
     const res = await fetch("/api/playoff/share", {
@@ -121,11 +121,9 @@ async function shareToX(result: PlayoffResult) {
   } catch {
     // fall back to the generic playoffs URL
   }
-  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-    `${text}\n#NBATeamCraft #NBA @nbaTeamCraft\n`
-  )}&url=${encodeURIComponent(shareUrl)}`;
+  const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
   if (win) win.location.href = tweetUrl;
-  else window.open(tweetUrl, "_blank", "noopener");
+  else window.open(tweetUrl, "_blank");
 }
 
 // ── Series card (collapsed / expanded) ─────────────────────────────────

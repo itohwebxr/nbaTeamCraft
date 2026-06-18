@@ -101,7 +101,7 @@ export default function CupStatus({ entryId, browserId, teamName, teamOverall, t
 
   const shareCupResult = (wins: number, losses: number) => {
     const week = cupWeekProp ?? entry?.cup_week ?? "";
-    const text = `🏀 ${teamName}\nTeamCraft Cup ${week}: ${wins}W–${losses}L\nOverall: ${teamOverall} (${teamTier} Tier)\n#NBATeamCraft #NBA @nbaTeamCraft\n`;
+    const text = `🏀 ${teamName}\nTeamCraft Cup ${week}: ${wins}W–${losses}L\nOverall: ${teamOverall} (${teamTier} Tier)\nCreated by #NBATeamCraft`;
     // Build OG URL for cup mode
     const origin = window.location.origin;
     const ogParams = new URLSearchParams({
