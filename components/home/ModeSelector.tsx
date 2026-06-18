@@ -13,6 +13,7 @@ export default function ModeSelector({ variant }: { variant: "builder" | "draft"
   const startDraft = () => {
     reset();
     setMode("draft");
+    gtm.dreamDraftStart();
     router.push("/draft");
   };
 
