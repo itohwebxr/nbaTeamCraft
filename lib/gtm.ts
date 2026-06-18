@@ -90,6 +90,8 @@ export const gtm = {
     rank_overall: number;
   }) => push({ event: "share_ranking", ...params }),
 
+  dreamDraftStart: () => push({ event: "dream_draft_start" }),
+
   sandboxStart: (params: {
     team_filter: string;
     season_filter: string;
