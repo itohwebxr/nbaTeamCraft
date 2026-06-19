@@ -438,7 +438,7 @@ export default function TriviaClient() {
                 )}
               </div>
             )}
-            {q.difficulty === "hard" && q.explanation && (
+            {q.difficulty === "hard" && q.template !== "played_for_all" && q.explanation && (
               <div className="rounded-xl p-4 bg-zinc-800/60 border border-zinc-700">
                 <p className="text-xs text-zinc-400 leading-relaxed">{q.explanation}</p>
               </div>
