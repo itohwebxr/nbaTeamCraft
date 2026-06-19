@@ -1,12 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 type Props = {
   searchParams: Promise<{ score?: string; total?: string; diff?: string; gmode?: string }>;
 };
+
+async function getSiteUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = host.startsWith("localhost") ? "http" : "https";
+  return `${proto}://${host}`;
+}
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
   const p = await searchParams;
@@ -15,7 +24,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   const diff = p.diff ?? "normal";
   const gmode = p.gmode ?? "practice";
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://nbateamcraft.com";
+  const siteUrl = await getSiteUrl();
   const ogImageUrl = `${siteUrl}/api/og?mode=trivia&score=${score}&total=${total}&diff=${diff}&gmode=${gmode}`;
   const pct = Math.round((parseInt(score) / parseInt(total)) * 100);
   const modeLabel = gmode === "daily" ? "Daily Challenge" : "Practice";
