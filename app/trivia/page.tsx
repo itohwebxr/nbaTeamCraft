@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import HeaderAuth from "@/components/auth/HeaderAuth";
@@ -31,7 +32,9 @@ export default function TriviaPage() {
           <p className="text-sm text-zinc-500 mt-1">Test your NBA knowledge. Data from 2001–2026.</p>
         </div>
 
-        <TriviaClient />
+        <Suspense fallback={null}>
+          <TriviaClient />
+        </Suspense>
       </div>
     </div>
   );
