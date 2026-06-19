@@ -7,6 +7,7 @@ import { seasonGrade } from "@/lib/season";
 import type { SeasonResult } from "@/app/api/season/simulate/route";
 import { TeamPicker, TeamPick, RANDOM_ID } from "@/components/sim/TeamPicker";
 import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
+import PostToSimFeedButton from "@/components/sim/PostToSimFeedButton";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -240,6 +241,11 @@ function SeasonPlayback({
             >
               Share on 𝕏
             </button>
+            <PostToSimFeedButton payload={{
+              kind: "season",
+              title: `🏀 ${result.team.name}: ${result.wins}-${result.losses}`,
+              subtitle: `Season · ${result.label}`,
+            }} />
             {sourceTeamId && !posted && (
               <button
                 onClick={async () => {
