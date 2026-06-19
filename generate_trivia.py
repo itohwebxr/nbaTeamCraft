@@ -94,38 +94,48 @@ def get_team_leader(team_season, team, season, stat):
     return best
 
 def get_wrong_answers_stats(team_season, correct_player, team, season, stat, n=3):
-    """Get plausible wrong answers from same team or nearby seasons."""
-    candidates = []
-    # Same team, nearby seasons
-    for delta in range(-2, 3):
+    """Get plausible wrong answers from same team (same season first, then nearby).
+    Wrong answers must be from the same team to avoid obviously incorrect options."""
+    # Priority 1: same team, same season — sorted by stat desc (2nd place and below)
+    same_season = team_season.get((team, season), [])
+    sorted_same = sorted(same_season, key=lambda r: fmt_float(r.get(stat, 0)), reverse=True)
+    candidates = [r["player"] for r in sorted_same if r["player"] != correct_player]
+
+    # Priority 2: same team, nearby seasons (±3 years) if not enough
+    if len(candidates) < n:
+        for delta in [-1, 1, -2, 2, -3, 3]:
+            s = season + delta
+            for row in team_season.get((team, s), []):
+                if row["player"] != correct_player and row["player"] not in candidates:
+                    candidates.append(row["player"])
+            if len(candidates) >= n * 3:
+                break
+
+    random.shuffle(candidates[:n * 3])
+    return candidates[:n]
+
+
+def is_dominant_for_years(team_season, player_name, team, season, stat, min_years=3):
+    """Return True if player led this team in stat for min_years or more consecutive seasons."""
+    count = 0
+    for delta in range(-min_years + 1, min_years + 1):
         s = season + delta
         key = (team, s)
-        if key in team_season:
-            for row in team_season[key]:
-                if row["player"] != correct_player:
-                    candidates.append(row["player"])
-    # Add from other teams same season
-    for t in NOTABLE_TEAMS:
-        key = (t, season)
-        if key in team_season:
-            for row in team_season[key]:
-                if row["player"] != correct_player:
-                    candidates.append(row["player"])
-    # Deduplicate preserving order
-    seen = set()
-    unique = []
-    for c in candidates:
-        if c not in seen:
-            seen.add(c)
-            unique.append(c)
-    random.shuffle(unique)
-    return unique[:n]
+        if key not in team_season:
+            continue
+        rows = team_season[key]
+        if not rows:
+            continue
+        leader = max(rows, key=lambda r: fmt_float(r.get(stat, 0)))
+        if leader["player"] == player_name:
+            count += 1
+    return count >= min_years
 
 # ---------------------------------------------------------------------------
 # Question generators
 # ---------------------------------------------------------------------------
 
-def make_stats_question(team_season, team, season, stat, difficulty, used_keys):
+def make_stats_question(team_season, team, season, stat, difficulty, used_keys, curated=False):
     key = (team, season, stat)
     if key in used_keys:
         return None
@@ -151,6 +161,10 @@ def make_stats_question(team_season, team, season, stat, difficulty, used_keys):
         "blk_per_game": "BPG",
     }
     slabel = season_label(season)
+
+    # For auto-generated Normal questions only: skip if player dominated 3+ consecutive years
+    if not curated and difficulty == "easy" and is_dominant_for_years(team_season, leader["player"], team, season, stat, min_years=3):
+        return None
 
     wrong = get_wrong_answers_stats(team_season, leader["player"], team, season, stat)
     if len(wrong) < 3:
@@ -265,33 +279,33 @@ def make_career_question(player_seasons, difficulty, used_keys, all_rows):
 
 CURATED_STATS = [
     # (team, season, stat, difficulty)
-    # Easy - legendary scorers
-    ("LAL", 2006, "pts_per_game", "easy"),
-    ("LAL", 2007, "pts_per_game", "easy"),
-    ("MIA", 2006, "pts_per_game", "easy"),
-    ("CLE", 2008, "pts_per_game", "easy"),
-    ("CLE", 2010, "pts_per_game", "easy"),
-    ("MIA", 2013, "pts_per_game", "easy"),
-    ("GSW", 2016, "pts_per_game", "easy"),
-    ("GSW", 2017, "pts_per_game", "easy"),
-    ("OKC", 2012, "pts_per_game", "easy"),
-    ("HOU", 2018, "pts_per_game", "easy"),
-    ("MIL", 2020, "pts_per_game", "easy"),
-    ("DAL", 2022, "pts_per_game", "easy"),
-    ("LAL", 2020, "trb_per_game", "easy"),
-    ("MIA", 2006, "trb_per_game", "easy"),
-    ("SAS", 2003, "pts_per_game", "easy"),
-    ("SAS", 2003, "trb_per_game", "easy"),
-    ("CHI", 2011, "pts_per_game", "easy"),
-    ("OKC", 2014, "pts_per_game", "easy"),
-    ("BKN", 2021, "pts_per_game", "easy"),
-    ("PHI", 2022, "pts_per_game", "easy"),
-    ("LAL", 2012, "trb_per_game", "easy"),
-    ("BOS", 2008, "pts_per_game", "easy"),
-    ("PHX", 2006, "ast_per_game", "easy"),
-    ("GSW", 2016, "ast_per_game", "easy"),
-    ("OKC", 2012, "ast_per_game", "easy"),
-    # Hard - role players / less obvious
+    # Normal — known era, but not multi-year auto-answers (dominance filter handles Curry/LeBron runs)
+    ("LAL", 2006, "pts_per_game", "easy"),   # Kobe 35 PPG
+    ("MIA", 2006, "pts_per_game", "easy"),   # Wade
+    ("CLE", 2008, "pts_per_game", "easy"),   # LeBron
+    ("MIA", 2013, "pts_per_game", "easy"),   # LeBron
+    ("OKC", 2012, "pts_per_game", "easy"),   # KD
+    ("HOU", 2018, "pts_per_game", "easy"),   # Harden
+    ("MIL", 2020, "pts_per_game", "easy"),   # Giannis
+    ("DAL", 2022, "pts_per_game", "easy"),   # Luka
+    ("SAS", 2003, "pts_per_game", "easy"),   # Duncan era
+    ("SAS", 2003, "trb_per_game", "easy"),   # Duncan
+    ("CHI", 2011, "pts_per_game", "easy"),   # Rose MVP year
+    ("BKN", 2021, "pts_per_game", "easy"),   # KD/Harden
+    ("PHI", 2022, "pts_per_game", "easy"),   # Embiid
+    ("BOS", 2008, "pts_per_game", "easy"),   # Pierce/Allen/KG era
+    ("PHX", 2006, "ast_per_game", "easy"),   # Nash
+    ("OKC", 2012, "ast_per_game", "easy"),   # Westbrook
+    ("LAL", 2004, "trb_per_game", "easy"),   # Shaq last LAL season
+    ("MIA", 2006, "trb_per_game", "easy"),   # Shaq MIA
+    ("DEN", 2008, "pts_per_game", "easy"),   # Carmelo
+    ("TOR", 2019, "pts_per_game", "easy"),   # Kawhi Finals run
+    ("PHX", 2022, "pts_per_game", "easy"),   # Devin Booker
+    ("MEM", 2022, "pts_per_game", "easy"),   # Ja Morant
+    ("NOP", 2023, "pts_per_game", "easy"),   # Zion
+    ("CLE", 2016, "pts_per_game", "easy"),   # LeBron return (Kyrie)
+    ("OKC", 2019, "pts_per_game", "easy"),   # PG-13
+    # Hard — role players / less obvious teams
     ("SAC", 2002, "pts_per_game", "hard"),
     ("NJN", 2002, "ast_per_game", "hard"),
     ("DET", 2004, "pts_per_game", "hard"),
@@ -341,7 +355,7 @@ def generate_questions(rows, team_season, player_seasons):
             continue
         if easy_stats_generated >= 25:
             break
-        q = make_stats_question(team_season, team, season, stat, "easy", used_keys)
+        q = make_stats_question(team_season, team, season, stat, "easy", used_keys, curated=True)
         if q:
             questions.append(q)
             easy_stats_generated += 1
@@ -366,7 +380,7 @@ def generate_questions(rows, team_season, player_seasons):
             continue
         if hard_stats_generated >= 10:
             break
-        q = make_stats_question(team_season, team, season, stat, "hard", used_keys)
+        q = make_stats_question(team_season, team, season, stat, "hard", used_keys, curated=True)
         if q:
             questions.append(q)
             hard_stats_generated += 1
