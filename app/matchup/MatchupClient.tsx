@@ -557,7 +557,7 @@ function SeriesPlayback(props: {
   );
 }
 
-export default function MatchupClient() {
+export default function MatchupClient({ initialTeams }: { initialTeams?: import("@/components/sim/TeamPicker").TeamPick[] }) {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -712,11 +712,11 @@ export default function MatchupClient() {
         </p>
 
         <div className="flex items-start gap-3">
-          <TeamPicker label="Home" accent="text-orange-400" selected={home} onSelect={setHome} />
+          <TeamPicker label="Home" accent="text-orange-400" selected={home} onSelect={setHome} initialTeams={initialTeams} />
           <div className="pt-7 shrink-0">
             <span className="font-display text-lg font-black text-zinc-600">VS</span>
           </div>
-          <TeamPicker label="Away" accent="text-sky-400" selected={away} onSelect={setAway} />
+          <TeamPicker label="Away" accent="text-sky-400" selected={away} onSelect={setAway} initialTeams={initialTeams} />
         </div>
 
         {/* Mode toggle */}

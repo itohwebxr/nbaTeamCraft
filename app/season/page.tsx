@@ -1,12 +1,14 @@
 import { Suspense } from "react";
 import SeasonClient from "./SeasonClient";
+import { fetchAllTeamsForPicker } from "@/lib/teamCache";
 
 export const dynamic = "force-dynamic";
 
-export default function SeasonPage() {
+export default async function SeasonPage() {
+  const initialTeams = await fetchAllTeamsForPicker();
   return (
     <Suspense fallback={null}>
-      <SeasonClient />
+      <SeasonClient initialTeams={initialTeams} />
     </Suspense>
   );
 }

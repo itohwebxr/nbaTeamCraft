@@ -68,6 +68,7 @@ export function TeamPicker({
   onSelect,
   usedIds,
   showRandom = true,
+  initialTeams,
 }: {
   variant?: "stacked" | "inline";
   label?: string;
@@ -77,6 +78,7 @@ export function TeamPicker({
   onSelect: (t: TeamPick | null) => void;
   usedIds?: Set<string>;
   showRandom?: boolean;
+  initialTeams?: TeamPick[];
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
@@ -89,8 +91,27 @@ export function TeamPicker({
   const boxRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Local filter when initialTeams cache is available
+  const runLocalFilter = useCallback(
+    (q: string, f: Filter, lim: number) => {
+      const needle = q.toLowerCase();
+      let pool = initialTeams ?? [];
+      if (f === "real") pool = pool.filter((t) => t.is_historical);
+      else if (f === "built") pool = pool.filter((t) => !t.is_historical);
+      const filtered = (needle
+        ? pool.filter((t) => t.name.toLowerCase().includes(needle))
+        : pool
+      ).filter((t) => !usedIds?.has(t.id) || t.id === selected?.id);
+      setResults(filtered.slice(0, lim));
+      setHasMore(filtered.length > lim);
+      setLoading(false);
+    },
+    [initialTeams, usedIds, selected]
+  );
+
   const runSearch = useCallback(
     async (q: string, f: Filter, lim: number) => {
+      if (initialTeams) { runLocalFilter(q, f, lim); return; }
       setLoading(true);
       try {
         const res = await fetch(
@@ -109,7 +130,7 @@ export function TeamPicker({
         setLoading(false);
       }
     },
-    [usedIds, selected]
+    [initialTeams, runLocalFilter, usedIds, selected]
   );
 
   const positionDropdown = useCallback(() => {
@@ -133,12 +154,17 @@ export function TeamPicker({
     gtm.teamSearchShowMore({ shown: results.length + PAGE });
   };
 
-  // Debounced fetch (query/filter/limit/open).
+  // Filter/fetch on query+filter+limit changes.
   useEffect(() => {
     if (!open) return;
+    if (initialTeams) {
+      // Instant local filter — no debounce needed
+      runLocalFilter(query.trim(), filter, limit);
+      return;
+    }
     const id = setTimeout(() => runSearch(query.trim(), filter, limit), 220);
     return () => clearTimeout(id);
-  }, [query, filter, limit, open, runSearch]);
+  }, [query, filter, limit, open, initialTeams, runLocalFilter, runSearch]);
 
   useEffect(() => {
     if (!open) return;
