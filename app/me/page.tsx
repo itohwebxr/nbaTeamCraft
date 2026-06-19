@@ -113,7 +113,22 @@ export default function MyPage() {
   const regularTeams = teams.filter((t) => !t.is_sandbox);
   const sandboxTeams = teams.filter((t) => t.is_sandbox);
 
-  const [activeTab, setActiveTab] = useState<"dream" | "builds">("dream");
+  const [activeTab, setActiveTab] = useState<"crafted" | "dream" | "trivia">("crafted");
+
+  type TriviaStats = { total: number; correct: number; streak: number };
+  const [triviaStats, setTriviaStats] = useState<TriviaStats | null>(null);
+  const [triviaLoading, setTriviaLoading] = useState(false);
+  const [triviaLoaded, setTriviaLoaded] = useState(false);
+
+  useEffect(() => {
+    if (activeTab !== "trivia" || triviaLoaded || !user?.id) return;
+    setTriviaLoading(true);
+    fetch(`/api/trivia/results?userId=${user.id}`)
+      .then((r) => r.json())
+      .then((data) => setTriviaStats(data.stats ?? null))
+      .catch(() => {})
+      .finally(() => { setTriviaLoading(false); setTriviaLoaded(true); });
+  }, [activeTab, triviaLoaded, user?.id]);
 
   type NotificationItem = {
     id: string;
@@ -134,12 +149,18 @@ export default function MyPage() {
           <Link href="/">
             <Image src="/logo.png?v=2" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
-          <button
-            onClick={activeTab === "builds" ? startRosterBuilder : startNewDraft}
-            className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors"
-          >
-            {activeTab === "builds" ? "Craft a Team →" : "Dream Draft →"}
-          </button>
+          {activeTab === "trivia" ? (
+            <Link href="/trivia" className="text-xs font-bold text-sky-400 hover:text-sky-300 transition-colors">
+              Trivia →
+            </Link>
+          ) : (
+            <button
+              onClick={activeTab === "crafted" ? startRosterBuilder : startNewDraft}
+              className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors"
+            >
+              {activeTab === "crafted" ? "Craft a Team →" : "Dream Draft →"}
+            </button>
+          )}
         </div>
       </header>
 
@@ -218,42 +239,77 @@ export default function MyPage() {
         {/* Tab bar */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
           <div className="flex border-b border-zinc-800">
-            <button
-              onClick={() => setActiveTab("dream")}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
-                activeTab === "dream"
-                  ? "text-white border-b-2 border-orange-500 -mb-px"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              Dream Teams
-              {regularTeams.length > 0 && (
-                <span className="ml-1.5 text-[10px] bg-zinc-800 text-zinc-400 rounded-full px-1.5 py-0.5">
-                  {regularTeams.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab("builds")}
-              className={`flex-1 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
-                activeTab === "builds"
-                  ? "text-orange-400 border-b-2 border-orange-500 -mb-px"
-                  : "text-zinc-500 hover:text-zinc-300"
-              }`}
-            >
-              Builds
-              {sandboxTeams.length > 0 && (
-                <span className="ml-1.5 text-[10px] bg-zinc-800 text-zinc-400 rounded-full px-1.5 py-0.5">
-                  {sandboxTeams.length}
-                </span>
-              )}
-            </button>
+            {([
+              { key: "crafted", label: "Crafted Teams", count: sandboxTeams.length },
+              { key: "dream",   label: "Dream Teams",   count: regularTeams.length },
+              { key: "trivia",  label: "Trivia",        count: null },
+            ] as const).map(({ key, label, count }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex-1 py-3 text-[11px] font-bold uppercase tracking-widest transition-colors ${
+                  activeTab === key
+                    ? "text-white border-b-2 border-orange-500 -mb-px"
+                    : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                {label}
+                {count !== null && count > 0 && (
+                  <span className="ml-1 text-[10px] bg-zinc-800 text-zinc-400 rounded-full px-1.5 py-0.5">
+                    {count}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
 
-          {loading ? (
-            <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
-          ) : activeTab === "dream" ? (
-            regularTeams.length === 0 ? (
+          {/* Crafted Teams */}
+          {activeTab === "crafted" && (
+            loading ? (
+              <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
+            ) : sandboxTeams.length === 0 ? (
+              <div className="text-center py-8 px-4 space-y-3">
+                <p className="text-2xl">🏗️</p>
+                <p className="text-sm text-zinc-500">No crafted teams yet.</p>
+                <button
+                  onClick={startRosterBuilder}
+                  className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+                >
+                  Craft a Team →
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-zinc-800">
+                {sandboxTeams.map((t) => (
+                  <div key={t.id} className="group flex items-center gap-2 px-4 py-3">
+                    <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
+                        {t.overall}
+                      </span>
+                      <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
+                      <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
+                    </Link>
+                    {(t.comment_count ?? 0) > 0 && (
+                      <span className="text-xs text-zinc-600 shrink-0">💬 {t.comment_count}</span>
+                    )}
+                    <button
+                      onClick={() => setConfirmDeleteId(t.id)}
+                      className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
+                      title="Delete team"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
+
+          {/* Dream Teams */}
+          {activeTab === "dream" && (
+            loading ? (
+              <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
+            ) : regularTeams.length === 0 ? (
               <div className="text-center py-8 px-4 space-y-3">
                 <p className="text-2xl">🏀</p>
                 <p className="text-sm text-zinc-500">No Dream Teams yet.</p>
@@ -290,41 +346,67 @@ export default function MyPage() {
                 ))}
               </div>
             )
-          ) : (
-            sandboxTeams.length === 0 ? (
+          )}
+
+          {/* Trivia */}
+          {activeTab === "trivia" && (
+            !user ? (
               <div className="text-center py-8 px-4 space-y-3">
-                <p className="text-2xl">🏗️</p>
-                <p className="text-sm text-zinc-500">No crafted teams yet.</p>
-                <button
-                  onClick={startRosterBuilder}
+                <p className="text-2xl">🧠</p>
+                <p className="text-sm text-zinc-500">Log in to track your Trivia stats.</p>
+                <a
+                  href="/auth/login"
                   className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
                 >
-                  Craft a Team →
-                </button>
+                  Log in with X →
+                </a>
+              </div>
+            ) : triviaLoading ? (
+              <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
+            ) : !triviaStats || triviaStats.total === 0 ? (
+              <div className="text-center py-8 px-4 space-y-3">
+                <p className="text-2xl">🧠</p>
+                <p className="text-sm text-zinc-500">No Trivia results yet.</p>
+                <Link
+                  href="/trivia"
+                  className="inline-flex px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm transition-colors"
+                >
+                  Start Trivia →
+                </Link>
               </div>
             ) : (
-              <div className="divide-y divide-zinc-800">
-                {sandboxTeams.map((t) => (
-                  <div key={t.id} className="group flex items-center gap-2 px-4 py-3">
-                    <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
-                        {t.overall}
-                      </span>
-                      <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
-                      <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
-                    </Link>
-                    {(t.comment_count ?? 0) > 0 && (
-                      <span className="text-xs text-zinc-600 shrink-0">💬 {t.comment_count}</span>
-                    )}
-                    <button
-                      onClick={() => setConfirmDeleteId(t.id)}
-                      className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
-                      title="Delete build"
-                    >
-                      ×
-                    </button>
+              <div className="p-5 space-y-4">
+                {/* Stats grid */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-zinc-800 rounded-xl p-3 text-center">
+                    <p className="font-display text-2xl font-black text-white">{triviaStats.total}</p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">Answered</p>
                   </div>
-                ))}
+                  <div className="bg-zinc-800 rounded-xl p-3 text-center">
+                    <p className="font-display text-2xl font-black text-green-400">{triviaStats.correct}</p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">Correct</p>
+                  </div>
+                  <div className="bg-zinc-800 rounded-xl p-3 text-center">
+                    <p className="font-display text-2xl font-black text-orange-400">
+                      {triviaStats.total > 0 ? Math.round((triviaStats.correct / triviaStats.total) * 100) : 0}%
+                    </p>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">Accuracy</p>
+                  </div>
+                </div>
+                {/* Streak */}
+                <div className="bg-zinc-800 rounded-xl p-4 flex items-center gap-4">
+                  <span className="text-3xl">🔥</span>
+                  <div>
+                    <p className="font-display text-xl font-black text-white">{triviaStats.streak}-day streak</p>
+                    <p className="text-xs text-zinc-500 mt-0.5">Daily Challenge consecutive days</p>
+                  </div>
+                </div>
+                <Link
+                  href="/trivia"
+                  className="block w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-black text-sm text-center transition-colors"
+                >
+                  Play Today&apos;s Challenge →
+                </Link>
               </div>
             )
           )}
