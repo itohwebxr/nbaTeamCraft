@@ -12,6 +12,8 @@ type Question = {
   options: string[];
   answer_index: number;
   explanation: string | null;
+  template?: string;
+  params?: Record<string, unknown>;
 };
 
 type Mode = "menu" | "playing" | "result";
@@ -23,6 +25,8 @@ type Answer = {
   question: Question;
   selected: number;
   correct: boolean;
+  submittedName?: string;   // Hard mode: what the user typed
+  allCorrect?: string[];    // Hard played_for_all: all valid answers
 };
 
 export default function TriviaClient() {
@@ -40,6 +44,7 @@ export default function TriviaClient() {
   const [saved, setSaved] = useState(false);
   const [todayDone, setTodayDone] = useState(false);
   const [fetchError, setFetchError] = useState(false);
+  const [validating, setValidating] = useState(false);
   // Hard mode: player search
   const [playerList, setPlayerList] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -117,16 +122,49 @@ export default function TriviaClient() {
     setAnswers((prev) => [...prev, { question: q, selected: idx, correct }]);
   };
 
-  const handleSearchSelect = (playerName: string) => {
-    if (selected !== null) return;
+  const handleSearchSelect = async (playerName: string) => {
+    if (selected !== null || validating) return;
     const q = questions[currentIdx];
+    setSearchQuery(playerName);
+    setShowDropdown(false);
+
+    // played_for_all: validate against CSV to get all correct answers
+    if (q.template === "played_for_all" && q.params) {
+      setValidating(true);
+      try {
+        const res = await fetch("/api/trivia/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ template: "played_for_all", params: q.params, player_name: playerName }),
+        });
+        const data = await res.json() as { is_correct: boolean; all_correct: string[] };
+        setSelected(data.is_correct ? 0 : 999);
+        setAnswers((prev) => [...prev, {
+          question: q,
+          selected: data.is_correct ? 0 : 999,
+          correct: data.is_correct,
+          submittedName: playerName,
+          allCorrect: data.all_correct,
+        }]);
+        gtm.triviaHardAnswerSelected({ is_correct: data.is_correct, player_name: playerName });
+      } catch {
+        // fallback: check against options
+        const idx = q.options.indexOf(playerName);
+        const correct = playerName === q.options[q.answer_index];
+        setSelected(idx === -1 ? 999 : idx);
+        setAnswers((prev) => [...prev, { question: q, selected: idx === -1 ? 999 : idx, correct, submittedName: playerName }]);
+      } finally {
+        setValidating(false);
+      }
+      return;
+    }
+
+    // Other hard questions: simple options check
     const idx = q.options.indexOf(playerName);
     const answerIdx = idx === -1 ? -1 : idx;
     setSelected(answerIdx === -1 ? 999 : answerIdx);
     const correct = playerName === q.options[q.answer_index];
-    setAnswers((prev) => [...prev, { question: q, selected: answerIdx === -1 ? 999 : answerIdx, correct }]);
-    setSearchQuery(playerName);
-    setShowDropdown(false);
+    setAnswers((prev) => [...prev, { question: q, selected: answerIdx === -1 ? 999 : answerIdx, correct, submittedName: playerName }]);
     gtm.triviaHardAnswerSelected({ is_correct: correct, player_name: playerName });
   };
 
@@ -323,7 +361,7 @@ export default function TriviaClient() {
                   }, 500);
                 }}
                 onFocus={() => setShowDropdown(true)}
-                disabled={isAnswered}
+                disabled={isAnswered || validating}
                 placeholder="Type a player name..."
                 autoComplete="off"
                 className="w-full px-4 py-3.5 rounded-xl border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-600 text-sm font-medium focus:outline-none focus:border-sky-500 disabled:opacity-60 transition-colors"
@@ -339,7 +377,7 @@ export default function TriviaClient() {
                   {filteredPlayers.map((name) => (
                     <li key={name}>
                       <button
-                        onMouseDown={(e) => { e.preventDefault(); handleSearchSelect(name); }}
+                        onMouseDown={(e) => { e.preventDefault(); void handleSearchSelect(name); }}
                         className="w-full text-left px-4 py-2.5 text-sm text-zinc-200 hover:bg-zinc-800 transition-colors"
                       >
                         {name}
@@ -352,16 +390,34 @@ export default function TriviaClient() {
 
             {/* After answer: show correct answer reveal */}
             {isAnswered && (() => {
-              const isCorrect = answers[answers.length - 1]?.correct;
-              const correctName = q.options[q.answer_index];
+              const lastAnswer = answers[answers.length - 1];
+              const isCorrect = lastAnswer?.correct;
+              const allCorrect = lastAnswer?.allCorrect;
+              const submitted = lastAnswer?.submittedName ?? searchQuery;
               return (
-                <div className={`rounded-xl p-4 border ${isCorrect ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"}`}>
-                  <p className={`text-sm font-bold mb-1 ${isCorrect ? "text-green-400" : "text-red-400"}`}>
-                    {isCorrect ? "✅ Correct!" : `❌ The answer is: ${correctName}`}
+                <div className={`rounded-xl p-4 border space-y-2 ${isCorrect ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"}`}>
+                  <p className={`text-sm font-bold ${isCorrect ? "text-green-400" : "text-red-400"}`}>
+                    {isCorrect ? `✅ Correct! "${submitted}" is a valid answer.` : `❌ "${submitted}" is not correct.`}
                   </p>
+                  {allCorrect && allCorrect.length > 0 && (
+                    <div>
+                      <p className="text-xs text-zinc-400 font-bold mb-1">
+                        All correct answers ({allCorrect.length}):
+                      </p>
+                      <p className="text-xs text-zinc-300 leading-relaxed">
+                        {allCorrect.join(", ")}
+                      </p>
+                    </div>
+                  )}
                 </div>
               );
             })()}
+
+            {validating && (
+              <div className="rounded-xl p-4 bg-zinc-800/60 border border-zinc-700 text-xs text-zinc-400">
+                Checking answer...
+              </div>
+            )}
 
             {!isAnswered && (
               <p className="text-xs text-zinc-600 text-center">Type at least 2 characters to search</p>
@@ -440,9 +496,17 @@ export default function TriviaClient() {
               <p className="text-xs text-zinc-500 mb-1">Q{i + 1} · {a.question.difficulty === "easy" ? "Normal" : "Hard"}</p>
               <p className="text-sm text-white font-medium mb-2">{a.question.question}</p>
               <p className={`text-xs font-bold ${a.correct ? "text-green-400" : "text-red-400"}`}>
-                {a.correct ? "✅" : "❌"} {a.question.options[a.question.answer_index]}
+                {a.correct ? "✅" : "❌"}{" "}
+                {a.submittedName
+                  ? (a.correct ? a.submittedName : `${a.submittedName} → ${a.allCorrect?.[0] ?? a.question.options[a.question.answer_index]}`)
+                  : a.question.options[a.question.answer_index]}
               </p>
-              {!a.correct && a.question.explanation && (
+              {a.allCorrect && a.allCorrect.length > 1 && (
+                <p className="text-xs text-zinc-600 mt-0.5">
+                  {a.allCorrect.length} valid answers: {a.allCorrect.slice(0, 5).join(", ")}{a.allCorrect.length > 5 ? "…" : ""}
+                </p>
+              )}
+              {!a.correct && !a.allCorrect && a.question.explanation && (
                 <p className="text-xs text-zinc-500 mt-1">{a.question.explanation}</p>
               )}
             </div>
