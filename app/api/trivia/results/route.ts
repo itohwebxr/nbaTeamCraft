@@ -71,15 +71,26 @@ export async function GET(req: NextRequest) {
 function calcStreak(sortedDates: (string | null)[]): number {
   if (!sortedDates.length) return 0;
   const today = new Date().toISOString().slice(0, 10);
+  const yesterday = (() => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0, 10);
+  })();
+
+  // Start from today if played today, otherwise from yesterday
+  const playedToday = sortedDates.includes(today);
+  let cursor = playedToday ? today : yesterday;
+
   let streak = 0;
-  let cursor = today;
   for (let i = sortedDates.length - 1; i >= 0; i--) {
     if (sortedDates[i] === cursor) {
       streak++;
       const d = new Date(cursor);
       d.setDate(d.getDate() - 1);
       cursor = d.toISOString().slice(0, 10);
-    } else break;
+    } else if ((sortedDates[i] ?? "") < cursor) {
+      break;
+    }
   }
   return streak;
 }
