@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
         query = query.eq("type", type);
       }
       const { data: questions } = await query.limit(100);
-      const shuffled = (questions ?? []).sort(() => Math.random() - 0.5).slice(0, 3);
+      const shuffled = (questions ?? []).sort(() => Math.random() - 0.5).slice(0, limit);
       return NextResponse.json({ questions: shuffled, date });
     }
 
