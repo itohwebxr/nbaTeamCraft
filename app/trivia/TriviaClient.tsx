@@ -74,16 +74,22 @@ export default function TriviaClient() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Check if user already did today's daily
+  // Check if user already completed today's daily challenge
   useEffect(() => {
-    if (!user?.id || gameMode !== "daily") return;
-    fetch(`/api/trivia/results?userId=${user.id}`)
-      .then((r) => r.json())
-      .then(() => {
-        // We don't block, just track; daily results check happens in result screen
-      })
-      .catch(() => {});
-  }, [user?.id, gameMode]);
+    // Logged-in: check server
+    if (user?.id) {
+      fetch(`/api/trivia/results?userId=${user.id}`)
+        .then((r) => r.json())
+        .then((data) => { if (data.stats?.dailyDoneToday) setTodayDone(true); })
+        .catch(() => {});
+      return;
+    }
+    // Guest: check localStorage
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("trivia_daily_done");
+      if (stored === today) setTodayDone(true);
+    }
+  }, [user?.id, today]);
 
   const fetchQuestions = useCallback(async (gm: GameMode, diff: Difficulty, qt: QuestionType) => {
     setLoading(true);
@@ -182,11 +188,18 @@ export default function TriviaClient() {
       setShowDropdown(false);
     } else {
       setMode("result");
-      saveResults();
+      saveResults(answers);
     }
   };
 
-  const saveResults = async () => {
+  const saveResults = async (finalAnswers: Answer[]) => {
+    // Mark daily as done
+    if (gameMode === "daily") {
+      setTodayDone(true);
+      if (!user?.id && typeof window !== "undefined") {
+        localStorage.setItem("trivia_daily_done", today);
+      }
+    }
     if (!user?.id) return;
     setSaving(true);
     try {
@@ -197,7 +210,7 @@ export default function TriviaClient() {
           user_id: user.id,
           mode: gameMode,
           date: gameMode === "daily" ? today : undefined,
-          results: answers.map((a) => ({ question_id: a.question.id, is_correct: a.correct })),
+          results: finalAnswers.map((a) => ({ question_id: a.question.id, is_correct: a.correct })),
         }),
       });
       setSaved(true);
@@ -260,14 +273,21 @@ export default function TriviaClient() {
         <div className="space-y-3">
           <button
             onClick={() => startGame("daily")}
-            disabled={loading}
-            className="w-full py-4 rounded-2xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 disabled:opacity-50 text-white font-black text-lg tracking-tight transition-colors"
+            disabled={loading || todayDone}
+            className={`w-full py-4 rounded-2xl text-white font-black text-lg tracking-tight transition-colors ${
+              todayDone
+                ? "bg-zinc-700 cursor-not-allowed opacity-60"
+                : "bg-orange-500 hover:bg-orange-400 active:bg-orange-600 disabled:opacity-50"
+            }`}
           >
-            {loading ? "Loading..." : "📅 Start Daily Challenge →"}
+            {loading ? "Loading..." : todayDone ? "✅ Today's Challenge Complete" : "📅 Start Daily Challenge →"}
           </button>
           <div className="flex items-center gap-3 px-1">
-            <span className="text-xs text-zinc-600">3 questions · score saved to profile</span>
-            {!user && <span className="text-xs text-zinc-600 ml-auto">Login to save</span>}
+            {todayDone
+              ? <span className="text-xs text-green-500">Come back tomorrow for a new challenge!</span>
+              : <span className="text-xs text-zinc-600">3 questions · score saved to profile</span>
+            }
+            {!user && !todayDone && <span className="text-xs text-zinc-600 ml-auto">Login to save</span>}
           </div>
 
           <button
@@ -438,7 +458,7 @@ export default function TriviaClient() {
                 )}
               </div>
             )}
-            {q.difficulty === "hard" && q.explanation && (
+            {q.difficulty === "hard" && q.template !== "played_for_all" && q.explanation && (
               <div className="rounded-xl p-4 bg-zinc-800/60 border border-zinc-700">
                 <p className="text-xs text-zinc-400 leading-relaxed">{q.explanation}</p>
               </div>
