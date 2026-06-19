@@ -487,7 +487,7 @@ function PlayoffPlayback({
 
 const SIZE_OPTIONS: BracketSize[] = [4, 8, 16];
 
-export default function PlayoffClient() {
+export default function PlayoffClient({ initialTeams }: { initialTeams?: import("@/components/sim/TeamPicker").TeamPick[] }) {
   const router = useRouter();
   const params = useSearchParams();
   const [size, setSize] = useState<BracketSize>(8);
@@ -662,6 +662,7 @@ export default function PlayoffClient() {
                         selected={teams[i] ?? null}
                         onSelect={(pick) => updateTeam(i, pick)}
                         usedIds={usedIds}
+                        initialTeams={initialTeams}
                       />
                     );
                   })}

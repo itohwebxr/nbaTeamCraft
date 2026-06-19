@@ -283,7 +283,7 @@ function SeasonPlayback({
 
 // ── Main client ─────────────────────────────────────────────────────────
 
-export default function SeasonClient() {
+export default function SeasonClient({ initialTeams }: { initialTeams?: import("@/components/sim/TeamPicker").TeamPick[] }) {
   const router = useRouter();
   const params = useSearchParams();
 
@@ -365,6 +365,7 @@ export default function SeasonClient() {
             label="Your Team"
             selected={team}
             onSelect={setTeam}
+            initialTeams={initialTeams}
           />
         </div>
 
