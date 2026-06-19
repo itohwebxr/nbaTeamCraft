@@ -251,9 +251,30 @@ export default function TriviaClient() {
   const q = questions[currentIdx];
 
   if (mode === "menu") {
+    const isDaily = gameMode === "daily";
     return (
       <div className="space-y-5">
-        {/* Shared filters */}
+        {/* Mode selector tabs */}
+        <div className="flex gap-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-1.5">
+          <button
+            onClick={() => setGameMode("daily")}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+              isDaily ? "bg-orange-500 text-white" : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            📅 Daily Challenge
+          </button>
+          <button
+            onClick={() => setGameMode("practice")}
+            className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+              !isDaily ? "bg-zinc-700 text-white" : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            🏋️ Practice
+          </button>
+        </div>
+
+        {/* Filters */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
           <div>
             <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Difficulty</p>
@@ -272,52 +293,74 @@ export default function TriviaClient() {
             </div>
           </div>
           <div>
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Category</p>
-            <div className="flex gap-2">
-              {(["mix", "stats", "career"] as QuestionType[]).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setQuestionType(t)}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors ${
-                    questionType === t ? "bg-sky-600 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </button>
-              ))}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Category</p>
+              {isDaily && (
+                <span className="text-xs bg-zinc-800 text-zinc-500 px-2 py-0.5 rounded-full">Mix only for Daily</span>
+              )}
             </div>
+            <div className="flex gap-2">
+              {(["mix", "stats", "career"] as QuestionType[]).map((t) => {
+                const locked = isDaily && t !== "mix";
+                return (
+                  <button
+                    key={t}
+                    onClick={() => !locked && setQuestionType(t)}
+                    disabled={locked}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+                      locked
+                        ? "bg-zinc-800/40 text-zinc-700 cursor-not-allowed"
+                        : questionType === t
+                          ? "bg-sky-600 text-white"
+                          : "bg-zinc-800 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                );
+              })}
+            </div>
+            {isDaily && (
+              <p className="text-xs text-zinc-600 mt-1.5 px-0.5">Category selection is available in Practice mode</p>
+            )}
           </div>
         </div>
 
-        {/* Start buttons */}
+        {/* Start button */}
         <div className="space-y-3">
-          <button
-            onClick={() => startGame("daily")}
-            disabled={loading || todayDone}
-            className={`w-full py-4 rounded-2xl text-white font-black text-lg tracking-tight transition-colors ${
-              todayDone
-                ? "bg-zinc-700 cursor-not-allowed opacity-60"
-                : "bg-orange-500 hover:bg-orange-400 active:bg-orange-600 disabled:opacity-50"
-            }`}
-          >
-            {loading ? "Loading..." : todayDone ? "✅ Today's Challenge Complete" : "📅 Start Daily Challenge →"}
-          </button>
-          <div className="flex items-center gap-3 px-1">
-            {todayDone
-              ? <span className="text-xs text-green-500">Come back tomorrow for a new challenge!</span>
-              : <span className="text-xs text-zinc-600">3 questions · score saved to profile</span>
-            }
-            {!user && !todayDone && <span className="text-xs text-zinc-600 ml-auto">Login to save</span>}
-          </div>
-
-          <button
-            onClick={() => startGame("practice")}
-            disabled={loading}
-            className="w-full py-4 rounded-2xl border border-zinc-700 hover:border-zinc-500 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-black text-lg tracking-tight transition-colors"
-          >
-            {loading ? "Loading..." : "🏋️ Start Practice →"}
-          </button>
-          <p className="text-xs text-zinc-600 px-1">Unlimited questions · no score tracking</p>
+          {isDaily ? (
+            <>
+              <button
+                onClick={() => startGame("daily")}
+                disabled={loading || todayDone}
+                className={`w-full py-4 rounded-2xl text-white font-black text-lg tracking-tight transition-colors ${
+                  todayDone
+                    ? "bg-zinc-700 cursor-not-allowed opacity-60"
+                    : "bg-orange-500 hover:bg-orange-400 active:bg-orange-600 disabled:opacity-50"
+                }`}
+              >
+                {loading ? "Loading..." : todayDone ? "✅ Today's Challenge Complete" : "Start Daily Challenge →"}
+              </button>
+              <div className="flex items-center gap-3 px-1">
+                {todayDone
+                  ? <span className="text-xs text-green-500">Come back tomorrow for a new challenge!</span>
+                  : <span className="text-xs text-zinc-600">5 questions · score saved to profile</span>
+                }
+                {!user && !todayDone && <span className="text-xs text-zinc-600 ml-auto">Login to save</span>}
+              </div>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => startGame("practice")}
+                disabled={loading}
+                className="w-full py-4 rounded-2xl bg-zinc-700 hover:bg-zinc-600 text-white font-black text-lg tracking-tight transition-colors disabled:opacity-50"
+              >
+                {loading ? "Loading..." : "Start Practice →"}
+              </button>
+              <p className="text-xs text-zinc-600 px-1">5 questions · no score tracking</p>
+            </>
+          )}
 
           {fetchError && (
             <p className="text-xs text-red-400 text-center px-1">
