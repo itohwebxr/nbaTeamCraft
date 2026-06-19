@@ -124,6 +124,19 @@ function shareToX(
   if (result.games) qs.set("games", result.games);
   if (result.tops) qs.set("tops", result.tops);
   const url = `${origin}/matchup/result?${qs.toString()}`;
+  const winner = Number(result.hs) > Number(result.as) ? result.home : result.away;
+  const loser = Number(result.hs) > Number(result.as) ? result.away : result.home;
+  const subtitle = result.kind === "series" ? "Match · Series" : "Match · Single";
+  fetch("/api/sim/feed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      kind: "matchup",
+      result_url: url,
+      title: `⚔️ ${winner} def. ${loser}`,
+      subtitle,
+    }),
+  }).catch(() => {});
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
   window.open(tweetUrl, "_blank");
 }

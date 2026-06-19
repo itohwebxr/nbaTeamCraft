@@ -239,13 +239,63 @@ export default function TriviaClient() {
     }
   };
 
-  const shareToX = () => {
+  const shareToX = async () => {
     const score = answers.filter((a) => a.correct).length;
     const total = answers.length;
     const emoji = score === total ? "🔥" : score >= total / 2 ? "💪" : "📚";
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : "https://nbateamcraft.com");
-    const diff = difficulty === "hard" ? "hard" : "normal";
-    const resultUrl = `${siteUrl}/trivia/result?score=${score}&total=${total}&diff=${diff}&gmode=${gameMode}`;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
+
+    // Build share data and save to shares table
+    const shareData = {
+      kind: "trivia",
+      score,
+      total,
+      difficulty,
+      gmode: gameMode,
+      answers: answers.map((a) => ({
+        question: a.question.question,
+        correct: a.correct,
+        submitted: a.submittedName ?? a.question.options[a.selected] ?? undefined,
+        correct_answer: a.correct
+          ? undefined
+          : (a.allCorrect?.[0] ?? a.question.options[a.question.answer_index]),
+      })),
+    };
+
+    let resultUrl = `${siteUrl}/trivia`;
+    let shareId: string | null = null;
+    try {
+      const res = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(shareData),
+      });
+      const data = await res.json() as { url?: string };
+      if (data.url) {
+        const parts = data.url.split("/share/");
+        shareId = parts[1] ?? null;
+        resultUrl = data.url.replace("/share/", "/trivia/result/");
+      }
+    } catch { /* fallback to trivia page */ }
+
+    // Post to trivia feed
+    if (shareId) {
+      fetch("/api/trivia/feed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user?.id ?? null,
+          share_id: shareId,
+          score,
+          total,
+          gmode: gameMode,
+          difficulty,
+          display_name: user?.displayName ?? null,
+          avatar_url: user?.avatarUrl ?? null,
+        }),
+      }).catch(() => {});
+    }
+
     const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at #NBATeamCraft\n${resultUrl}`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
   };
@@ -622,7 +672,7 @@ export default function TriviaClient() {
         {/* Actions */}
         <div className="flex gap-3">
           <button
-            onClick={shareToX}
+            onClick={() => { void shareToX(); }}
             className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
           >
             <span>𝕏</span> Share

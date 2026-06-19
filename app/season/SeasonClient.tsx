@@ -57,6 +57,7 @@ async function shareToX(result: SeasonResult) {
   // Open blank tab synchronously (no noopener — we need to set location after await)
   const win = window.open("", "_blank");
   let shareUrl = window.location.origin + "/season";
+  let shareId: string | null = null;
   try {
     const res = await fetch("/api/season/share", {
       method: "POST",
@@ -71,10 +72,23 @@ async function shareToX(result: SeasonResult) {
       }),
     });
     const json = await res.json();
-    if (res.ok && json.url) shareUrl = json.url;
+    if (res.ok && json.url) {
+      shareUrl = json.url;
+      shareId = json.url.split("/share/")[1] ?? null;
+    }
   } catch {
     // fall back to the generic season URL
   }
+  fetch("/api/sim/feed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      kind: "season",
+      share_id: shareId,
+      title: `🏀 ${team.name}: ${wins}-${losses}`,
+      subtitle: `Season · ${label}`,
+    }),
+  }).catch(() => {});
   const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
   if (win) win.location.href = tweetUrl;
   else window.open(tweetUrl, "_blank");
