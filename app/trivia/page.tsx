@@ -18,7 +18,7 @@ export default function TriviaPage() {
           </Link>
           <div className="flex items-center gap-4">
             <Link href="/draft" className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
-              Draft →
+              Craft a Team →
             </Link>
             <HeaderAuth />
           </div>

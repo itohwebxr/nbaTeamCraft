@@ -26,7 +26,7 @@ export default async function RankingPage({
               🧠 Trivia
             </Link>
             <Link href="/draft" className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
-              Draft →
+              Craft a Team →
             </Link>
             <HeaderAuth />
           </div>

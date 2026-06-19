@@ -38,7 +38,8 @@ export default function TriviaClient() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number | null>(null); // highlighted choice
+  const [confirmed, setConfirmed] = useState(false); // answer submitted
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -116,23 +117,40 @@ export default function TriviaClient() {
     setCurrentIdx(0);
     setAnswers([]);
     setSelected(null);
+    setConfirmed(false);
     setSaved(false);
     setMode("playing");
   };
 
   const handleSelect = (idx: number) => {
-    if (selected !== null) return;
+    if (confirmed) return;
     setSelected(idx);
-    const q = questions[currentIdx];
-    const correct = idx === q.answer_index;
-    setAnswers((prev) => [...prev, { question: q, selected: idx, correct }]);
   };
 
-  const handleSearchSelect = async (playerName: string) => {
-    if (selected !== null || validating) return;
+  const handleConfirm = () => {
+    if (selected === null || confirmed) return;
+    setConfirmed(true);
     const q = questions[currentIdx];
+    const correct = selected === q.answer_index;
+    setAnswers((prev) => [...prev, { question: q, selected, correct }]);
+  };
+
+  const handleSearchSubmit = async () => {
+    if (!searchQuery.trim() || confirmed || validating) return;
+    const playerName = searchQuery.trim();
+    confirmSearch(playerName);
+  };
+
+  const handleSearchSelect = (playerName: string) => {
+    if (confirmed) return;
     setSearchQuery(playerName);
     setShowDropdown(false);
+  };
+
+  const confirmSearch = async (playerName: string) => {
+    if (confirmed || validating) return;
+    setConfirmed(true);
+    const q = questions[currentIdx];
 
     // played_for_all: validate against CSV to get all correct answers
     if (q.template === "played_for_all" && q.params) {
@@ -154,7 +172,6 @@ export default function TriviaClient() {
         }]);
         gtm.triviaHardAnswerSelected({ is_correct: data.is_correct, player_name: playerName });
       } catch {
-        // fallback: check against options
         const idx = q.options.indexOf(playerName);
         const correct = playerName === q.options[q.answer_index];
         setSelected(idx === -1 ? 999 : idx);
@@ -184,6 +201,7 @@ export default function TriviaClient() {
     if (currentIdx + 1 < questions.length) {
       setCurrentIdx((i) => i + 1);
       setSelected(null);
+      setConfirmed(false);
       setSearchQuery("");
       setShowDropdown(false);
     } else {
@@ -224,7 +242,9 @@ export default function TriviaClient() {
   const shareToX = () => {
     const score = answers.filter((a) => a.correct).length;
     const emoji = score === answers.length ? "🔥" : score >= answers.length / 2 ? "💪" : "📚";
-    const text = `${emoji} Trivia Challenge: ${score}/${answers.length} correct!\nTest your NBA knowledge at #NBATeamCraft`;
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://nbateamcraft.com";
+    const url = `${siteUrl}/trivia`;
+    const text = `${emoji} Trivia Challenge: ${score}/${answers.length} correct!\nTest your NBA knowledge at #NBATeamCraft\n${url}`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -310,7 +330,7 @@ export default function TriviaClient() {
   }
 
   if (mode === "playing" && q) {
-    const isAnswered = selected !== null;
+    const isAnswered = confirmed;
     return (
       <div className="space-y-4">
         {/* Progress */}
@@ -345,7 +365,9 @@ export default function TriviaClient() {
             {q.options.map((option, i) => {
               let cls = "w-full text-left px-4 py-3.5 rounded-xl border font-medium text-sm transition-colors ";
               if (!isAnswered) {
-                cls += "border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800";
+                cls += i === selected
+                  ? "border-sky-500 bg-sky-500/10 text-sky-300"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800";
               } else if (i === q.answer_index) {
                 cls += "border-green-500 bg-green-500/10 text-green-400";
               } else if (i === selected) {
@@ -360,6 +382,15 @@ export default function TriviaClient() {
                 </button>
               );
             })}
+            {/* Confirm button — visible after selection, before submission */}
+            {selected !== null && !isAnswered && (
+              <button
+                onClick={handleConfirm}
+                className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-black text-base transition-colors mt-2"
+              >
+                Confirm Answer →
+              </button>
+            )}
           </div>
         ) : (
           /* Hard mode: player name search */
@@ -439,7 +470,17 @@ export default function TriviaClient() {
               </div>
             )}
 
-            {!isAnswered && (
+            {/* Submit button — visible after a player is selected from dropdown */}
+            {searchQuery.trim() && !isAnswered && (
+              <button
+                onClick={handleSearchSubmit}
+                disabled={validating}
+                className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-black text-base transition-colors"
+              >
+                {validating ? "Checking..." : "Submit Answer →"}
+              </button>
+            )}
+            {!searchQuery.trim() && !isAnswered && (
               <p className="text-xs text-zinc-600 text-center">Type at least 2 characters to search</p>
             )}
           </div>
