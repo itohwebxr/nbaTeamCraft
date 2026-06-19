@@ -48,7 +48,7 @@ export default function LikeButton({ teamId, initialCount, size = "md" }: LikeBu
       const res = await fetch(`/api/public-teams/${teamId}/like`, {
         method: next ? "POST" : "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ browserId }),
+        body: JSON.stringify({ browserId, userId: user?.id ?? null }),
       });
       const json = await res.json();
       if (typeof json.likeCount === "number") setCount(json.likeCount);

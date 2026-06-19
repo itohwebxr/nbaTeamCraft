@@ -9,7 +9,7 @@ export async function POST(
 ) {
   try {
     const { id: teamId } = await params;
-    const { browserId } = await req.json();
+    const { browserId, userId } = await req.json();
 
     if (!browserId) {
       return NextResponse.json({ error: "Missing browserId" }, { status: 400 });
@@ -38,20 +38,45 @@ export async function POST(
     const { data } = await supabase.rpc("increment_like_count", { team_id: teamId });
     const likeCount = data ?? 0;
 
-    // Notify team owner (fire-and-forget, skip self-like check — we only have browserId)
-    void Promise.resolve(
-      supabase.from("public_teams").select("user_id, name").eq("id", teamId).single()
-    ).then(({ data: team }) => {
-      if (team?.user_id) {
-        return Promise.resolve(supabase.from("notifications").insert({
+    // Notify team owner (fire-and-forget)
+    void (async () => {
+      try {
+        const { data: team } = await supabase
+          .from("public_teams")
+          .select("user_id, name")
+          .eq("id", teamId)
+          .single();
+        if (!team?.user_id) return;
+
+        // Skip self-like notification
+        if (userId && team.user_id === userId) return;
+
+        // Look up actor display name if logged in
+        let actorDisplayName: string | null = null;
+        let actorUserId: string | null = null;
+        if (userId) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("id", userId)
+            .single();
+          actorDisplayName = profile?.display_name ?? null;
+          actorUserId = userId;
+        }
+
+        await supabase.from("notifications").insert({
           user_id: team.user_id,
           type: "like",
           team_id: teamId,
           team_name: team.name,
           actor_browser_id: browserId,
-        }));
+          actor_display_name: actorDisplayName,
+          actor_user_id: actorUserId,
+        });
+      } catch {
+        // ignore notification errors
       }
-    }).catch(() => {});
+    })();
 
     return NextResponse.json({ liked: true, likeCount });
   } catch (e) {

@@ -6,6 +6,7 @@ import { gtm } from "@/lib/gtm";
 import type { PlayoffResult, SeriesSummary } from "@/app/api/playoff/simulate/route";
 import { TeamPicker, TeamPick, RANDOM_ID, RANDOM_PICK } from "@/components/sim/TeamPicker";
 import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
+import PostToSimFeedButton from "@/components/sim/PostToSimFeedButton";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -284,6 +285,11 @@ function PlayoffResults({
         >
           Share on 𝕏
         </button>
+        <PostToSimFeedButton payload={{
+          kind: "playoff",
+          title: `🏆 ${result.champion.name} wins!`,
+          subtitle: `Playoff · ${result.size}-Team`,
+        }} />
         {sourceTeamId && !posted && (
           <button
             onClick={async () => {

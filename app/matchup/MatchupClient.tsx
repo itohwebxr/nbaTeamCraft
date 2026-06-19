@@ -8,6 +8,7 @@ import { useDraftStore } from "@/stores/draftStore";
 import ExhibitionMatch from "@/components/cup/ExhibitionMatch";
 import { TeamPicker, TeamPick, RANDOM_ID } from "@/components/sim/TeamPicker";
 import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
+import PostToSimFeedButton from "@/components/sim/PostToSimFeedButton";
 
 // CTA that drops the user into the Roster Builder to create their own lineup.
 // Surfaced on the picker and on result screens to convert simulator play into
@@ -267,6 +268,11 @@ function SeriesResult({
         >
           Share on 𝕏
         </button>
+        <PostToSimFeedButton payload={{
+          kind: "matchup",
+          title: `⚔️ ${winnerName} wins the series!`,
+          subtitle: `Match · Series · ${wins.home}-${wins.away}`,
+        }} />
         {sourceTeamId && !posted && (
           <button
             onClick={async () => {
@@ -662,6 +668,11 @@ export default function MatchupClient({ initialTeams }: { initialTeams?: import(
         }
         footer={
           <>
+            <PostToSimFeedButton payload={{
+              kind: "matchup",
+              title: `⚔️ ${r.winner === "home" ? sim.home.name : sim.away.name} def. ${r.winner === "home" ? sim.away.name : sim.home.name}`,
+              subtitle: "Match · Single",
+            }} />
             {singleSourceId && (
               <PostToTeamButton
                 teamId={singleSourceId}
