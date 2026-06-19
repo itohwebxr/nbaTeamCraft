@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getBrowserId, getLikedTeams, setLikedTeam } from "@/lib/browserId";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LikeButtonProps {
   teamId: string;
@@ -10,19 +11,31 @@ interface LikeButtonProps {
 }
 
 export default function LikeButton({ teamId, initialCount, size = "md" }: LikeButtonProps) {
+  const { user } = useAuth();
   const [liked, setLiked] = useState(false);
   const [count, setCount] = useState(initialCount);
   const [loading, setLoading] = useState(false);
   const [burst, setBurst] = useState(0); // increments to retrigger particles
 
   useEffect(() => {
-    setLiked(getLikedTeams().has(teamId));
-  }, [teamId]);
+    if (user?.id) {
+      // For logged-in users, check the DB via the like status endpoint
+      fetch(`/api/public-teams/${teamId}/like/status?userId=${user.id}`)
+        .then((r) => r.json())
+        .then((d) => { if (typeof d.liked === "boolean") setLiked(d.liked); })
+        .catch(() => setLiked(getLikedTeams().has(teamId)));
+    } else {
+      setLiked(getLikedTeams().has(teamId));
+    }
+  }, [teamId, user?.id]);
 
   const toggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (loading) return;
+
+    // Use user_id for logged-in users so likes persist across devices
+    const browserId = user?.id ?? getBrowserId();
 
     const next = !liked;
     setLiked(next);
@@ -35,7 +48,7 @@ export default function LikeButton({ teamId, initialCount, size = "md" }: LikeBu
       const res = await fetch(`/api/public-teams/${teamId}/like`, {
         method: next ? "POST" : "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ browserId: getBrowserId() }),
+        body: JSON.stringify({ browserId }),
       });
       const json = await res.json();
       if (typeof json.likeCount === "number") setCount(json.likeCount);
