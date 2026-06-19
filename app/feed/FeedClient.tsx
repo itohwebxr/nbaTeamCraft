@@ -5,8 +5,8 @@ import FeedCard from "@/components/home/FeedCard";
 import type { HomeTeam } from "@/lib/homeTeams";
 
 const TABS = [
-  { key: "builder", label: "🔥 Latest Builds" },
-  { key: "dream",   label: "🏀 Latest Teams"  },
+  { key: "builder", label: "🔥 Latest Crafted Teams" },
+  { key: "dream",   label: "🏀 Latest Dream Teams"  },
 ] as const;
 
 type TabKey = typeof TABS[number]["key"];

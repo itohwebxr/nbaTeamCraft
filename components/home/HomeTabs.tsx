@@ -137,8 +137,8 @@ export default function HomeTabs({
           <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-5 space-y-4 text-left">
             <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Sample Questions</p>
             {[
-              { q: "Who led the 2005-06 LAL in scoring?", hint: "Stats · Easy" },
-              { q: "Which player's career path included LAL → MIA → CLE?", hint: "Career · Easy" },
+              { q: "Who led the 2005-06 LAL in scoring?", hint: "Stats · Normal" },
+              { q: "Which player's career path included LAL → MIA → CLE?", hint: "Career · Normal" },
               { q: "Who led the 2003-04 DET in scoring?", hint: "Stats · Hard" },
             ].map((item, i) => (
               <div key={i} className="border-t border-zinc-800 pt-3 first:border-0 first:pt-0">

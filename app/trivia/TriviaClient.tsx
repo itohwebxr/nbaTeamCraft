@@ -16,7 +16,7 @@ type Question = {
 
 type Mode = "menu" | "playing" | "result";
 type GameMode = "daily" | "practice";
-type Difficulty = "easy" | "hard";
+type Difficulty = "normal" | "hard";
 type QuestionType = "stats" | "career" | "mix";
 
 type Answer = {
@@ -29,7 +29,7 @@ export default function TriviaClient() {
   const { user } = useAuth();
   const [mode, setMode] = useState<Mode>("menu");
   const [gameMode, setGameMode] = useState<GameMode>("daily");
-  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
+  const [difficulty, setDifficulty] = useState<Difficulty>("normal");
   const [questionType, setQuestionType] = useState<QuestionType>("mix");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -50,6 +50,7 @@ export default function TriviaClient() {
   // Preload player list when Hard difficulty is selected
   useEffect(() => {
     if (difficulty !== "hard" || playerList.length > 0) return;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     fetch("/players.json")
       .then((r) => r.json())
       .then((data: string[]) => setPlayerList(data))
@@ -82,7 +83,7 @@ export default function TriviaClient() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ mode: gm, limit: "3", date: today });
-      params.set("difficulty", diff);
+      params.set("difficulty", diff === "normal" ? "easy" : diff);
       if (qt !== "mix") params.set("type", qt);
       const res = await fetch(`/api/trivia/questions?${params}`);
       const data = await res.json();
@@ -176,112 +177,65 @@ export default function TriviaClient() {
 
   if (mode === "menu") {
     return (
-      <div className="space-y-6">
-        {/* Daily Challenge */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xl">📅</span>
-            <h2 className="font-display text-base font-black text-white">Daily Challenge</h2>
-            <span className="ml-auto text-xs bg-orange-500/20 text-orange-400 font-bold px-2 py-0.5 rounded-full">3 Questions</span>
-          </div>
-          <p className="text-xs text-zinc-500 mb-4">Today&apos;s questions — results saved to your profile.</p>
-
-          <div className="mb-4 space-y-3">
-            <div>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Difficulty</p>
-              <div className="flex gap-2">
-                {(["easy", "hard"] as Difficulty[]).map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setDifficulty(d)}
-                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
-                      difficulty === d ? "bg-orange-500 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    {d === "easy" ? "🟢" : "🔴"} {d.charAt(0).toUpperCase() + d.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Category</p>
-              <div className="flex gap-2">
-                {(["mix", "stats", "career"] as QuestionType[]).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setQuestionType(t)}
-                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
-                      questionType === t ? "bg-sky-600 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </button>
-                ))}
-              </div>
+      <div className="space-y-5">
+        {/* Shared filters */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
+          <div>
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Difficulty</p>
+            <div className="flex gap-2">
+              {(["normal", "hard"] as Difficulty[]).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setDifficulty(d)}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                    difficulty === d ? "bg-orange-500 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  {d === "normal" ? "🟢" : "🔴"} {d === "normal" ? "Normal" : "Hard"}
+                </button>
+              ))}
             </div>
           </div>
+          <div>
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Category</p>
+            <div className="flex gap-2">
+              {(["mix", "stats", "career"] as QuestionType[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setQuestionType(t)}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors ${
+                    questionType === t ? "bg-sky-600 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
+                  }`}
+                >
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
+        {/* Start buttons */}
+        <div className="space-y-3">
           <button
             onClick={() => startGame("daily")}
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-black text-base transition-colors"
+            className="w-full py-4 rounded-2xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 disabled:opacity-50 text-white font-black text-lg tracking-tight transition-colors"
           >
-            {loading ? "Loading..." : "Start Daily Challenge →"}
+            {loading ? "Loading..." : "📅 Start Daily Challenge →"}
           </button>
-          {!user && (
-            <p className="text-xs text-zinc-600 text-center mt-2">Log in to save your score to your profile</p>
-          )}
-        </div>
+          <div className="flex items-center gap-3 px-1">
+            <span className="text-xs text-zinc-600">3 questions · score saved to profile</span>
+            {!user && <span className="text-xs text-zinc-600 ml-auto">Login to save</span>}
+          </div>
 
-        {/* Practice Mode */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xl">🏋️</span>
-            <h2 className="font-display text-base font-black text-white">Practice Mode</h2>
-            <span className="ml-auto text-xs bg-zinc-700 text-zinc-400 font-bold px-2 py-0.5 rounded-full">Unlimited</span>
-          </div>
-          <p className="text-xs text-zinc-500 mb-4">Unlimited questions — no score tracking, just learning.</p>
-          <div className="mb-4 space-y-3">
-            <div>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Difficulty</p>
-              <div className="flex gap-2">
-                {(["easy", "hard"] as Difficulty[]).map((d) => (
-                  <button
-                    key={d}
-                    onClick={() => setDifficulty(d)}
-                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
-                      difficulty === d ? "bg-orange-500 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    {d === "easy" ? "🟢" : "🔴"} {d.charAt(0).toUpperCase() + d.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Category</p>
-              <div className="flex gap-2">
-                {(["mix", "stats", "career"] as QuestionType[]).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setQuestionType(t)}
-                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
-                      questionType === t ? "bg-sky-600 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
-                    }`}
-                  >
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
           <button
             onClick={() => startGame("practice")}
             disabled={loading}
-            className="w-full py-3 rounded-xl border border-zinc-700 hover:border-zinc-500 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-sm transition-colors"
+            className="w-full py-4 rounded-2xl border border-zinc-700 hover:border-zinc-500 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-black text-lg tracking-tight transition-colors"
           >
-            {loading ? "Loading..." : "Start Practice →"}
+            {loading ? "Loading..." : "🏋️ Start Practice →"}
           </button>
+          <p className="text-xs text-zinc-600 px-1">Unlimited questions · no score tracking</p>
         </div>
       </div>
     );
@@ -307,7 +261,7 @@ export default function TriviaClient() {
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
             q.difficulty === "easy" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
           }`}>
-            {q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)}
+            {q.difficulty === "easy" ? "Normal" : "Hard"}
           </span>
           <span className="text-xs text-zinc-600 capitalize">{q.type}</span>
         </div>
@@ -473,7 +427,7 @@ export default function TriviaClient() {
         <div className="space-y-2">
           {answers.map((a, i) => (
             <div key={i} className={`bg-zinc-900 border rounded-xl p-4 ${a.correct ? "border-green-500/20" : "border-red-500/20"}`}>
-              <p className="text-xs text-zinc-500 mb-1">Q{i + 1} · {a.question.difficulty}</p>
+              <p className="text-xs text-zinc-500 mb-1">Q{i + 1} · {a.question.difficulty === "easy" ? "Normal" : "Hard"}</p>
               <p className="text-sm text-white font-medium mb-2">{a.question.question}</p>
               <p className={`text-xs font-bold ${a.correct ? "text-green-400" : "text-red-400"}`}>
                 {a.correct ? "✅" : "❌"} {a.question.options[a.question.answer_index]}

@@ -39,8 +39,8 @@ export default function ModeSelector({ variant }: { variant: "builder" | "draft"
   return (
     <button
       onClick={startDraft}
-      className="block w-full py-3.5 rounded-2xl border border-zinc-700 hover:border-zinc-500
-        bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-base transition-colors"
+      className="block w-full py-4 rounded-2xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600
+        text-white font-black text-lg tracking-tight transition-colors"
     >
       🏀 Start Dream Draft →
     </button>
