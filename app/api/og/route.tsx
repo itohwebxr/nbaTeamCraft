@@ -181,15 +181,75 @@ export async function GET(req: NextRequest) {
 
   // Trivia result OG
   if (p.get("mode") === "trivia") {
-    const score = parseInt(p.get("score") ?? "0", 10);
-    const total = parseInt(p.get("total") ?? "5", 10);
+    const shareId = p.get("id") ?? "";
+    type TriviaAnswer = { question: string; correct: boolean; submitted?: string; correct_answer?: string };
+    type TriviaShareData = { kind: "trivia"; score: number; total: number; difficulty: string; gmode: string; answers: TriviaAnswer[] };
+    let share: TriviaShareData | null = null;
+
+    if (shareId) {
+      try {
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+        const { data } = await supabase.from("shares").select("data").eq("id", shareId).single();
+        const d = data?.data as TriviaShareData | undefined;
+        if (d?.kind === "trivia") share = d;
+      } catch { share = null; }
+    }
+
+    const score = share?.score ?? parseInt(p.get("score") ?? "0", 10);
+    const total = share?.total ?? parseInt(p.get("total") ?? "5", 10);
     const pct = total > 0 ? Math.round((score / total) * 100) : 0;
-    const gmode = p.get("gmode") === "daily" ? "Daily Challenge" : "Practice";
-    const diff = p.get("diff") === "hard" ? "Hard" : "Normal";
+    const gmode = (share?.gmode ?? p.get("gmode")) === "daily" ? "Daily Challenge" : "Practice";
+    const diff = (share?.difficulty ?? p.get("diff")) === "hard" ? "Hard" : "Normal";
     const emoji = score === total ? "🔥" : score >= total * 0.6 ? "💪" : "📚";
     const perfLabel = score === total ? "PERFECT!" : score >= total * 0.6 ? "NICE WORK!" : "KEEP STUDYING!";
     const perfColor = score === total ? "#f59e0b" : score >= total * 0.6 ? "#22c55e" : "#3b82f6";
 
+    const truncate = (s: string, n: number) => s.length > n ? `${s.slice(0, n - 1)}…` : s;
+    const answers = share?.answers ?? [];
+
+    if (answers.length > 0) {
+      return new ImageResponse(
+        (
+          <div style={{ width: "1200px", height: "630px", background: "#09090b", display: "flex", padding: "44px 60px", fontFamily: "sans-serif" }}>
+            {/* Left: score block */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "340px", flexShrink: 0, borderRight: "1px solid #27272a", paddingRight: "48px", marginRight: "48px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "16px" }}>
+                <span style={{ fontSize: "14px", fontWeight: 900, color: "#f97316", background: "#1c1917", padding: "3px 10px", borderRadius: "6px", letterSpacing: "0.06em", textTransform: "uppercase", display: "flex" }}>🧠 Trivia</span>
+                <span style={{ fontSize: "12px", color: "#71717a", background: "#18181b", padding: "3px 8px", borderRadius: "6px", display: "flex" }}>{gmode}</span>
+              </div>
+              <div style={{ display: "flex", fontSize: "22px", marginBottom: "4px" }}>{emoji}</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: "6px" }}>
+                <span style={{ fontSize: "100px", fontWeight: 900, color: "#f97316", lineHeight: 1, display: "flex" }}>{score}</span>
+                <span style={{ fontSize: "40px", fontWeight: 900, color: "#3f3f46", display: "flex" }}>/{total}</span>
+              </div>
+              <span style={{ fontSize: "28px", fontWeight: 900, color: perfColor, letterSpacing: "0.06em", display: "flex", marginTop: "4px" }}>{perfLabel}</span>
+              <span style={{ fontSize: "16px", color: "#52525b", marginTop: "6px", display: "flex" }}>{pct}% · {diff}</span>
+              <span style={{ fontSize: "13px", color: "#3f3f46", marginTop: "24px", display: "flex" }}>#NBATeamCraft</span>
+            </div>
+            {/* Right: answer list */}
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", flex: 1, gap: "10px" }}>
+              {answers.slice(0, 5).map((a, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "12px", padding: "10px 14px", background: a.correct ? "#052e16" : "#2d0a0a", borderRadius: "10px", border: `1px solid ${a.correct ? "#14532d" : "#7f1d1d"}` }}>
+                  <span style={{ fontSize: "18px", flexShrink: 0, display: "flex", marginTop: "2px" }}>{a.correct ? "✅" : "❌"}</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                    <span style={{ fontSize: "15px", fontWeight: 700, color: "#e4e4e7", display: "flex" }}>{truncate(a.question, 58)}</span>
+                    {!a.correct && a.correct_answer && (
+                      <span style={{ fontSize: "12px", color: "#71717a", display: "flex" }}>→ {truncate(a.correct_answer, 40)}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ),
+        { width: 1200, height: 630, headers: { "Cache-Control": "public, max-age=86400" } }
+      );
+    }
+
+    // Fallback: score-only card (no share data)
     return new ImageResponse(
       (
         <div style={{ width: "1200px", height: "630px", background: "#09090b", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "56px 64px", fontFamily: "sans-serif", position: "relative" }}>
