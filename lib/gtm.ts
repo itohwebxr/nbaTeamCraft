@@ -223,4 +223,14 @@ export const gtm = {
     losses: number;
     label: string;
   }) => push({ event: "season_share", ...params }),
+
+  triviaHardSearch: (params: {
+    query: string;
+    results_count: number;
+  }) => push({ event: "trivia_hard_search", ...params }),
+
+  triviaHardAnswerSelected: (params: {
+    is_correct: boolean;
+    player_name: string;
+  }) => push({ event: "trivia_hard_answer_selected", ...params }),
 };

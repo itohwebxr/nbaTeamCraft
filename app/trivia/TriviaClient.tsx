@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { gtm } from "@/lib/gtm";
 
 type Question = {
   id: string;
@@ -38,7 +39,33 @@ export default function TriviaClient() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [todayDone, setTodayDone] = useState(false);
+  // Hard mode: player search
+  const [playerList, setPlayerList] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchGtmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const today = new Date().toISOString().slice(0, 10);
+
+  // Preload player list when Hard difficulty is selected
+  useEffect(() => {
+    if (difficulty !== "hard" || playerList.length > 0) return;
+    fetch("/players.json")
+      .then((r) => r.json())
+      .then((data: string[]) => setPlayerList(data))
+      .catch(() => {});
+  }, [difficulty, playerList.length]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Check if user already did today's daily
   useEffect(() => {
@@ -86,6 +113,25 @@ export default function TriviaClient() {
     const correct = idx === q.answer_index;
     setAnswers((prev) => [...prev, { question: q, selected: idx, correct }]);
   };
+
+  const handleSearchSelect = (playerName: string) => {
+    if (selected !== null) return;
+    const q = questions[currentIdx];
+    const idx = q.options.indexOf(playerName);
+    const answerIdx = idx === -1 ? -1 : idx;
+    setSelected(answerIdx === -1 ? 999 : answerIdx);
+    const correct = playerName === q.options[q.answer_index];
+    setAnswers((prev) => [...prev, { question: q, selected: answerIdx === -1 ? 999 : answerIdx, correct }]);
+    setSearchQuery(playerName);
+    setShowDropdown(false);
+    gtm.triviaHardAnswerSelected({ is_correct: correct, player_name: playerName });
+  };
+
+  const filteredPlayers = searchQuery.trim().length < 2
+    ? []
+    : playerList
+        .filter((n) => n.toLowerCase().includes(searchQuery.toLowerCase()))
+        .slice(0, 10);
 
   const handleNext = () => {
     if (currentIdx + 1 < questions.length) {
@@ -271,39 +317,112 @@ export default function TriviaClient() {
           <p className="text-white font-bold text-base leading-snug">{q.question}</p>
         </div>
 
-        {/* Options */}
-        <div className="space-y-2">
-          {q.options.map((option, i) => {
-            let cls = "w-full text-left px-4 py-3.5 rounded-xl border font-medium text-sm transition-colors ";
-            if (!isAnswered) {
-              cls += "border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800";
-            } else if (i === q.answer_index) {
-              cls += "border-green-500 bg-green-500/10 text-green-400";
-            } else if (i === selected) {
-              cls += "border-red-500 bg-red-500/10 text-red-400";
-            } else {
-              cls += "border-zinc-800 bg-zinc-900/50 text-zinc-600";
-            }
-            return (
-              <button key={i} onClick={() => handleSelect(i)} disabled={isAnswered} className={cls}>
-                <span className="font-bold mr-2 text-zinc-500">{["A", "B", "C", "D"][i]}.</span>
-                {option}
-              </button>
-            );
-          })}
-        </div>
+        {/* Options — Easy: 4-choice buttons / Hard: player search */}
+        {q.difficulty === "easy" ? (
+          <div className="space-y-2">
+            {q.options.map((option, i) => {
+              let cls = "w-full text-left px-4 py-3.5 rounded-xl border font-medium text-sm transition-colors ";
+              if (!isAnswered) {
+                cls += "border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800";
+              } else if (i === q.answer_index) {
+                cls += "border-green-500 bg-green-500/10 text-green-400";
+              } else if (i === selected) {
+                cls += "border-red-500 bg-red-500/10 text-red-400";
+              } else {
+                cls += "border-zinc-800 bg-zinc-900/50 text-zinc-600";
+              }
+              return (
+                <button key={i} onClick={() => handleSelect(i)} disabled={isAnswered} className={cls}>
+                  <span className="font-bold mr-2 text-zinc-500">{["A", "B", "C", "D"][i]}.</span>
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          /* Hard mode: player name search */
+          <div className="space-y-3">
+            <div ref={searchRef} className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchQuery(val);
+                  setShowDropdown(true);
+                  if (searchGtmTimer.current) clearTimeout(searchGtmTimer.current);
+                  searchGtmTimer.current = setTimeout(() => {
+                    if (val.trim().length >= 2) {
+                      const count = playerList.filter((n) => n.toLowerCase().includes(val.toLowerCase())).length;
+                      gtm.triviaHardSearch({ query: val, results_count: Math.min(count, 10) });
+                    }
+                  }, 500);
+                }}
+                onFocus={() => setShowDropdown(true)}
+                disabled={isAnswered}
+                placeholder="Type a player name..."
+                autoComplete="off"
+                className="w-full px-4 py-3.5 rounded-xl border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-600 text-sm font-medium focus:outline-none focus:border-sky-500 disabled:opacity-60 transition-colors"
+              />
+              {searchQuery && !isAnswered && (
+                <button
+                  onClick={() => { setSearchQuery(""); setShowDropdown(false); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-lg"
+                >×</button>
+              )}
+              {showDropdown && filteredPlayers.length > 0 && !isAnswered && (
+                <ul className="absolute z-20 w-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden shadow-xl">
+                  {filteredPlayers.map((name) => (
+                    <li key={name}>
+                      <button
+                        onMouseDown={(e) => { e.preventDefault(); handleSearchSelect(name); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-zinc-200 hover:bg-zinc-800 transition-colors"
+                      >
+                        {name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* After answer: show correct answer reveal */}
+            {isAnswered && (() => {
+              const isCorrect = answers[answers.length - 1]?.correct;
+              const correctName = q.options[q.answer_index];
+              return (
+                <div className={`rounded-xl p-4 border ${isCorrect ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"}`}>
+                  <p className={`text-sm font-bold mb-1 ${isCorrect ? "text-green-400" : "text-red-400"}`}>
+                    {isCorrect ? "✅ Correct!" : `❌ The answer is: ${correctName}`}
+                  </p>
+                </div>
+              );
+            })()}
+
+            {!isAnswered && (
+              <p className="text-xs text-zinc-600 text-center">Type at least 2 characters to search</p>
+            )}
+          </div>
+        )}
 
         {/* Feedback & Next */}
         {isAnswered && (
           <div className="space-y-3">
-            <div className={`rounded-xl p-4 ${selected === q.answer_index ? "bg-green-500/10 border border-green-500/30" : "bg-red-500/10 border border-red-500/30"}`}>
-              <p className={`text-sm font-bold mb-1 ${selected === q.answer_index ? "text-green-400" : "text-red-400"}`}>
-                {selected === q.answer_index ? "✅ Correct!" : "❌ Incorrect"}
-              </p>
-              {q.explanation && (
+            {q.difficulty === "easy" && (
+              <div className={`rounded-xl p-4 ${selected === q.answer_index ? "bg-green-500/10 border border-green-500/30" : "bg-red-500/10 border border-red-500/30"}`}>
+                <p className={`text-sm font-bold mb-1 ${selected === q.answer_index ? "text-green-400" : "text-red-400"}`}>
+                  {selected === q.answer_index ? "✅ Correct!" : "❌ Incorrect"}
+                </p>
+                {q.explanation && (
+                  <p className="text-xs text-zinc-400 leading-relaxed">{q.explanation}</p>
+                )}
+              </div>
+            )}
+            {q.difficulty === "hard" && q.explanation && (
+              <div className="rounded-xl p-4 bg-zinc-800/60 border border-zinc-700">
                 <p className="text-xs text-zinc-400 leading-relaxed">{q.explanation}</p>
-              )}
-            </div>
+              </div>
+            )}
             <button
               onClick={handleNext}
               className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-black text-base transition-colors"
