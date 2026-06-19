@@ -6,7 +6,7 @@ import { useDraftStore } from "@/stores/draftStore";
 import { gtm } from "@/lib/gtm";
 import dynamic from "next/dynamic";
 
-const TriviaClient = dynamic(() => import("@/app/trivia/TriviaClient"), { ssr: false });
+const TriviaEntryCard = dynamic(() => import("@/components/trivia/TriviaEntryCard"), { ssr: false });
 const TriviaFeed = dynamic(() => import("@/components/trivia/TriviaFeed"), { ssr: false });
 const SimFeed = dynamic(() => import("@/components/sim/SimFeed"), { ssr: false });
 
@@ -173,7 +173,7 @@ export default function HomeTabs({
       {/* ── Tab 3: Trivia ── */}
       {activeTab === "trivia" && (
         <div className="space-y-5">
-          <TriviaClient />
+          <TriviaEntryCard />
           <TriviaFeed />
         </div>
       )}
