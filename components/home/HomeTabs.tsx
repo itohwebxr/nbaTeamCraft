@@ -74,7 +74,7 @@ export default function HomeTabs({
               text-white transition-colors text-left px-5"
           >
             <p className="font-black text-lg tracking-tight leading-tight">🏗️ Craft a Team →</p>
-            <p className="text-xs text-orange-100/80 font-medium mt-0.5">好きな選手を自由に組み合わせてチームを作る</p>
+            <p className="text-xs text-orange-100/80 font-medium mt-0.5">Pick any players from any era &amp; build your roster</p>
           </button>
           <button
             onClick={startDraft}
@@ -82,7 +82,7 @@ export default function HomeTabs({
               bg-zinc-900/80 hover:bg-orange-500/10 transition-colors text-left px-5"
           >
             <p className="font-black text-lg tracking-tight leading-tight text-orange-400 hover:text-orange-300">🏀 Dream Draft →</p>
-            <p className="text-xs text-zinc-500 font-medium mt-0.5">予算17pt制・歴代名選手からドラフトで選ぶ</p>
+            <p className="text-xs text-zinc-500 font-medium mt-0.5">17-pt budget · draft all-time legends one by one</p>
           </button>
 
           {/* Feed sub-tabs */}
