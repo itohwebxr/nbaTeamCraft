@@ -8,6 +8,7 @@ from collections import defaultdict
 
 CSV_PATH = "/home/user/nbaTeamCraft/data/player_per_game.csv"
 SQL_PATH = "/home/user/nbaTeamCraft/data/trivia_questions_seed.sql"
+SQL_PATH_V2 = "/home/user/nbaTeamCraft/data/trivia_questions_seed_v2.sql"
 
 random.seed(42)
 
@@ -139,11 +140,15 @@ def make_stats_question(team_season, team, season, stat, difficulty, used_keys):
         "pts_per_game": "scoring",
         "trb_per_game": "rebounding",
         "ast_per_game": "assists",
+        "stl_per_game": "steals",
+        "blk_per_game": "blocks",
     }
     stat_display = {
         "pts_per_game": "PPG",
         "trb_per_game": "RPG",
         "ast_per_game": "APG",
+        "stl_per_game": "SPG",
+        "blk_per_game": "BPG",
     }
     slabel = season_label(season)
 
@@ -173,6 +178,8 @@ def make_stats_question(team_season, team, season, stat, difficulty, used_keys):
         "season": slabel,
         "team_id": team,
         "player_name": correct_name,
+        "template": "stats_leader",
+        "params": {"season": slabel, "team_id": team, "stat": stat},
     }
 
 def make_career_question(player_seasons, difficulty, used_keys, all_rows):
@@ -247,6 +254,8 @@ def make_career_question(player_seasons, difficulty, used_keys, all_rows):
                 "season": None,
                 "team_id": None,
                 "player_name": None,
+                "template": "played_for_all",
+                "params": {"teams": [team_a, team_b]},
             }
     return None
 
@@ -419,6 +428,8 @@ def generate_questions(rows, team_season, player_seasons):
             "season": None,
             "team_id": None,
             "player_name": None,
+            "template": "played_for_all",
+            "params": {"teams": [team_a, team_b]},
         })
         easy_career_generated += 1
 
@@ -473,6 +484,8 @@ def generate_questions(rows, team_season, player_seasons):
             "season": None,
             "team_id": None,
             "player_name": None,
+            "template": "played_for_all",
+            "params": {"teams": [team_a, team_b]},
         })
         hard_career_generated += 1
 
@@ -497,6 +510,43 @@ def generate_questions(rows, team_season, player_seasons):
 # ---------------------------------------------------------------------------
 # SQL writer
 # ---------------------------------------------------------------------------
+
+def write_sql_v2(questions, path):
+    lines = []
+    lines.append(
+        "INSERT INTO trivia_questions "
+        "(type, difficulty, question, options, answer_index, explanation, season, team_id, player_name, template, params) VALUES"
+    )
+
+    value_rows = []
+    for q in questions:
+        type_ = esc(q["type"])
+        diff = esc(q["difficulty"])
+        question = esc(q["question"])
+        options_json = json.dumps(q["options"], ensure_ascii=False).replace("'", "''")
+        answer_index = q["answer_index"]
+        explanation = esc(q["explanation"])
+        season = f"'{esc(q['season'])}'" if q.get("season") else "NULL"
+        team_id = f"'{esc(q['team_id'])}'" if q.get("team_id") else "NULL"
+        player_name = f"'{esc(q['player_name'])}'" if q.get("player_name") else "NULL"
+        template = esc(q.get("template", "freetext"))
+        params_json = json.dumps(q.get("params", {}), ensure_ascii=False).replace("'", "''")
+
+        row = (
+            f"('{type_}', '{diff}', '{question}', '{options_json}', "
+            f"{answer_index}, '{explanation}', {season}, {team_id}, {player_name}, "
+            f"'{template}', '{params_json}')"
+        )
+        value_rows.append(row)
+
+    lines.append(",\n".join(value_rows))
+    lines.append(";")
+
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+    print(f"\nSQL written to: {path}")
+
 
 def write_sql(questions, path):
     lines = []
@@ -560,6 +610,7 @@ if __name__ == "__main__":
 
     questions = questions[:50]
     write_sql(questions, SQL_PATH)
+    write_sql_v2(questions, SQL_PATH_V2)
 
     # Verify
     print("\n--- First 3 lines of SQL ---")
@@ -567,3 +618,9 @@ if __name__ == "__main__":
         for i, line in enumerate(f):
             if i < 3:
                 print(line[:200])
+
+    print("\n--- Verifying v2 SQL row count ---")
+    with open(SQL_PATH_V2) as f:
+        content = f.read()
+    row_count = content.count("stats_leader") + content.count("played_for_all") + content.count("freetext")
+    print(f"  template mentions: {row_count} (should be 50)")
