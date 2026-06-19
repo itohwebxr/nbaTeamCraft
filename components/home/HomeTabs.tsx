@@ -70,18 +70,19 @@ export default function HomeTabs({
           {/* Two CTA buttons */}
           <button
             onClick={startSandbox}
-            className="w-full py-4 rounded-2xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600
-              text-white font-black text-lg tracking-tight transition-colors"
+            className="w-full py-3.5 rounded-2xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600
+              text-white transition-colors text-left px-5"
           >
-            🏗️ Craft a Team →
+            <p className="font-black text-lg tracking-tight leading-tight">🏗️ Craft a Team →</p>
+            <p className="text-xs text-orange-100/80 font-medium mt-0.5">好きな選手を自由に組み合わせてチームを作る</p>
           </button>
           <button
             onClick={startDraft}
-            className="w-full py-4 rounded-2xl border border-orange-500/50 hover:border-orange-500
-              bg-zinc-900/80 hover:bg-orange-500/10 text-orange-400 hover:text-orange-300
-              font-black text-lg tracking-tight transition-colors"
+            className="w-full py-3.5 rounded-2xl border border-orange-500/50 hover:border-orange-500
+              bg-zinc-900/80 hover:bg-orange-500/10 transition-colors text-left px-5"
           >
-            🏀 Dream Draft →
+            <p className="font-black text-lg tracking-tight leading-tight text-orange-400 hover:text-orange-300">🏀 Dream Draft →</p>
+            <p className="text-xs text-zinc-500 font-medium mt-0.5">予算17pt制・歴代名選手からドラフトで選ぶ</p>
           </button>
 
           {/* Feed sub-tabs */}
