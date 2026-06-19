@@ -245,7 +245,7 @@ export default function TriviaClient() {
     const emoji = score === total ? "🔥" : score >= total / 2 ? "💪" : "📚";
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
 
-    // Build share data and save to DB
+    // Build share data and save to shares table
     const shareData = {
       kind: "trivia",
       score,
@@ -263,6 +263,7 @@ export default function TriviaClient() {
     };
 
     let resultUrl = `${siteUrl}/trivia`;
+    let shareId: string | null = null;
     try {
       const res = await fetch("/api/share", {
         method: "POST",
@@ -271,10 +272,29 @@ export default function TriviaClient() {
       });
       const data = await res.json() as { url?: string };
       if (data.url) {
-        // Convert /share/[id] to /trivia/result/[id]
+        const parts = data.url.split("/share/");
+        shareId = parts[1] ?? null;
         resultUrl = data.url.replace("/share/", "/trivia/result/");
       }
     } catch { /* fallback to trivia page */ }
+
+    // Post to trivia feed
+    if (shareId) {
+      fetch("/api/trivia/feed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: user?.id ?? null,
+          share_id: shareId,
+          score,
+          total,
+          gmode: gameMode,
+          difficulty,
+          display_name: user?.displayName ?? null,
+          avatar_url: user?.avatarUrl ?? null,
+        }),
+      }).catch(() => {});
+    }
 
     const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at #NBATeamCraft\n${resultUrl}`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");

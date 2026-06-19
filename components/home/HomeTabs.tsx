@@ -7,6 +7,7 @@ import { gtm } from "@/lib/gtm";
 import dynamic from "next/dynamic";
 
 const TriviaClient = dynamic(() => import("@/app/trivia/TriviaClient"), { ssr: false });
+const TriviaFeed = dynamic(() => import("@/components/trivia/TriviaFeed"), { ssr: false });
 
 type MainTab = "craft" | "simulate" | "trivia";
 type FeedTab = "crafted" | "dream";
@@ -167,8 +168,9 @@ export default function HomeTabs({
 
       {/* ── Tab 3: Trivia ── */}
       {activeTab === "trivia" && (
-        <div>
+        <div className="space-y-5">
           <TriviaClient />
+          <TriviaFeed />
         </div>
       )}
 
