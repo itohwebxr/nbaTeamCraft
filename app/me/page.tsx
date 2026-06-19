@@ -136,6 +136,7 @@ export default function MyPage() {
     team_id: string | null;
     team_name: string | null;
     actor_display_name: string | null;
+    actor_user_id: string | null;
     is_read: boolean;
     created_at: string;
   };
@@ -217,11 +218,16 @@ export default function MyPage() {
                   <span className="text-base shrink-0 mt-0.5">{n.type === "like" ? "❤️" : "💬"}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white leading-snug">
-                      {n.type === "like" ? (
-                        <>Someone liked <span className="font-bold">{n.team_name ?? "your team"}</span></>
-                      ) : (
-                        <>{n.actor_display_name ? <span className="font-bold">{n.actor_display_name}</span> : "Someone"} commented on <span className="font-bold">{n.team_name ?? "your team"}</span></>
-                      )}
+                      {(() => {
+                        const actor = n.actor_display_name
+                          ? n.actor_user_id
+                            ? <a href={`/user/${n.actor_user_id}`} className="font-bold hover:text-orange-400 transition-colors">{n.actor_display_name}</a>
+                            : <span className="font-bold">{n.actor_display_name}</span>
+                          : <span>Someone</span>;
+                        return n.type === "like"
+                          ? <>{actor} liked <span className="font-bold">{n.team_name ?? "your team"}</span></>
+                          : <>{actor} commented on <span className="font-bold">{n.team_name ?? "your team"}</span></>;
+                      })()}
                     </p>
                     <p className="text-xs text-zinc-500 mt-0.5">
                       {new Date(n.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}

@@ -160,6 +160,7 @@ export async function POST(
           team_name: team.name,
           actor_browser_id: browserId,
           actor_display_name: author?.displayName ?? null,
+          actor_user_id: userId ?? null,
         }));
       }
     }).catch(() => {});
