@@ -4,7 +4,7 @@ import HeaderAuth from "@/components/auth/HeaderAuth";
 import TriviaClient from "./TriviaClient";
 
 export const metadata = {
-  title: "NBA Trivia Challenge — NBA TeamCraft",
+  title: "Trivia Challenge — NBA TeamCraft",
   description: "Test your NBA knowledge. Daily questions on stats, trades, and career paths from 2001 to today.",
 };
 
@@ -27,7 +27,7 @@ export default function TriviaPage() {
 
       <div className="fade-up fade-up-1 max-w-lg mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="font-display text-3xl font-black text-white tracking-wide">🧠 NBA Trivia Challenge</h1>
+          <h1 className="font-display text-3xl font-black text-white tracking-wide">🧠 Trivia Challenge</h1>
           <p className="text-sm text-zinc-500 mt-1">Test your NBA knowledge. Data from 2001–2026.</p>
         </div>
 

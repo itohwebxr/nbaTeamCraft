@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { gtm } from "@/lib/gtm";
 
 type Question = {
   id: string;
@@ -15,7 +16,7 @@ type Question = {
 
 type Mode = "menu" | "playing" | "result";
 type GameMode = "daily" | "practice";
-type Difficulty = "easy" | "hard" | "all";
+type Difficulty = "normal" | "hard";
 type QuestionType = "stats" | "career" | "mix";
 
 type Answer = {
@@ -28,7 +29,7 @@ export default function TriviaClient() {
   const { user } = useAuth();
   const [mode, setMode] = useState<Mode>("menu");
   const [gameMode, setGameMode] = useState<GameMode>("daily");
-  const [difficulty, setDifficulty] = useState<Difficulty>("all");
+  const [difficulty, setDifficulty] = useState<Difficulty>("normal");
   const [questionType, setQuestionType] = useState<QuestionType>("mix");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -38,7 +39,35 @@ export default function TriviaClient() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [todayDone, setTodayDone] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
+  // Hard mode: player search
+  const [playerList, setPlayerList] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchGtmTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const today = new Date().toISOString().slice(0, 10);
+
+  // Preload player list when Hard difficulty is selected
+  useEffect(() => {
+    if (difficulty !== "hard" || playerList.length > 0) return;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetch("/players.json")
+      .then((r) => r.json())
+      .then((data: string[]) => setPlayerList(data))
+      .catch(() => {});
+  }, [difficulty, playerList.length]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // Check if user already did today's daily
   useEffect(() => {
@@ -55,10 +84,8 @@ export default function TriviaClient() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ mode: gm, limit: "3", date: today });
-      if (gm === "practice") {
-        if (diff !== "all") params.set("difficulty", diff);
-        if (qt !== "mix") params.set("type", qt);
-      }
+      params.set("difficulty", diff === "normal" ? "easy" : diff);
+      if (qt !== "mix") params.set("type", qt);
       const res = await fetch(`/api/trivia/questions?${params}`);
       const data = await res.json();
       return (data.questions ?? []) as Question[];
@@ -70,9 +97,10 @@ export default function TriviaClient() {
   }, [today]);
 
   const startGame = async (gm: GameMode) => {
+    setFetchError(false);
     setGameMode(gm);
     const qs = await fetchQuestions(gm, difficulty, questionType);
-    if (!qs.length) return;
+    if (!qs.length) { setFetchError(true); return; }
     setQuestions(qs);
     setCurrentIdx(0);
     setAnswers([]);
@@ -89,10 +117,31 @@ export default function TriviaClient() {
     setAnswers((prev) => [...prev, { question: q, selected: idx, correct }]);
   };
 
+  const handleSearchSelect = (playerName: string) => {
+    if (selected !== null) return;
+    const q = questions[currentIdx];
+    const idx = q.options.indexOf(playerName);
+    const answerIdx = idx === -1 ? -1 : idx;
+    setSelected(answerIdx === -1 ? 999 : answerIdx);
+    const correct = playerName === q.options[q.answer_index];
+    setAnswers((prev) => [...prev, { question: q, selected: answerIdx === -1 ? 999 : answerIdx, correct }]);
+    setSearchQuery(playerName);
+    setShowDropdown(false);
+    gtm.triviaHardAnswerSelected({ is_correct: correct, player_name: playerName });
+  };
+
+  const filteredPlayers = searchQuery.trim().length < 2
+    ? []
+    : playerList
+        .filter((n) => n.toLowerCase().includes(searchQuery.toLowerCase()))
+        .slice(0, 10);
+
   const handleNext = () => {
     if (currentIdx + 1 < questions.length) {
       setCurrentIdx((i) => i + 1);
       setSelected(null);
+      setSearchQuery("");
+      setShowDropdown(false);
     } else {
       setMode("result");
       saveResults();
@@ -124,7 +173,7 @@ export default function TriviaClient() {
   const shareToX = () => {
     const score = answers.filter((a) => a.correct).length;
     const emoji = score === answers.length ? "🔥" : score >= answers.length / 2 ? "💪" : "📚";
-    const text = `${emoji} NBA Trivia Challenge: ${score}/${answers.length} correct!\nTest your NBA knowledge at #NBATeamCraft`;
+    const text = `${emoji} Trivia Challenge: ${score}/${answers.length} correct!\nTest your NBA knowledge at #NBATeamCraft`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -132,37 +181,33 @@ export default function TriviaClient() {
 
   if (mode === "menu") {
     return (
-      <div className="space-y-6">
-        {/* Daily Challenge */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xl">📅</span>
-            <h2 className="font-display text-base font-black text-white">Daily Challenge</h2>
-            <span className="ml-auto text-xs bg-orange-500/20 text-orange-400 font-bold px-2 py-0.5 rounded-full">3 Questions</span>
-          </div>
-          <p className="text-xs text-zinc-500 mb-4">Today&apos;s questions — results saved to your profile.</p>
-
-          <div className="mb-4 space-y-2">
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Difficulty</p>
+      <div className="space-y-5">
+        {/* Shared filters */}
+        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
+          <div>
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Difficulty</p>
             <div className="flex gap-2">
-              {(["all", "easy", "hard"] as Difficulty[]).map((d) => (
+              {(["normal", "hard"] as Difficulty[]).map((d) => (
                 <button
                   key={d}
                   onClick={() => setDifficulty(d)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
                     difficulty === d ? "bg-orange-500 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
                   }`}
                 >
-                  {d === "all" ? "Mix" : d.charAt(0).toUpperCase() + d.slice(1)}
+                  {d === "normal" ? "🟢" : "🔴"} {d === "normal" ? "Normal" : "Hard"}
                 </button>
               ))}
             </div>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Category</p>
             <div className="flex gap-2">
               {(["mix", "stats", "career"] as QuestionType[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setQuestionType(t)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-colors ${
                     questionType === t ? "bg-sky-600 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
                   }`}
                 >
@@ -171,34 +216,36 @@ export default function TriviaClient() {
               ))}
             </div>
           </div>
+        </div>
 
+        {/* Start buttons */}
+        <div className="space-y-3">
           <button
             onClick={() => startGame("daily")}
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white font-black text-base transition-colors"
+            className="w-full py-4 rounded-2xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 disabled:opacity-50 text-white font-black text-lg tracking-tight transition-colors"
           >
-            {loading ? "Loading..." : "Start Daily Challenge →"}
+            {loading ? "Loading..." : "📅 Start Daily Challenge →"}
           </button>
-          {!user && (
-            <p className="text-xs text-zinc-600 text-center mt-2">Log in to save your score to your profile</p>
-          )}
-        </div>
-
-        {/* Practice Mode */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xl">🏋️</span>
-            <h2 className="font-display text-base font-black text-white">Practice Mode</h2>
-            <span className="ml-auto text-xs bg-zinc-700 text-zinc-400 font-bold px-2 py-0.5 rounded-full">Unlimited</span>
+          <div className="flex items-center gap-3 px-1">
+            <span className="text-xs text-zinc-600">3 questions · score saved to profile</span>
+            {!user && <span className="text-xs text-zinc-600 ml-auto">Login to save</span>}
           </div>
-          <p className="text-xs text-zinc-500 mb-4">Unlimited questions — no score tracking, just learning.</p>
+
           <button
             onClick={() => startGame("practice")}
             disabled={loading}
-            className="w-full py-3 rounded-xl border border-zinc-700 hover:border-zinc-500 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-sm transition-colors"
+            className="w-full py-4 rounded-2xl border border-zinc-700 hover:border-zinc-500 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-black text-lg tracking-tight transition-colors"
           >
-            {loading ? "Loading..." : "Start Practice →"}
+            {loading ? "Loading..." : "🏋️ Start Practice →"}
           </button>
+          <p className="text-xs text-zinc-600 px-1">Unlimited questions · no score tracking</p>
+
+          {fetchError && (
+            <p className="text-xs text-red-400 text-center px-1">
+              No questions found. Please make sure the trivia database has been set up.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -224,7 +271,7 @@ export default function TriviaClient() {
           <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
             q.difficulty === "easy" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
           }`}>
-            {q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)}
+            {q.difficulty === "easy" ? "Normal" : "Hard"}
           </span>
           <span className="text-xs text-zinc-600 capitalize">{q.type}</span>
         </div>
@@ -234,39 +281,112 @@ export default function TriviaClient() {
           <p className="text-white font-bold text-base leading-snug">{q.question}</p>
         </div>
 
-        {/* Options */}
-        <div className="space-y-2">
-          {q.options.map((option, i) => {
-            let cls = "w-full text-left px-4 py-3.5 rounded-xl border font-medium text-sm transition-colors ";
-            if (!isAnswered) {
-              cls += "border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800";
-            } else if (i === q.answer_index) {
-              cls += "border-green-500 bg-green-500/10 text-green-400";
-            } else if (i === selected) {
-              cls += "border-red-500 bg-red-500/10 text-red-400";
-            } else {
-              cls += "border-zinc-800 bg-zinc-900/50 text-zinc-600";
-            }
-            return (
-              <button key={i} onClick={() => handleSelect(i)} disabled={isAnswered} className={cls}>
-                <span className="font-bold mr-2 text-zinc-500">{["A", "B", "C", "D"][i]}.</span>
-                {option}
-              </button>
-            );
-          })}
-        </div>
+        {/* Options — Easy: 4-choice buttons / Hard: player search */}
+        {q.difficulty === "easy" ? (
+          <div className="space-y-2">
+            {q.options.map((option, i) => {
+              let cls = "w-full text-left px-4 py-3.5 rounded-xl border font-medium text-sm transition-colors ";
+              if (!isAnswered) {
+                cls += "border-zinc-700 bg-zinc-900 text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800";
+              } else if (i === q.answer_index) {
+                cls += "border-green-500 bg-green-500/10 text-green-400";
+              } else if (i === selected) {
+                cls += "border-red-500 bg-red-500/10 text-red-400";
+              } else {
+                cls += "border-zinc-800 bg-zinc-900/50 text-zinc-600";
+              }
+              return (
+                <button key={i} onClick={() => handleSelect(i)} disabled={isAnswered} className={cls}>
+                  <span className="font-bold mr-2 text-zinc-500">{["A", "B", "C", "D"][i]}.</span>
+                  {option}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          /* Hard mode: player name search */
+          <div className="space-y-3">
+            <div ref={searchRef} className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchQuery(val);
+                  setShowDropdown(true);
+                  if (searchGtmTimer.current) clearTimeout(searchGtmTimer.current);
+                  searchGtmTimer.current = setTimeout(() => {
+                    if (val.trim().length >= 2) {
+                      const count = playerList.filter((n) => n.toLowerCase().includes(val.toLowerCase())).length;
+                      gtm.triviaHardSearch({ query: val, results_count: Math.min(count, 10) });
+                    }
+                  }, 500);
+                }}
+                onFocus={() => setShowDropdown(true)}
+                disabled={isAnswered}
+                placeholder="Type a player name..."
+                autoComplete="off"
+                className="w-full px-4 py-3.5 rounded-xl border border-zinc-700 bg-zinc-900 text-white placeholder-zinc-600 text-sm font-medium focus:outline-none focus:border-sky-500 disabled:opacity-60 transition-colors"
+              />
+              {searchQuery && !isAnswered && (
+                <button
+                  onClick={() => { setSearchQuery(""); setShowDropdown(false); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-lg"
+                >×</button>
+              )}
+              {showDropdown && filteredPlayers.length > 0 && !isAnswered && (
+                <ul className="absolute z-20 w-full mt-1 bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden shadow-xl">
+                  {filteredPlayers.map((name) => (
+                    <li key={name}>
+                      <button
+                        onMouseDown={(e) => { e.preventDefault(); handleSearchSelect(name); }}
+                        className="w-full text-left px-4 py-2.5 text-sm text-zinc-200 hover:bg-zinc-800 transition-colors"
+                      >
+                        {name}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* After answer: show correct answer reveal */}
+            {isAnswered && (() => {
+              const isCorrect = answers[answers.length - 1]?.correct;
+              const correctName = q.options[q.answer_index];
+              return (
+                <div className={`rounded-xl p-4 border ${isCorrect ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"}`}>
+                  <p className={`text-sm font-bold mb-1 ${isCorrect ? "text-green-400" : "text-red-400"}`}>
+                    {isCorrect ? "✅ Correct!" : `❌ The answer is: ${correctName}`}
+                  </p>
+                </div>
+              );
+            })()}
+
+            {!isAnswered && (
+              <p className="text-xs text-zinc-600 text-center">Type at least 2 characters to search</p>
+            )}
+          </div>
+        )}
 
         {/* Feedback & Next */}
         {isAnswered && (
           <div className="space-y-3">
-            <div className={`rounded-xl p-4 ${selected === q.answer_index ? "bg-green-500/10 border border-green-500/30" : "bg-red-500/10 border border-red-500/30"}`}>
-              <p className={`text-sm font-bold mb-1 ${selected === q.answer_index ? "text-green-400" : "text-red-400"}`}>
-                {selected === q.answer_index ? "✅ Correct!" : "❌ Incorrect"}
-              </p>
-              {q.explanation && (
+            {q.difficulty === "easy" && (
+              <div className={`rounded-xl p-4 ${selected === q.answer_index ? "bg-green-500/10 border border-green-500/30" : "bg-red-500/10 border border-red-500/30"}`}>
+                <p className={`text-sm font-bold mb-1 ${selected === q.answer_index ? "text-green-400" : "text-red-400"}`}>
+                  {selected === q.answer_index ? "✅ Correct!" : "❌ Incorrect"}
+                </p>
+                {q.explanation && (
+                  <p className="text-xs text-zinc-400 leading-relaxed">{q.explanation}</p>
+                )}
+              </div>
+            )}
+            {q.difficulty === "hard" && q.explanation && (
+              <div className="rounded-xl p-4 bg-zinc-800/60 border border-zinc-700">
                 <p className="text-xs text-zinc-400 leading-relaxed">{q.explanation}</p>
-              )}
-            </div>
+              </div>
+            )}
             <button
               onClick={handleNext}
               className="w-full py-3.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-black text-base transition-colors"
@@ -317,7 +437,7 @@ export default function TriviaClient() {
         <div className="space-y-2">
           {answers.map((a, i) => (
             <div key={i} className={`bg-zinc-900 border rounded-xl p-4 ${a.correct ? "border-green-500/20" : "border-red-500/20"}`}>
-              <p className="text-xs text-zinc-500 mb-1">Q{i + 1} · {a.question.difficulty}</p>
+              <p className="text-xs text-zinc-500 mb-1">Q{i + 1} · {a.question.difficulty === "easy" ? "Normal" : "Hard"}</p>
               <p className="text-sm text-white font-medium mb-2">{a.question.question}</p>
               <p className={`text-xs font-bold ${a.correct ? "text-green-400" : "text-red-400"}`}>
                 {a.correct ? "✅" : "❌"} {a.question.options[a.question.answer_index]}

@@ -10,7 +10,7 @@ export default async function LatestTeams() {
     <div className="w-full max-w-md mx-auto">
       <div className="flex items-center justify-between mb-3">
         <p className="font-display text-xs font-bold text-zinc-400 uppercase tracking-[0.2em]">
-          🏀 Latest Teams
+          🏀 Latest Dream Teams
         </p>
         <Link href="/feed?tab=dream" className="text-xs text-orange-400 hover:text-orange-300 font-bold transition-colors">
           View All →
