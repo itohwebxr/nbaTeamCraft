@@ -15,7 +15,7 @@ type Question = {
 
 type Mode = "menu" | "playing" | "result";
 type GameMode = "daily" | "practice";
-type Difficulty = "easy" | "hard" | "all";
+type Difficulty = "easy" | "hard";
 type QuestionType = "stats" | "career" | "mix";
 
 type Answer = {
@@ -28,7 +28,7 @@ export default function TriviaClient() {
   const { user } = useAuth();
   const [mode, setMode] = useState<Mode>("menu");
   const [gameMode, setGameMode] = useState<GameMode>("daily");
-  const [difficulty, setDifficulty] = useState<Difficulty>("all");
+  const [difficulty, setDifficulty] = useState<Difficulty>("easy");
   const [questionType, setQuestionType] = useState<QuestionType>("mix");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -55,10 +55,8 @@ export default function TriviaClient() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ mode: gm, limit: "3", date: today });
-      if (gm === "practice") {
-        if (diff !== "all") params.set("difficulty", diff);
-        if (qt !== "mix") params.set("type", qt);
-      }
+      params.set("difficulty", diff);
+      if (qt !== "mix") params.set("type", qt);
       const res = await fetch(`/api/trivia/questions?${params}`);
       const data = await res.json();
       return (data.questions ?? []) as Question[];
@@ -142,33 +140,38 @@ export default function TriviaClient() {
           </div>
           <p className="text-xs text-zinc-500 mb-4">Today&apos;s questions — results saved to your profile.</p>
 
-          <div className="mb-4 space-y-2">
-            <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Difficulty</p>
-            <div className="flex gap-2">
-              {(["all", "easy", "hard"] as Difficulty[]).map((d) => (
-                <button
-                  key={d}
-                  onClick={() => setDifficulty(d)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
-                    difficulty === d ? "bg-orange-500 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  {d === "all" ? "Mix" : d.charAt(0).toUpperCase() + d.slice(1)}
-                </button>
-              ))}
+          <div className="mb-4 space-y-3">
+            <div>
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Difficulty</p>
+              <div className="flex gap-2">
+                {(["easy", "hard"] as Difficulty[]).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setDifficulty(d)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                      difficulty === d ? "bg-orange-500 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {d === "easy" ? "🟢" : "🔴"} {d.charAt(0).toUpperCase() + d.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-2">
-              {(["mix", "stats", "career"] as QuestionType[]).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setQuestionType(t)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
-                    questionType === t ? "bg-sky-600 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
-                </button>
-              ))}
+            <div>
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Category</p>
+              <div className="flex gap-2">
+                {(["mix", "stats", "career"] as QuestionType[]).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setQuestionType(t)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
+                      questionType === t ? "bg-sky-600 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -192,6 +195,40 @@ export default function TriviaClient() {
             <span className="ml-auto text-xs bg-zinc-700 text-zinc-400 font-bold px-2 py-0.5 rounded-full">Unlimited</span>
           </div>
           <p className="text-xs text-zinc-500 mb-4">Unlimited questions — no score tracking, just learning.</p>
+          <div className="mb-4 space-y-3">
+            <div>
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Difficulty</p>
+              <div className="flex gap-2">
+                {(["easy", "hard"] as Difficulty[]).map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => setDifficulty(d)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5 ${
+                      difficulty === d ? "bg-orange-500 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {d === "easy" ? "🟢" : "🔴"} {d.charAt(0).toUpperCase() + d.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">Category</p>
+              <div className="flex gap-2">
+                {(["mix", "stats", "career"] as QuestionType[]).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setQuestionType(t)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-bold transition-colors ${
+                      questionType === t ? "bg-sky-600 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
           <button
             onClick={() => startGame("practice")}
             disabled={loading}
