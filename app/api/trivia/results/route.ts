@@ -55,10 +55,12 @@ export async function GET(req: NextRequest) {
     const all = data ?? [];
     const total = all.length;
     const correct = all.filter((r) => r.is_correct).length;
+    const today = new Date().toISOString().slice(0, 10);
+    const dailyDoneToday = all.some((r) => r.mode === "daily" && r.date === today);
     const dailyDates = [...new Set(all.filter((r) => r.mode === "daily" && r.date).map((r) => r.date))].sort();
     const streak = calcStreak(dailyDates);
 
-    return NextResponse.json({ stats: { total, correct, streak } });
+    return NextResponse.json({ stats: { total, correct, streak, dailyDoneToday } });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ stats: null });
