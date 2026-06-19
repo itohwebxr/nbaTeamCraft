@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 
 const TriviaClient = dynamic(() => import("@/app/trivia/TriviaClient"), { ssr: false });
 const TriviaFeed = dynamic(() => import("@/components/trivia/TriviaFeed"), { ssr: false });
+const SimFeed = dynamic(() => import("@/components/sim/SimFeed"), { ssr: false });
 
 type MainTab = "craft" | "simulate" | "trivia";
 type FeedTab = "crafted" | "dream";
@@ -163,6 +164,8 @@ export default function HomeTabs({
             </div>
             <span className="ml-auto text-sky-400 font-bold text-sm group-hover:translate-x-1 transition-transform">→</span>
           </a>
+
+          <SimFeed />
         </div>
       )}
 
