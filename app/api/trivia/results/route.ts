@@ -53,11 +53,12 @@ export async function GET(req: NextRequest) {
       .eq("user_id", userId);
 
     const all = data ?? [];
-    const total = all.length;
-    const correct = all.filter((r) => r.is_correct).length;
+    const daily = all.filter((r) => r.mode === "daily");
+    const total = daily.length;
+    const correct = daily.filter((r) => r.is_correct).length;
     const today = new Date().toISOString().slice(0, 10);
-    const dailyDoneToday = all.some((r) => r.mode === "daily" && r.date === today);
-    const dailyDates = [...new Set(all.filter((r) => r.mode === "daily" && r.date).map((r) => r.date))].sort();
+    const dailyDoneToday = daily.some((r) => r.date === today);
+    const dailyDates = [...new Set(daily.filter((r) => r.date).map((r) => r.date))].sort();
     const streak = calcStreak(dailyDates);
 
     return NextResponse.json({ stats: { total, correct, streak, dailyDoneToday } });
