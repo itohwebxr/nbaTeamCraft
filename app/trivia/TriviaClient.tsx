@@ -95,7 +95,7 @@ export default function TriviaClient() {
   const fetchQuestions = useCallback(async (gm: GameMode, diff: Difficulty, qt: QuestionType) => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ mode: gm, limit: "3", date: today });
+      const params = new URLSearchParams({ mode: gm, limit: "5", date: today });
       params.set("difficulty", diff === "normal" ? "easy" : diff);
       if (qt !== "mix") params.set("type", qt);
       const res = await fetch(`/api/trivia/questions?${params}`);
