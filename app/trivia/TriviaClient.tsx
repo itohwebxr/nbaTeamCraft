@@ -39,6 +39,7 @@ export default function TriviaClient() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [todayDone, setTodayDone] = useState(false);
+  const [fetchError, setFetchError] = useState(false);
   // Hard mode: player search
   const [playerList, setPlayerList] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -96,9 +97,10 @@ export default function TriviaClient() {
   }, [today]);
 
   const startGame = async (gm: GameMode) => {
+    setFetchError(false);
     setGameMode(gm);
     const qs = await fetchQuestions(gm, difficulty, questionType);
-    if (!qs.length) return;
+    if (!qs.length) { setFetchError(true); return; }
     setQuestions(qs);
     setCurrentIdx(0);
     setAnswers([]);
@@ -236,6 +238,12 @@ export default function TriviaClient() {
             {loading ? "Loading..." : "🏋️ Start Practice →"}
           </button>
           <p className="text-xs text-zinc-600 px-1">Unlimited questions · no score tracking</p>
+
+          {fetchError && (
+            <p className="text-xs text-red-400 text-center px-1">
+              No questions found. Please make sure the trivia database has been set up.
+            </p>
+          )}
         </div>
       </div>
     );
