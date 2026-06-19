@@ -179,6 +179,41 @@ export async function GET(req: NextRequest) {
     // Fall through to default card if the share can't be loaded.
   }
 
+  // Trivia result OG
+  if (p.get("mode") === "trivia") {
+    const score = parseInt(p.get("score") ?? "0", 10);
+    const total = parseInt(p.get("total") ?? "5", 10);
+    const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+    const gmode = p.get("gmode") === "daily" ? "Daily Challenge" : "Practice";
+    const diff = p.get("diff") === "hard" ? "Hard" : "Normal";
+    const emoji = score === total ? "🔥" : score >= total * 0.6 ? "💪" : "📚";
+    const perfLabel = score === total ? "PERFECT!" : score >= total * 0.6 ? "NICE WORK!" : "KEEP STUDYING!";
+    const perfColor = score === total ? "#f59e0b" : score >= total * 0.6 ? "#22c55e" : "#3b82f6";
+
+    return new ImageResponse(
+      (
+        <div style={{ width: "1200px", height: "630px", background: "#09090b", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "56px 64px", fontFamily: "sans-serif", position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+            <span style={{ fontSize: "18px", fontWeight: 900, color: "#71717a", letterSpacing: "0.2em", textTransform: "uppercase", display: "flex" }}>NBA TeamCraft</span>
+            <span style={{ fontSize: "13px", fontWeight: 700, color: "#000", background: "#f97316", padding: "3px 10px", borderRadius: "6px", letterSpacing: "0.08em", textTransform: "uppercase", display: "flex" }}>🧠 Trivia</span>
+            <span style={{ fontSize: "13px", fontWeight: 700, color: "#a1a1aa", background: "#27272a", padding: "3px 10px", borderRadius: "6px", display: "flex" }}>{gmode} · {diff}</span>
+          </div>
+          <div style={{ fontSize: "64px", display: "flex", marginBottom: "8px" }}>{emoji}</div>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "12px", marginBottom: "8px" }}>
+            <span style={{ fontSize: "160px", fontWeight: 900, color: "#f97316", lineHeight: 1, display: "flex" }}>{score}</span>
+            <span style={{ fontSize: "60px", fontWeight: 900, color: "#3f3f46", display: "flex" }}>/{total}</span>
+          </div>
+          <span style={{ fontSize: "42px", fontWeight: 900, color: perfColor, letterSpacing: "0.08em", display: "flex" }}>{perfLabel}</span>
+          <span style={{ fontSize: "22px", color: "#52525b", marginTop: "8px", display: "flex" }}>{pct}% correct</span>
+          <div style={{ display: "flex", justifyContent: "flex-end", width: "100%", position: "absolute", bottom: "40px", right: "64px" }}>
+            <span style={{ fontSize: "16px", color: "#3f3f46", display: "flex" }}>#NBATeamCraft</span>
+          </div>
+        </div>
+      ),
+      { width: 1200, height: 630, headers: { "Cache-Control": "public, max-age=3600" } }
+    );
+  }
+
   // Matchup result OG — VS scoreboard for the Match Simulator
   if (p.get("mode") === "matchup") {
     const homeName = p.get("home") || "Home";

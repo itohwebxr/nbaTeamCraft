@@ -241,10 +241,12 @@ export default function TriviaClient() {
 
   const shareToX = () => {
     const score = answers.filter((a) => a.correct).length;
-    const emoji = score === answers.length ? "🔥" : score >= answers.length / 2 ? "💪" : "📚";
+    const total = answers.length;
+    const emoji = score === total ? "🔥" : score >= total / 2 ? "💪" : "📚";
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://nbateamcraft.com";
-    const url = `${siteUrl}/trivia`;
-    const text = `${emoji} Trivia Challenge: ${score}/${answers.length} correct!\nTest your NBA knowledge at #NBATeamCraft\n${url}`;
+    const diff = difficulty === "hard" ? "hard" : "normal";
+    const resultUrl = `${siteUrl}/trivia/result?score=${score}&total=${total}&diff=${diff}&gmode=${gameMode}`;
+    const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at #NBATeamCraft\n${resultUrl}`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
   };
 
