@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+export const dynamic = "force-dynamic";
+
 type Props = {
   searchParams: Promise<{ score?: string; total?: string; diff?: string; gmode?: string }>;
 };
