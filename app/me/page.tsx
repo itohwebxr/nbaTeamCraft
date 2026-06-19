@@ -22,10 +22,32 @@ type MyTeam = {
   comment_count?: number;
 };
 
+type TriviaStats = { total: number; correct: number; streak: number };
+
+type NotificationItem = {
+  id: string;
+  type: "like" | "comment";
+  team_id: string | null;
+  team_name: string | null;
+  actor_display_name: string | null;
+  actor_user_id: string | null;
+  is_read: boolean;
+  created_at: string;
+};
+
 const TIER_COLORS: Record<string, string> = {
   S: "text-yellow-400", A: "text-orange-400", B: "text-sky-400",
   C: "text-zinc-400", D: "text-zinc-500",
 };
+
+type MainTab = "craft" | "simulate" | "trivia";
+type CraftTab = "crafted" | "dream";
+
+const MAIN_TABS: { key: MainTab; label: string; emoji: string }[] = [
+  { key: "craft",    label: "Craft",    emoji: "🏗️" },
+  { key: "simulate", label: "Simulate", emoji: "⚔️" },
+  { key: "trivia",   label: "Trivia",   emoji: "🧠" },
+];
 
 export default function MyPage() {
   const router = useRouter();
@@ -38,6 +60,16 @@ export default function MyPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [mainTab, setMainTab] = useState<MainTab>("craft");
+  const [craftTab, setCraftTab] = useState<CraftTab>("crafted");
+
+  const [triviaStats, setTriviaStats] = useState<TriviaStats | null>(null);
+  const [triviaLoading, setTriviaLoading] = useState(false);
+  const [triviaLoaded, setTriviaLoaded] = useState(false);
+
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifLoaded, setNotifLoaded] = useState(false);
+
   useEffect(() => {
     if (!user?.id) return;
     fetch(`/api/notifications?userId=${user.id}`)
@@ -45,7 +77,6 @@ export default function MyPage() {
       .then((data) => {
         setNotifications(data.notifications ?? []);
         setNotifLoaded(true);
-        // Mark all as read
         if ((data.unreadCount ?? 0) > 0) {
           fetch("/api/notifications", {
             method: "POST",
@@ -73,6 +104,16 @@ export default function MyPage() {
       .finally(() => setLoading(false));
   }, [user]);
 
+  useEffect(() => {
+    if (mainTab !== "trivia" || triviaLoaded || !user?.id) return;
+    setTriviaLoading(true);
+    fetch(`/api/trivia/results?userId=${user.id}`)
+      .then((r) => r.json())
+      .then((data) => setTriviaStats(data.stats ?? null))
+      .catch(() => {})
+      .finally(() => { setTriviaLoading(false); setTriviaLoaded(true); });
+  }, [mainTab, triviaLoaded, user?.id]);
+
   const handleDeleteTeam = useCallback(async (teamId: string) => {
     setDeleting(true);
     try {
@@ -91,16 +132,16 @@ export default function MyPage() {
     }
   }, [user]);
 
-  const startNewDraft = () => {
-    resetDraft();
-    setMode("draft");
-    router.push("/draft");
-  };
-
   const startRosterBuilder = () => {
     resetDraft();
     setMode("sandbox");
     gtm.sandboxStart({ team_filter: "Random", season_filter: "Random" });
+    router.push("/draft");
+  };
+
+  const startNewDraft = () => {
+    resetDraft();
+    setMode("draft");
     router.push("/draft");
   };
 
@@ -113,36 +154,6 @@ export default function MyPage() {
   const regularTeams = teams.filter((t) => !t.is_sandbox);
   const sandboxTeams = teams.filter((t) => t.is_sandbox);
 
-  const [activeTab, setActiveTab] = useState<"crafted" | "dream" | "trivia">("crafted");
-
-  type TriviaStats = { total: number; correct: number; streak: number };
-  const [triviaStats, setTriviaStats] = useState<TriviaStats | null>(null);
-  const [triviaLoading, setTriviaLoading] = useState(false);
-  const [triviaLoaded, setTriviaLoaded] = useState(false);
-
-  useEffect(() => {
-    if (activeTab !== "trivia" || triviaLoaded || !user?.id) return;
-    setTriviaLoading(true);
-    fetch(`/api/trivia/results?userId=${user.id}`)
-      .then((r) => r.json())
-      .then((data) => setTriviaStats(data.stats ?? null))
-      .catch(() => {})
-      .finally(() => { setTriviaLoading(false); setTriviaLoaded(true); });
-  }, [activeTab, triviaLoaded, user?.id]);
-
-  type NotificationItem = {
-    id: string;
-    type: "like" | "comment";
-    team_id: string | null;
-    team_name: string | null;
-    actor_display_name: string | null;
-    actor_user_id: string | null;
-    is_read: boolean;
-    created_at: string;
-  };
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [notifLoaded, setNotifLoaded] = useState(false);
-
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
       <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
@@ -150,17 +161,18 @@ export default function MyPage() {
           <Link href="/">
             <Image src="/logo.png?v=2" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
           </Link>
-          {activeTab === "trivia" ? (
+          {mainTab === "craft" && (
+            <button
+              onClick={craftTab === "crafted" ? startRosterBuilder : startNewDraft}
+              className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors"
+            >
+              {craftTab === "crafted" ? "Craft a Team →" : "Dream Draft →"}
+            </button>
+          )}
+          {mainTab === "trivia" && (
             <Link href="/trivia" className="text-xs font-bold text-sky-400 hover:text-sky-300 transition-colors">
               Trivia →
             </Link>
-          ) : (
-            <button
-              onClick={activeTab === "crafted" ? startRosterBuilder : startNewDraft}
-              className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors"
-            >
-              {activeTab === "crafted" ? "Craft a Team →" : "Dream Draft →"}
-            </button>
           )}
         </div>
       </header>
@@ -200,13 +212,13 @@ export default function MyPage() {
             </div>
           ) : (
             <div className="text-center py-2 space-y-2">
-              <p className="text-sm text-zinc-400">You're browsing as a guest.</p>
-              <p className="text-xs text-zinc-600">Your teams below are tied to this browser. Sign in with X to keep them across devices.</p>
+              <p className="text-sm text-zinc-400">You&apos;re browsing as a guest.</p>
+              <p className="text-xs text-zinc-600">Sign in with X to keep your teams across devices.</p>
             </div>
           )}
         </div>
 
-        {/* Notifications — only shown when logged in and there are items */}
+        {/* Notifications */}
         {user && notifLoaded && notifications.length > 0 && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
             <div className="px-4 py-3 border-b border-zinc-800">
@@ -242,147 +254,219 @@ export default function MyPage() {
           </div>
         )}
 
-        {/* Tab bar */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
-          <div className="flex border-b border-zinc-800">
-            {([
-              { key: "crafted", label: "Crafted Teams", count: sandboxTeams.length },
-              { key: "dream",   label: "Dream Teams",   count: regularTeams.length },
-              { key: "trivia",  label: "Trivia",        count: null },
-            ] as const).map(({ key, label, count }) => (
+        {/* Main tabs */}
+        <div className="flex gap-1.5 bg-zinc-900/80 border border-zinc-800 rounded-2xl p-1.5">
+          {MAIN_TABS.map(({ key, label, emoji }) => (
+            <button
+              key={key}
+              onClick={() => setMainTab(key)}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wide transition-colors ${
+                mainTab === key ? "bg-orange-500 text-white" : "text-zinc-500 hover:text-zinc-200"
+              }`}
+            >
+              {emoji} {label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Craft tab ── */}
+        {mainTab === "craft" && (
+          <div className="space-y-3">
+            {/* Craft / Dream sub-tabs */}
+            <div className="flex gap-1.5 bg-zinc-900/60 border border-zinc-800 rounded-xl p-1">
               <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`flex-1 py-3 text-[11px] font-bold uppercase tracking-widest transition-colors ${
-                  activeTab === key
-                    ? "text-white border-b-2 border-orange-500 -mb-px"
-                    : "text-zinc-500 hover:text-zinc-300"
+                onClick={() => setCraftTab("crafted")}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                  craftTab === "crafted" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"
                 }`}
               >
-                {label}
-                {count !== null && count > 0 && (
-                  <span className="ml-1 text-[10px] bg-zinc-800 text-zinc-400 rounded-full px-1.5 py-0.5">
-                    {count}
+                🏗️ Crafted Teams
+                {sandboxTeams.length > 0 && (
+                  <span className="ml-1 text-[10px] bg-zinc-600 text-zinc-300 rounded-full px-1.5 py-0.5">
+                    {sandboxTeams.length}
                   </span>
                 )}
               </button>
-            ))}
+              <button
+                onClick={() => setCraftTab("dream")}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                  craftTab === "dream" ? "bg-zinc-700 text-white" : "text-zinc-500 hover:text-zinc-300"
+                }`}
+              >
+                🏀 Dream Teams
+                {regularTeams.length > 0 && (
+                  <span className="ml-1 text-[10px] bg-zinc-600 text-zinc-300 rounded-full px-1.5 py-0.5">
+                    {regularTeams.length}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Crafted Teams list */}
+            {craftTab === "crafted" && (
+              loading ? (
+                <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
+              ) : sandboxTeams.length === 0 ? (
+                <div className="text-center py-8 px-4 space-y-3 bg-zinc-900 border border-zinc-800 rounded-2xl">
+                  <p className="text-2xl">🏗️</p>
+                  <p className="text-sm text-zinc-500">No crafted teams yet.</p>
+                  <button
+                    onClick={startRosterBuilder}
+                    className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+                  >
+                    Craft a Team →
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                  {sandboxTeams.map((t) => (
+                    <div key={t.id} className="group flex items-center gap-2 px-4 py-3 border-b border-zinc-800 last:border-0">
+                      <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
+                          {t.overall}
+                        </span>
+                        <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
+                        <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
+                      </Link>
+                      {(t.comment_count ?? 0) > 0 && (
+                        <span className="text-xs text-zinc-600 shrink-0">💬 {t.comment_count}</span>
+                      )}
+                      <button
+                        onClick={() => setConfirmDeleteId(t.id)}
+                        className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
+                        title="Delete team"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+
+            {/* Dream Teams list */}
+            {craftTab === "dream" && (
+              loading ? (
+                <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
+              ) : regularTeams.length === 0 ? (
+                <div className="text-center py-8 px-4 space-y-3 bg-zinc-900 border border-zinc-800 rounded-2xl">
+                  <p className="text-2xl">🏀</p>
+                  <p className="text-sm text-zinc-500">No Dream Teams yet.</p>
+                  <button
+                    onClick={startNewDraft}
+                    className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+                  >
+                    Start Drafting →
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                  {regularTeams.map((t) => (
+                    <div key={t.id} className="group flex items-center gap-2 px-4 py-3 border-b border-zinc-800 last:border-0">
+                      <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
+                        <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
+                          {t.overall}
+                        </span>
+                        <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
+                        <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
+                      </Link>
+                      {(t.comment_count ?? 0) > 0 && (
+                        <span className="text-xs text-zinc-600 shrink-0">💬 {t.comment_count}</span>
+                      )}
+                      <span className="text-xs text-zinc-600 shrink-0">❤️ {t.like_count}</span>
+                      <button
+                        onClick={() => setConfirmDeleteId(t.id)}
+                        className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
+                        title="Delete team"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
           </div>
+        )}
 
-          {/* Crafted Teams */}
-          {activeTab === "crafted" && (
-            loading ? (
-              <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
-            ) : sandboxTeams.length === 0 ? (
-              <div className="text-center py-8 px-4 space-y-3">
-                <p className="text-2xl">🏗️</p>
-                <p className="text-sm text-zinc-500">No crafted teams yet.</p>
-                <button
-                  onClick={startRosterBuilder}
-                  className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
-                >
-                  Craft a Team →
-                </button>
+        {/* ── Simulate tab ── */}
+        {mainTab === "simulate" && (
+          <div className="space-y-3">
+            <p className="text-zinc-400 text-sm text-left leading-relaxed">
+              Pick your teams and run the numbers —<br />
+              <span className="text-orange-400 font-bold">see who really wins.</span>
+            </p>
+            <a
+              href="/matchup"
+              className="flex items-center gap-4 w-full py-4 px-5 rounded-2xl
+                bg-gradient-to-r from-orange-500/15 to-zinc-900 border border-orange-500/30
+                hover:border-orange-500/60 transition-colors group"
+            >
+              <span className="text-3xl">⚔️</span>
+              <div className="text-left">
+                <p className="font-black text-white text-base leading-tight">Match Simulator</p>
+                <p className="text-xs text-zinc-400 mt-0.5">1v1 · single game or 7-game series</p>
               </div>
-            ) : (
-              <div className="divide-y divide-zinc-800">
-                {sandboxTeams.map((t) => (
-                  <div key={t.id} className="group flex items-center gap-2 px-4 py-3">
-                    <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
-                        {t.overall}
-                      </span>
-                      <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
-                      <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
-                    </Link>
-                    {(t.comment_count ?? 0) > 0 && (
-                      <span className="text-xs text-zinc-600 shrink-0">💬 {t.comment_count}</span>
-                    )}
-                    <button
-                      onClick={() => setConfirmDeleteId(t.id)}
-                      className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
-                      title="Delete team"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+              <span className="ml-auto text-orange-400 font-bold text-sm group-hover:translate-x-1 transition-transform">→</span>
+            </a>
+            <a
+              href="/playoffs"
+              className="flex items-center gap-4 w-full py-4 px-5 rounded-2xl
+                bg-gradient-to-r from-yellow-500/10 to-zinc-900 border border-yellow-500/20
+                hover:border-yellow-500/40 transition-colors group"
+            >
+              <span className="text-3xl">🏆</span>
+              <div className="text-left">
+                <p className="font-black text-white text-base leading-tight">Playoff Simulator</p>
+                <p className="text-xs text-zinc-400 mt-0.5">4 / 8 / 16 teams · full bracket</p>
               </div>
-            )
-          )}
+              <span className="ml-auto text-yellow-400 font-bold text-sm group-hover:translate-x-1 transition-transform">→</span>
+            </a>
+            <a
+              href="/season"
+              className="flex items-center gap-4 w-full py-4 px-5 rounded-2xl
+                bg-gradient-to-r from-sky-500/10 to-zinc-900 border border-sky-500/20
+                hover:border-sky-500/40 transition-colors group"
+            >
+              <span className="text-3xl">📅</span>
+              <div className="text-left">
+                <p className="font-black text-white text-base leading-tight">Season Simulator</p>
+                <p className="text-xs text-zinc-400 mt-0.5">82-game schedule · W-L record & grade</p>
+              </div>
+              <span className="ml-auto text-sky-400 font-bold text-sm group-hover:translate-x-1 transition-transform">→</span>
+            </a>
+          </div>
+        )}
 
-          {/* Dream Teams */}
-          {activeTab === "dream" && (
-            loading ? (
-              <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
-            ) : regularTeams.length === 0 ? (
-              <div className="text-center py-8 px-4 space-y-3">
-                <p className="text-2xl">🏀</p>
-                <p className="text-sm text-zinc-500">No Dream Teams yet.</p>
-                <button
-                  onClick={startNewDraft}
-                  className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
-                >
-                  Start Drafting →
-                </button>
-              </div>
-            ) : (
-              <div className="divide-y divide-zinc-800">
-                {regularTeams.map((t) => (
-                  <div key={t.id} className="group flex items-center gap-2 px-4 py-3">
-                    <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
-                      <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
-                        {t.overall}
-                      </span>
-                      <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
-                      <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
-                    </Link>
-                    {(t.comment_count ?? 0) > 0 && (
-                      <span className="text-xs text-zinc-600 shrink-0">💬 {t.comment_count}</span>
-                    )}
-                    <span className="text-xs text-zinc-600 shrink-0">❤️ {t.like_count}</span>
-                    <button
-                      onClick={() => setConfirmDeleteId(t.id)}
-                      className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
-                      title="Delete team"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-
-          {/* Trivia */}
-          {activeTab === "trivia" && (
-            !user ? (
-              <div className="text-center py-8 px-4 space-y-3">
-                <p className="text-2xl">🧠</p>
-                <p className="text-sm text-zinc-500">Log in to track your Trivia stats.</p>
-                <a
-                  href="/auth/login"
-                  className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
-                >
-                  Log in with X →
-                </a>
-              </div>
-            ) : triviaLoading ? (
-              <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
-            ) : !triviaStats || triviaStats.total === 0 ? (
-              <div className="text-center py-8 px-4 space-y-3">
-                <p className="text-2xl">🧠</p>
-                <p className="text-sm text-zinc-500">No Trivia results yet.</p>
-                <Link
-                  href="/trivia"
-                  className="inline-flex px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm transition-colors"
-                >
-                  Start Trivia →
-                </Link>
-              </div>
-            ) : (
-              <div className="p-5 space-y-4">
-                {/* Stats grid */}
+        {/* ── Trivia tab ── */}
+        {mainTab === "trivia" && (
+          !user ? (
+            <div className="text-center py-10 px-4 space-y-3 bg-zinc-900 border border-zinc-800 rounded-2xl">
+              <p className="text-2xl">🧠</p>
+              <p className="text-sm text-zinc-500">Log in to track your Trivia stats.</p>
+              <a
+                href="/auth/login"
+                className="inline-flex px-5 py-2.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+              >
+                Log in with X →
+              </a>
+            </div>
+          ) : triviaLoading ? (
+            <div className="h-20 flex items-center justify-center text-zinc-600 text-sm">Loading...</div>
+          ) : !triviaStats || triviaStats.total === 0 ? (
+            <div className="text-center py-10 px-4 space-y-3 bg-zinc-900 border border-zinc-800 rounded-2xl">
+              <p className="text-2xl">🧠</p>
+              <p className="text-sm text-zinc-500">No Trivia results yet.</p>
+              <Link
+                href="/trivia"
+                className="inline-flex px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-sm transition-colors"
+              >
+                Start Trivia →
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-zinc-800 rounded-xl p-3 text-center">
                     <p className="font-display text-2xl font-black text-white">{triviaStats.total}</p>
@@ -399,7 +483,6 @@ export default function MyPage() {
                     <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5">Accuracy</p>
                   </div>
                 </div>
-                {/* Streak */}
                 <div className="bg-zinc-800 rounded-xl p-4 flex items-center gap-4">
                   <span className="text-3xl">🔥</span>
                   <div>
@@ -414,9 +497,9 @@ export default function MyPage() {
                   Play Today&apos;s Challenge →
                 </Link>
               </div>
-            )
-          )}
-        </div>
+            </div>
+          )
+        )}
 
       </div>
 
