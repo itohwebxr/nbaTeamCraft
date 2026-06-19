@@ -140,6 +140,8 @@ export default function TriviaClient() {
     if (currentIdx + 1 < questions.length) {
       setCurrentIdx((i) => i + 1);
       setSelected(null);
+      setSearchQuery("");
+      setShowDropdown(false);
     } else {
       setMode("result");
       saveResults();
