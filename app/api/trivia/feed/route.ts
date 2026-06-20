@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     const supabase = createServerClient();
     const { data, error } = await supabase
       .from("trivia_feed")
-      .select("id, share_id, score, total, gmode, difficulty, display_name, avatar_url, like_count, comment_count, created_at")
+      .select("id, share_id, score, total, gmode, difficulty, display_name, avatar_url, like_count, comment_count, questions_preview, created_at")
       .order("created_at", { ascending: false })
       .limit(limit);
 
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { user_id, share_id, score, total, gmode, difficulty, display_name, avatar_url } =
+    const { user_id, share_id, score, total, gmode, difficulty, display_name, avatar_url, questions_preview } =
       await req.json() as {
         user_id?: string;
         share_id: string;
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
         difficulty: string;
         display_name?: string;
         avatar_url?: string;
+        questions_preview?: { q: string; c: boolean }[];
       };
 
     if (!share_id || score == null || total == null) {
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
       difficulty,
       display_name: display_name ?? null,
       avatar_url: avatar_url ?? null,
+      questions_preview: questions_preview ?? null,
     });
 
     if (error) throw error;

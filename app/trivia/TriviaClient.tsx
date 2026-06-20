@@ -247,6 +247,10 @@ export default function TriviaClient() {
 
   const postToTriviaFeed = (shareId: string, score: number, total: number) => {
     setFeedPosting(true);
+    const questions_preview = answers.slice(0, 5).map((a) => ({
+      q: a.question.question,
+      c: a.correct,
+    }));
     fetch("/api/trivia/feed", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -259,6 +263,7 @@ export default function TriviaClient() {
         difficulty,
         display_name: user?.displayName ?? null,
         avatar_url: user?.avatarUrl ?? null,
+        questions_preview,
       }),
     })
       .then(async (res) => {
