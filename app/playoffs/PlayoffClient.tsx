@@ -7,6 +7,7 @@ import type { PlayoffResult, SeriesSummary } from "@/app/api/playoff/simulate/ro
 import { TeamPicker, TeamPick, RANDOM_ID, RANDOM_PICK } from "@/components/sim/TeamPicker";
 import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
 import PostToSimFeedButton from "@/components/sim/PostToSimFeedButton";
+import AppHeader from "@/components/layout/AppHeader";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -229,17 +230,9 @@ function PlayoffResults({
 
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950 overflow-y-auto">
-      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center gap-4">
-          <button
-            onClick={onReset}
-            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="font-display text-sm font-black uppercase tracking-widest">🏆 Playoff Simulator</h1>
-        </div>
-      </header>
+      <AppHeader actions={
+        <button onClick={onReset} className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">← Back</button>
+      } />
       <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
 
         {/* Champion */}
@@ -438,26 +431,20 @@ function PlayoffPlayback({
         @keyframes rd-rise { 0% { transform: translateY(20px); opacity: 0 } 100% { transform: translateY(0); opacity: 1 } }
         .rd-rise { animation: rd-rise .5s cubic-bezier(.2,.7,.2,1) both }
       `}</style>
-      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center gap-4">
-          <button
-            onClick={onReset}
-            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="font-display text-sm font-black uppercase tracking-widest">🏆 Playoff Simulator</h1>
+      <AppHeader actions={
+        <>
+          <button onClick={onReset} className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">← Back</button>
           <button
             onClick={() => {
               gtm.playoffRoundSkip({ round: revealedRounds, size: result.size });
               setDone(true);
             }}
-            className="ml-auto text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
+            className="text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
           >
             Skip ⏭
           </button>
-        </div>
-      </header>
+        </>
+      } />
       <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
 
         {result.rounds.slice(0, revealedRounds).map((round, roundIdx) => {
@@ -604,17 +591,9 @@ export default function PlayoffClient({ initialTeams }: { initialTeams?: import(
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="font-display text-sm font-black uppercase tracking-widest">🏆 Playoff Simulator</h1>
-        </div>
-      </header>
+      <AppHeader actions={
+        <button onClick={() => router.back()} className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">← Back</button>
+      } />
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         <p className="text-center text-sm text-zinc-400">

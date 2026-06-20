@@ -10,6 +10,7 @@ import { createAuthClient } from "@/lib/supabaseAuth";
 import { overallColor } from "@/lib/overallColor";
 import { gtm } from "@/lib/gtm";
 import { useDraftStore } from "@/stores/draftStore";
+import AppHeader from "@/components/layout/AppHeader";
 
 type MyTeam = {
   id: string;
@@ -156,11 +157,8 @@ export default function MyPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <Link href="/">
-            <Image src="/logo.png?v=2" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
-          </Link>
+      <AppHeader actions={
+        <>
           {mainTab === "craft" && (
             <button
               onClick={craftTab === "crafted" ? startRosterBuilder : startNewDraft}
@@ -174,8 +172,8 @@ export default function MyPage() {
               Trivia →
             </Link>
           )}
-        </div>
-      </header>
+        </>
+      } />
 
       <div className="fade-up fade-up-1 max-w-lg mx-auto px-4 py-6 space-y-4">
 

@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { createServerClient } from "@/lib/supabase";
 import UserProfileTabs from "./UserProfileTabs";
+import AppHeader from "@/components/layout/AppHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -31,16 +31,11 @@ export default async function UserProfilePage({
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <Link href="/">
-            <Image src="/logo.png?v=2" alt="NBA TeamCraft" height={32} width={60} className="object-contain" />
-          </Link>
-          <Link href="/me" className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
-            My Page →
-          </Link>
-        </div>
-      </header>
+      <AppHeader actions={
+        <Link href="/me" className="text-xs font-bold text-orange-400 hover:text-orange-300 transition-colors">
+          My Page →
+        </Link>
+      } />
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-4">
         {/* Profile card */}

@@ -8,6 +8,7 @@ import type { SeasonResult } from "@/app/api/season/simulate/route";
 import { TeamPicker, TeamPick, RANDOM_ID } from "@/components/sim/TeamPicker";
 import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
 import PostToSimFeedButton from "@/components/sim/PostToSimFeedButton";
+import AppHeader from "@/components/layout/AppHeader";
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -153,26 +154,16 @@ function SeasonPlayback({
         .sz-fade { animation: sz-fade .6s ease .3s both }
       `}</style>
 
-      {/* Header — Back returns to the picker (same as the TOP screen). */}
-      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center gap-4">
-          <button
-            onClick={onReset}
-            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="font-display text-sm font-black uppercase tracking-widest">📅 Season Simulator</h1>
+      <AppHeader actions={
+        <>
+          <button onClick={onReset} className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">← Back</button>
           {!done && (
-            <button
-              onClick={() => setDone(true)}
-              className="ml-auto text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
-            >
+            <button onClick={() => setDone(true)} className="text-[11px] font-bold text-zinc-500 hover:text-white transition-colors">
               Skip ⏭
             </button>
           )}
-        </div>
-      </header>
+        </>
+      } />
 
       <div className="relative flex flex-col items-center justify-center min-h-[calc(100vh-3.25rem)] px-5 py-8">
         {done && (
@@ -361,17 +352,9 @@ export default function SeasonClient({ initialTeams }: { initialTeams?: import("
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="font-display text-sm font-black uppercase tracking-widest">📅 Season Simulator</h1>
-        </div>
-      </header>
+      <AppHeader actions={
+        <button onClick={() => router.back()} className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">← Back</button>
+      } />
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         <p className="text-center text-sm text-zinc-400">
