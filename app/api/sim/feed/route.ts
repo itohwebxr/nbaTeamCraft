@@ -6,18 +6,19 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const limit = Math.min(Number(req.nextUrl.searchParams.get("limit") ?? 10), 30);
+    const offset = Number(req.nextUrl.searchParams.get("offset") ?? 0);
     const supabase = createServerClient();
     const { data, error } = await supabase
       .from("sim_feed")
       .select("id, kind, share_id, result_url, title, subtitle, display_name, avatar_url, like_count, comment_count, created_at")
       .order("created_at", { ascending: false })
-      .limit(limit);
+      .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    return NextResponse.json({ feed: data ?? [] });
+    return NextResponse.json({ feed: data ?? [], hasMore: (data?.length ?? 0) === limit });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ feed: [] });
+    return NextResponse.json({ feed: [], hasMore: false });
   }
 }
 

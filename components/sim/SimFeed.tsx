@@ -47,9 +47,10 @@ export default function SimFeed() {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest px-0.5">
-        🔥 Recent Simulations
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">⚔️ Recent Simulations</p>
+        <a href="/feed?tab=sim" className="text-xs text-orange-400 hover:text-orange-300 font-bold transition-colors">View All →</a>
+      </div>
       <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl overflow-hidden">
         {feed.map((entry) => (
           <ActivityFeedCard key={entry.id} type="sim" entry={entry} />
