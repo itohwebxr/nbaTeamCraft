@@ -233,4 +233,13 @@ export const gtm = {
     is_correct: boolean;
     player_name: string;
   }) => push({ event: "trivia_hard_answer_selected", ...params }),
+
+  feedTabView: (params: {
+    main_tab: "craft" | "simulate" | "trivia";
+    sub_tab: "builder" | "dream" | null;
+  }) => push({ event: "feed_tab_view", ...params }),
+
+  feedViewAll: (params: {
+    source: "simulate" | "trivia";
+  }) => push({ event: "feed_view_all", ...params }),
 };

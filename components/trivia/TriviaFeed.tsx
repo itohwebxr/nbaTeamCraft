@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import ActivityFeedCard from "@/components/common/ActivityFeedCard";
+import { gtm } from "@/lib/gtm";
 
 type FeedEntry = {
   id: string;
@@ -47,9 +49,18 @@ export default function TriviaFeed() {
 
   return (
     <div className="space-y-2">
-      <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest px-0.5">
-        🏀 Recent Results
-      </p>
+      <div className="flex items-center justify-between px-0.5">
+        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
+          🏀 Recent Results
+        </p>
+        <Link
+          href="/feed?tab=trivia"
+          onClick={() => gtm.feedViewAll({ source: "trivia" })}
+          className="text-xs text-orange-400 hover:text-orange-300 font-bold transition-colors"
+        >
+          View All →
+        </Link>
+      </div>
       <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl overflow-hidden">
         {feed.map((entry) => (
           <ActivityFeedCard key={entry.id} type="trivia" entry={entry} />

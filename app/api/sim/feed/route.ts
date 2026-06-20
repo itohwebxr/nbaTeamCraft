@@ -6,18 +6,26 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const limit = Math.min(Number(req.nextUrl.searchParams.get("limit") ?? 10), 30);
+    const cursor = req.nextUrl.searchParams.get("cursor");
     const supabase = createServerClient();
-    const { data, error } = await supabase
+
+    let query = supabase
       .from("sim_feed")
       .select("id, kind, share_id, result_url, title, subtitle, display_name, avatar_url, like_count, comment_count, created_at")
       .order("created_at", { ascending: false })
       .limit(limit);
 
+    if (cursor) query = query.lt("created_at", cursor);
+
+    const { data, error } = await query;
     if (error) throw error;
-    return NextResponse.json({ feed: data ?? [] });
+
+    const feed = data ?? [];
+    const nextCursor = feed.length === limit ? feed[feed.length - 1].created_at : null;
+    return NextResponse.json({ feed, nextCursor });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ feed: [] });
+    return NextResponse.json({ feed: [], nextCursor: null });
   }
 }
 
