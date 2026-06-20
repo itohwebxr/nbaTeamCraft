@@ -389,6 +389,7 @@ export default function ExhibitionMatch({
                     Share on 𝕏
                   </button>
                 )}
+                {footer}
                 {onNewMatchup ? (
                   // Matchup mode: rematch (same teams) below share, then a
                   // normal-colored "New Matchup" button. No "Back".
@@ -437,7 +438,6 @@ export default function ExhibitionMatch({
                     )}
                   </div>
                 )}
-                {footer}
               </div>
             </div>
           )}
