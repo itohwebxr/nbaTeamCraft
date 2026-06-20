@@ -54,7 +54,8 @@ export async function POST(req: NextRequest) {
     if (error) throw error;
     return NextResponse.json({ posted: true });
   } catch (e) {
-    console.error(e);
-    return NextResponse.json({ error: "Failed to post to sim feed" }, { status: 500 });
+    const msg = e instanceof Error ? e.message : JSON.stringify(e);
+    console.error("sim_feed insert error:", msg);
+    return NextResponse.json({ error: "Failed to post to sim feed", detail: msg }, { status: 500 });
   }
 }

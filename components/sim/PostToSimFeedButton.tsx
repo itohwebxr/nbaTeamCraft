@@ -25,7 +25,8 @@ export default function PostToSimFeedButton({ payload }: { payload: FeedPayload 
       if (res.ok) {
         setState("done");
       } else {
-        console.error("sim feed post failed", res.status, await res.text());
+        const body = await res.json().catch(() => ({})) as { error?: string; detail?: string };
+        console.error("sim feed post failed", res.status, body.detail ?? body.error ?? "");
         setState("idle");
       }
     } catch (e) {
