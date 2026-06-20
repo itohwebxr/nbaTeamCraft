@@ -2,8 +2,8 @@ import { createServerClient } from "@/lib/supabase";
 import AppHeader from "@/components/layout/AppHeader";
 import FeedLikeButton from "@/components/common/FeedLikeButton";
 import FeedComments from "@/components/common/FeedComments";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import SimDetailActions from "./SimDetailActions";
 
 const KIND_EMOJI: Record<string, string> = {
   matchup: "⚔️",
@@ -68,16 +68,6 @@ export default async function SimFeedDetailPage({
               </div>
             </div>
 
-            {/* View result link */}
-            {entry.share_id && (
-              <Link
-                href={`/share/${entry.share_id}`}
-                className="inline-block text-sm font-bold text-orange-400 hover:text-orange-300 transition-colors mb-4"
-              >
-                View Full Result →
-              </Link>
-            )}
-
             {/* Like button */}
             <div className="mt-4">
               <FeedLikeButton
@@ -86,6 +76,14 @@ export default async function SimFeedDetailPage({
                 initialCount={entry.like_count ?? 0}
               />
             </div>
+
+            {/* Share + Simulate actions */}
+            <SimDetailActions
+              title={entry.title}
+              shareId={entry.share_id}
+              resultUrl={entry.result_url}
+              kind={entry.kind}
+            />
           </div>
 
           {/* Comments */}

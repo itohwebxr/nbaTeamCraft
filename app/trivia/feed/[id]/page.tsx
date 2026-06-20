@@ -4,6 +4,7 @@ import FeedLikeButton from "@/components/common/FeedLikeButton";
 import FeedComments from "@/components/common/FeedComments";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import TriviaDetailActions from "./TriviaDetailActions";
 
 export const dynamic = "force-dynamic";
 
@@ -139,13 +140,16 @@ export default async function TriviaFeedDetailPage({
           {/* Comments */}
           <FeedComments feedType="trivia" feedId={entry.id} />
 
-          {/* CTA */}
-          <Link
-            href="/trivia"
-            className="block w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm text-center transition-colors"
-          >
-            Play Trivia →
-          </Link>
+          {/* Actions */}
+          <div className="space-y-3">
+            <TriviaDetailActions score={entry.score} total={entry.total} shareId={entry.share_id} />
+            <Link
+              href="/trivia"
+              className="block w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm text-center transition-colors"
+            >
+              Play Trivia →
+            </Link>
+          </div>
         </div>
       </main>
     </>
