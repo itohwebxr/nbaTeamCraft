@@ -17,13 +17,19 @@ export default function PostToSimFeedButton({ payload }: { payload: FeedPayload 
     if (state !== "idle") return;
     setState("posting");
     try {
-      await fetch("/api/sim/feed", {
+      const res = await fetch("/api/sim/feed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      setState("done");
-    } catch {
+      if (res.ok) {
+        setState("done");
+      } else {
+        console.error("sim feed post failed", res.status, await res.text());
+        setState("idle");
+      }
+    } catch (e) {
+      console.error("sim feed post error", e);
       setState("idle");
     }
   };
