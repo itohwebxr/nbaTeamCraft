@@ -261,8 +261,15 @@ export default function TriviaClient() {
         avatar_url: user?.avatarUrl ?? null,
       }),
     })
-      .then(() => { setFeedPosted(true); })
-      .catch(() => {})
+      .then(async (res) => {
+        if (res.ok) {
+          setFeedPosted(true);
+        } else {
+          const body = await res.text().catch(() => "");
+          console.error("trivia feed post failed", res.status, body);
+        }
+      })
+      .catch((e) => { console.error("trivia feed post error", e); })
       .finally(() => { setFeedPosting(false); });
   };
 
