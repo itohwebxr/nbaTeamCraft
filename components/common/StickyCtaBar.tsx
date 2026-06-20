@@ -24,7 +24,25 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
   const startCraft = useStartCraft();
   const [visible, setVisible] = useState(false);
   const shownFired = useRef(false);
+  const barRef = useRef<HTMLDivElement>(null);
   const primary = PRIMARY[pageType];
+
+  // While the bar is on screen, reserve space at the bottom of the page equal
+  // to the bar's height so it never overlaps the last content (e.g. What's next).
+  useEffect(() => {
+    if (!visible) return;
+    const prev = document.body.style.paddingBottom;
+    const apply = () => {
+      const h = barRef.current?.offsetHeight ?? 0;
+      document.body.style.paddingBottom = `${h + 16}px`;
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      document.body.style.paddingBottom = prev;
+    };
+  }, [visible]);
 
   useEffect(() => {
     const key = `tc_nudge_${pageType}`;
@@ -71,7 +89,7 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
+    <div ref={barRef} className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
       <div className="max-w-lg mx-auto flex items-center gap-2 pointer-events-auto rounded-2xl bg-zinc-900/95 backdrop-blur border border-zinc-700 shadow-2xl shadow-black/50 p-2 pl-4">
         <button
           onClick={handleCta}
