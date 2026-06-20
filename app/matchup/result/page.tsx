@@ -3,7 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { headers } from "next/headers";
 import HeaderAuth from "@/components/auth/HeaderAuth";
-import BuildTeamButton from "@/components/team/BuildTeamButton";
+import WhatsNext from "@/components/common/WhatsNext";
+import StickyCtaBar from "@/components/common/StickyCtaBar";
 
 export const dynamic = "force-dynamic";
 
@@ -194,7 +195,10 @@ export default async function MatchupResultPage({
         >
           ⚔️ Simulate Your Own
         </Link>
-        <BuildTeamButton isSandbox />
+
+        {/* What's next — cross-sell into craft & trivia */}
+        <WhatsNext pageType="sim" />
+
         <Link
           href="/"
           className="block text-center text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
@@ -202,6 +206,8 @@ export default async function MatchupResultPage({
           ← Back to NBA TeamCraft
         </Link>
       </div>
+
+      <StickyCtaBar pageType="sim" />
     </div>
   );
 }

@@ -5,6 +5,9 @@ import FeedComments from "@/components/common/FeedComments";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import TriviaDetailActions from "./TriviaDetailActions";
+import WhatsNext from "@/components/common/WhatsNext";
+import RelatedFeed from "@/components/common/RelatedFeed";
+import StickyCtaBar from "@/components/common/StickyCtaBar";
 
 export const dynamic = "force-dynamic";
 
@@ -150,8 +153,16 @@ export default async function TriviaFeedDetailPage({
               Play Trivia →
             </Link>
           </div>
+
+          {/* Lateral discovery — more results to browse */}
+          <RelatedFeed variant="trivia" excludeId={entry.id} />
+
+          {/* What's next — cross-sell into craft & simulate */}
+          <WhatsNext pageType="trivia" />
         </div>
       </main>
+
+      <StickyCtaBar pageType="trivia" />
     </>
   );
 }

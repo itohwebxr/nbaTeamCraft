@@ -242,4 +242,20 @@ export const gtm = {
   feedViewAll: (params: {
     source: "simulate" | "trivia";
   }) => push({ event: "feed_view_all", ...params }),
+
+  landingNextCta: (params: {
+    page_type: "team" | "sim" | "trivia";
+    target: "craft" | "simulate" | "trivia";
+    placement: "whatsnext" | "sticky" | "related";
+  }) => push({ event: "landing_next_cta", ...params }),
+
+  nudgeShown: (params: {
+    page_type: "team" | "sim" | "trivia";
+    placement: "sticky";
+  }) => push({ event: "nudge_shown", ...params }),
+
+  nudgeDismissed: (params: {
+    page_type: "team" | "sim" | "trivia";
+    placement: "sticky";
+  }) => push({ event: "nudge_dismissed", ...params }),
 };

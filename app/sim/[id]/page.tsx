@@ -4,6 +4,9 @@ import FeedLikeButton from "@/components/common/FeedLikeButton";
 import FeedComments from "@/components/common/FeedComments";
 import { notFound } from "next/navigation";
 import SimDetailActions from "./SimDetailActions";
+import WhatsNext from "@/components/common/WhatsNext";
+import RelatedFeed from "@/components/common/RelatedFeed";
+import StickyCtaBar from "@/components/common/StickyCtaBar";
 
 const KIND_EMOJI: Record<string, string> = {
   matchup: "⚔️",
@@ -88,8 +91,16 @@ export default async function SimFeedDetailPage({
 
           {/* Comments */}
           <FeedComments feedType="sim" feedId={entry.id} />
+
+          {/* Lateral discovery — more simulations to browse */}
+          <RelatedFeed variant="sim" excludeId={entry.id} />
+
+          {/* What's next — cross-sell into craft & trivia */}
+          <WhatsNext pageType="sim" />
         </div>
       </main>
+
+      <StickyCtaBar pageType="sim" />
     </>
   );
 }

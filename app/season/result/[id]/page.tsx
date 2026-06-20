@@ -5,6 +5,8 @@ import { headers } from "next/headers";
 import { createServerClient } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import type { SeasonShareData } from "@/app/api/season/share/route";
+import WhatsNext from "@/components/common/WhatsNext";
+import StickyCtaBar from "@/components/common/StickyCtaBar";
 
 export const dynamic = "force-dynamic";
 
@@ -98,6 +100,10 @@ export default async function SeasonResultPage({
         >
           📅 Simulate Your Season
         </Link>
+
+        {/* What's next — cross-sell into craft & trivia */}
+        <WhatsNext pageType="sim" />
+
         <Link
           href="/"
           className="block text-center text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
@@ -105,6 +111,8 @@ export default async function SeasonResultPage({
           ← Back to NBA TeamCraft
         </Link>
       </div>
+
+      <StickyCtaBar pageType="sim" />
     </div>
   );
 }
