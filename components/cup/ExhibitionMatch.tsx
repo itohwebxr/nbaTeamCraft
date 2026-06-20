@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { GameResult, BoxScoreLine } from "@/lib/simulateGame";
+import AppHeader from "@/components/layout/AppHeader";
 
 interface OpponentInfo {
   id: string;
@@ -191,19 +192,11 @@ export default function ExhibitionMatch({
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950/97 backdrop-blur-sm overflow-y-auto">
       {phase === "final" && won && <Confetti />}
-      {onBack && (
-        <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-          <div className="max-w-lg mx-auto flex items-center gap-4">
-            <button
-              onClick={onBack}
-              className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-            >
-              ← Back
-            </button>
-            <h1 className="font-display text-sm font-black uppercase tracking-widest">{navTitle}</h1>
-          </div>
-        </header>
-      )}
+      <AppHeader actions={
+        onBack ? (
+          <button onClick={onBack} className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">← Back</button>
+        ) : undefined
+      } />
       <div className="min-h-full flex flex-col items-center justify-center px-4 py-8">
         <div className="w-full max-w-lg">
           {/* VS header — always visible */}

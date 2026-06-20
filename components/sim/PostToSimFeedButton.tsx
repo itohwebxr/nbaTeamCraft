@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 type FeedPayload = {
   kind: "matchup" | "playoff" | "season";
@@ -11,19 +12,32 @@ type FeedPayload = {
 };
 
 export default function PostToSimFeedButton({ payload }: { payload: FeedPayload }) {
+  const { user } = useAuth();
   const [state, setState] = useState<"idle" | "posting" | "done">("idle");
 
   const post = async () => {
     if (state !== "idle") return;
     setState("posting");
     try {
-      await fetch("/api/sim/feed", {
+      const res = await fetch("/api/sim/feed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          ...payload,
+          user_id: user?.id ?? null,
+          display_name: user?.displayName ?? null,
+          avatar_url: user?.avatarUrl ?? null,
+        }),
       });
-      setState("done");
-    } catch {
+      if (res.ok) {
+        setState("done");
+      } else {
+        const body = await res.json().catch(() => ({})) as { error?: string; detail?: string };
+        console.error("sim feed post failed", res.status, body.detail ?? body.error ?? "");
+        setState("idle");
+      }
+    } catch (e) {
+      console.error("sim feed post error", e);
       setState("idle");
     }
   };

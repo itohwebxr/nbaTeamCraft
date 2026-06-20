@@ -261,8 +261,15 @@ export default function TriviaClient() {
         avatar_url: user?.avatarUrl ?? null,
       }),
     })
-      .then(() => { setFeedPosted(true); })
-      .catch(() => {})
+      .then(async (res) => {
+        if (res.ok) {
+          setFeedPosted(true);
+        } else {
+          const body = await res.text().catch(() => "");
+          console.error("trivia feed post failed", res.status, body);
+        }
+      })
+      .catch((e) => { console.error("trivia feed post error", e); })
       .finally(() => { setFeedPosting(false); });
   };
 
@@ -704,9 +711,9 @@ export default function TriviaClient() {
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
               }
             }}
-            className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 active:bg-orange-600 text-white font-bold text-sm transition-colors"
           >
-            <span>𝕏</span> Share on 𝕏
+            Share on 𝕏
           </button>
           <button
             onClick={async () => {
