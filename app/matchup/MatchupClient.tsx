@@ -676,9 +676,9 @@ export default function MatchupClient({ initialTeams }: { initialTeams?: import(
                 onPosted={() => router.push(`/team/${singleSourceId}`)}
               />
             )}
-            <BuildOwnTeamCTA />
           </>
         }
+        bottomCta={<BuildOwnTeamCTA />}
       />
     );
   }
