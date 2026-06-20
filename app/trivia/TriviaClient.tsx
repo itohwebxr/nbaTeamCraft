@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { gtm } from "@/lib/gtm";
 
@@ -31,8 +32,10 @@ type Answer = {
 
 export default function TriviaClient() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("menu");
-  const [gameMode, setGameMode] = useState<GameMode>("daily");
+  const initialGameMode = searchParams.get("mode") === "practice" ? "practice" : "daily";
+  const [gameMode, setGameMode] = useState<GameMode>(initialGameMode);
   const [difficulty, setDifficulty] = useState<Difficulty>("normal");
   const [questionType, setQuestionType] = useState<QuestionType>("mix");
   const [questions, setQuestions] = useState<Question[]>([]);
