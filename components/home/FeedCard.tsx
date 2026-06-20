@@ -25,7 +25,13 @@ function timeAgo(iso: string): string {
 }
 
 
-export default function FeedCard({ team }: { team: HomeTeam }) {
+export default function FeedCard({
+  team,
+  onDelete,
+}: {
+  team: HomeTeam;
+  onDelete?: () => void;
+}) {
   const starters = team.roster_json.slice(0, 5);
 
   return (
@@ -88,6 +94,15 @@ export default function FeedCard({ team }: { team: HomeTeam }) {
           <span className="text-xs text-zinc-500 flex items-center gap-1">
             <span>💬</span>{team.comment_count}
           </span>
+        )}
+        {onDelete && (
+          <button
+            onClick={onDelete}
+            className="ml-auto shrink-0 text-zinc-600 hover:text-red-400 text-lg leading-none transition-colors"
+            title="Delete team"
+          >
+            ×
+          </button>
         )}
       </div>
     </div>

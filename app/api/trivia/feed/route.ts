@@ -6,19 +6,28 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   try {
     const limit = Math.min(Number(req.nextUrl.searchParams.get("limit") ?? 10), 30);
-    const offset = Number(req.nextUrl.searchParams.get("offset") ?? 0);
+    const cursor = req.nextUrl.searchParams.get("cursor");
+    const userId = req.nextUrl.searchParams.get("userId");
     const supabase = createServerClient();
-    const { data, error } = await supabase
+
+    let query = supabase
       .from("trivia_feed")
       .select("id, share_id, score, total, gmode, difficulty, display_name, avatar_url, like_count, comment_count, questions_preview, created_at")
       .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+      .limit(limit);
 
+    if (userId) query = query.eq("user_id", userId);
+    if (cursor) query = query.lt("created_at", cursor);
+
+    const { data, error } = await query;
     if (error) throw error;
-    return NextResponse.json({ feed: data ?? [], hasMore: (data?.length ?? 0) === limit });
+
+    const feed = data ?? [];
+    const nextCursor = feed.length === limit ? feed[feed.length - 1].created_at : null;
+    return NextResponse.json({ feed, nextCursor });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ feed: [] });
+    return NextResponse.json({ feed: [], nextCursor: null });
   }
 }
 
