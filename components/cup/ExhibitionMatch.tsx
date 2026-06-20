@@ -29,6 +29,8 @@ interface Props {
   onShare?: () => void;
   /** Optional extra content rendered below the action buttons on the final screen */
   footer?: React.ReactNode;
+  /** Optional content rendered at the very bottom of the final screen, below all action buttons */
+  bottomCta?: React.ReactNode;
   /** Label for the rematch/play-again button. Defaults to "⚔️ Play Again" */
   rematchLabel?: string;
   /**
@@ -152,6 +154,7 @@ export default function ExhibitionMatch({
   defaultShowBox = false,
   onShare,
   footer,
+  bottomCta,
   rematchLabel = "⚔️ Play Again",
   onNewMatchup,
   onBack,
@@ -431,6 +434,7 @@ export default function ExhibitionMatch({
                     )}
                   </div>
                 )}
+                {bottomCta}
               </div>
             </div>
           )}

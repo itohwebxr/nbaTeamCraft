@@ -10,6 +10,14 @@ import { TeamPicker, TeamPick, RANDOM_ID } from "@/components/sim/TeamPicker";
 import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
 import PostToSimFeedButton from "@/components/sim/PostToSimFeedButton";
 import AppHeader from "@/components/layout/AppHeader";
+import { buildMatchupQuery } from "@/lib/matchupResult";
+
+// Absolute URL to the matchup result view for a finished game/series, stored on
+// the feed entry so the sim detail page can rebuild the full scoreboard.
+function matchupResultUrl(opts: Parameters<typeof buildMatchupQuery>[0]): string {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return `${origin}/matchup/result?${buildMatchupQuery(opts)}`;
+}
 
 // CTA that drops the user into the Roster Builder to create their own lineup.
 // Surfaced on the picker and on result screens to convert simulator play into
@@ -265,6 +273,15 @@ function SeriesResult({
           kind: "matchup",
           title: `⚔️ ${winnerName} wins the series!`,
           subtitle: `Match · Series · ${wins.home}-${wins.away}`,
+          result_url: matchupResultUrl({
+            home: home.name,
+            away: away.name,
+            hs: wins.home,
+            as: wins.away,
+            kind: "series",
+            games: games.map((g) => `${g.homeTotal}-${g.awayTotal}`).join(","),
+            tops: encodeTops(games),
+          }),
         }} />
         {sourceTeamId && !posted && (
           <button
@@ -659,6 +676,13 @@ export default function MatchupClient({ initialTeams }: { initialTeams?: import(
               kind: "matchup",
               title: `⚔️ ${r.winner === "home" ? sim.home.name : sim.away.name} def. ${r.winner === "home" ? sim.away.name : sim.home.name}`,
               subtitle: "Match · Single",
+              result_url: matchupResultUrl({
+                home: sim.home.name,
+                away: sim.away.name,
+                hs: r.homeTotal,
+                as: r.awayTotal,
+                kind: "single",
+              }),
             }} />
             {singleSourceId && (
               <PostToTeamButton
@@ -676,9 +700,9 @@ export default function MatchupClient({ initialTeams }: { initialTeams?: import(
                 onPosted={() => router.push(`/team/${singleSourceId}`)}
               />
             )}
-            <BuildOwnTeamCTA />
           </>
         }
+        bottomCta={<BuildOwnTeamCTA />}
       />
     );
   }

@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { createServerClient } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import type { SeasonShareData } from "@/app/api/season/share/route";
+import SeasonResultView from "@/components/sim/result/SeasonResultView";
 import WhatsNext from "@/components/common/WhatsNext";
 import StickyCtaBar from "@/components/common/StickyCtaBar";
 
@@ -77,22 +78,7 @@ export default async function SeasonResultPage({
       </header>
 
       <div className="fade-up max-w-lg mx-auto px-4 py-10 space-y-6 text-center">
-        <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em]">
-          82-Game Season
-        </p>
-        <h1 className="font-display text-3xl font-black text-white">{share.team.name}</h1>
-
-        <div className="flex items-baseline justify-center gap-3">
-          <span className="font-display text-7xl font-black text-orange-400 tabular-nums">{share.wins}</span>
-          <span className="font-display text-4xl font-black text-zinc-600">—</span>
-          <span className="font-display text-7xl font-black text-zinc-500 tabular-nums">{share.losses}</span>
-        </div>
-
-        <div>
-          <p className="font-display text-3xl font-black text-white">{share.label}</p>
-          <p className="text-sm text-zinc-400 mt-1">{share.blurb}</p>
-          <p className="text-xs text-zinc-500 mt-2">{share.team.tier} Tier · {share.team.overall} OVR</p>
-        </div>
+        <SeasonResultView data={share} />
 
         <Link
           href="/season"

@@ -252,10 +252,12 @@ export const gtm = {
   nudgeShown: (params: {
     page_type: "team" | "sim" | "trivia";
     placement: "sticky";
+    target: "craft" | "trivia";
   }) => push({ event: "nudge_shown", ...params }),
 
   nudgeDismissed: (params: {
     page_type: "team" | "sim" | "trivia";
     placement: "sticky";
+    target: "craft" | "trivia";
   }) => push({ event: "nudge_dismissed", ...params }),
 };
