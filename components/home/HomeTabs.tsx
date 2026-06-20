@@ -53,12 +53,21 @@ export default function HomeTabs({
           <button
             key={key}
             onClick={() => setActiveTab(key)}
-            className={`flex-1 py-2.5 rounded-xl text-xs font-black tracking-wide transition-colors ${
+            className={`relative flex-1 py-2.5 rounded-xl text-xs font-black tracking-wide transition-colors ${
               activeTab === key
                 ? "bg-orange-500 text-white"
                 : "text-zinc-500 hover:text-zinc-200"
             }`}
           >
+            {/* Attention bubble drawing eyes to Trivia (hidden once it's active) */}
+            {key === "trivia" && activeTab !== "trivia" && (
+              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-10 pointer-events-none animate-bounce">
+                <span className="relative block whitespace-nowrap rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 px-2.5 py-1 text-[10px] font-black text-white shadow-lg shadow-fuchsia-900/50">
+                  🔥 Daily Challenge
+                  <span className="absolute left-1/2 top-full -translate-x-1/2 h-0 w-0 border-x-4 border-x-transparent border-t-4 border-t-fuchsia-500" />
+                </span>
+              </span>
+            )}
             {emoji} {label}
           </button>
         ))}
