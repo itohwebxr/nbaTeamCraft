@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { createServerClient } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import type { PlayoffShareData } from "@/app/api/playoff/share/route";
+import PlayoffResultView from "@/components/sim/result/PlayoffResultView";
 import WhatsNext from "@/components/common/WhatsNext";
 import StickyCtaBar from "@/components/common/StickyCtaBar";
 
@@ -77,24 +78,7 @@ export default async function PlayoffResultPage({
       </header>
 
       <div className="fade-up max-w-lg mx-auto px-4 py-8 space-y-6">
-        <div className="text-center">
-          <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em] mb-2">
-            🏆 Champion · {share.size}-Team Playoff
-          </p>
-          <h1 className="font-display text-3xl font-black text-white">{share.champion.name}</h1>
-          <p className="text-sm text-zinc-400 mt-1">{share.champion.tier} Tier · {share.champion.overall} OVR</p>
-        </div>
-
-        {/* Champion's road to the title */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl divide-y divide-zinc-800/60">
-          {share.path.map((p, i) => (
-            <div key={i} className="px-4 py-3 flex items-center gap-3">
-              <span className="font-display text-[11px] font-bold text-zinc-500 w-32 shrink-0 uppercase tracking-wider">{p.round}</span>
-              <span className="flex-1 text-sm font-bold text-white truncate">def. {p.opp}</span>
-              <span className="font-display text-sm font-black text-orange-400 shrink-0">{p.score}</span>
-            </div>
-          ))}
-        </div>
+        <PlayoffResultView data={share} />
 
         <Link
           href="/playoffs"
