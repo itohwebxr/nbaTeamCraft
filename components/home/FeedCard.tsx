@@ -24,13 +24,6 @@ function timeAgo(iso: string): string {
   return `${d}d ago`;
 }
 
-const POS_COLOR: Record<string, string> = {
-  PG: "text-sky-400",
-  SG: "text-blue-400",
-  SF: "text-green-400",
-  PF: "text-yellow-400",
-  C:  "text-orange-400",
-};
 
 export default function FeedCard({ team }: { team: HomeTeam }) {
   const starters = team.roster_json.slice(0, 5);
@@ -78,11 +71,11 @@ export default function FeedCard({ team }: { team: HomeTeam }) {
         <div className="space-y-1 mt-1">
           {starters.map((p, i) => (
             <div key={i} className="flex items-center gap-1.5">
-              <span className={`text-[10px] font-black w-6 shrink-0 ${POS_COLOR[p.assignedPosition] ?? "text-zinc-500"}`}>
+              <span className="text-[10px] font-black w-6 shrink-0 text-zinc-400">
                 {p.assignedPosition}
               </span>
               <span className="text-xs text-zinc-300 truncate flex-1">{p.name}</span>
-              <span className={`text-xs font-black shrink-0 ${overallColor(p.overall)}`}>{p.overall}</span>
+              <span className="text-xs font-black shrink-0 text-white">{p.overall}</span>
             </div>
           ))}
         </div>

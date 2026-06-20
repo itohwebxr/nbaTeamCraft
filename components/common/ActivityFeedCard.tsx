@@ -191,7 +191,7 @@ function TriviaContent({ entry }: { entry: TriviaEntry }) {
   const emoji = entry.score === entry.total ? "🔥" : entry.score >= entry.total * 0.6 ? "💪" : "📚";
   const modeLabel = entry.gmode === "daily" ? "Daily" : "Practice";
   const diffLabel = entry.difficulty === "hard" ? "Hard" : "Normal";
-  const preview = entry.questions_preview?.slice(0, 3);
+  const preview = entry.questions_preview;
 
   return (
     <div className="space-y-2">
@@ -202,13 +202,13 @@ function TriviaContent({ entry }: { entry: TriviaEntry }) {
         <span className="text-lg font-black text-orange-400">{entry.score}/{entry.total}</span>
         <span className="text-xs text-zinc-500">{pct}% correct</span>
       </div>
-      {/* Question preview */}
+      {/* Question list */}
       {preview && preview.length > 0 && (
-        <div className="space-y-1 mt-1">
+        <div className="space-y-1.5 mt-1 border-t border-zinc-800/60 pt-2">
           {preview.map((item, i) => (
-            <div key={i} className="flex items-start gap-1.5">
+            <div key={i} className="flex items-start gap-2">
               <span className="text-xs shrink-0 mt-0.5">{item.c ? "✅" : "❌"}</span>
-              <p className="text-xs text-zinc-400 line-clamp-1">{item.q}</p>
+              <p className="text-xs text-zinc-400 leading-snug">{item.q}</p>
             </div>
           ))}
         </div>
