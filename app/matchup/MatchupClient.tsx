@@ -9,6 +9,7 @@ import ExhibitionMatch from "@/components/cup/ExhibitionMatch";
 import { TeamPicker, TeamPick, RANDOM_ID } from "@/components/sim/TeamPicker";
 import { SimCrossLinks } from "@/components/sim/SimCrossLinks";
 import PostToSimFeedButton from "@/components/sim/PostToSimFeedButton";
+import AppHeader from "@/components/layout/AppHeader";
 
 // CTA that drops the user into the Roster Builder to create their own lineup.
 // Surfaced on the picker and on result screens to convert simulator play into
@@ -179,17 +180,9 @@ function SeriesResult({
   const winnerName = winner === "home" ? home.name : away.name;
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950 overflow-y-auto">
-      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center gap-4">
-          <button
-            onClick={onReset}
-            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="font-display text-sm font-black uppercase tracking-widest">⚔️ Match Simulator</h1>
-        </div>
-      </header>
+      <AppHeader actions={
+        <button onClick={onReset} className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">← Back</button>
+      } />
       <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
         <div className="text-center">
           <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em] mb-2">
@@ -506,26 +499,20 @@ function SeriesPlayback(props: {
         @media (prefers-reduced-motion: reduce) { .gp-rise,.gp-pop,.gp-fade { animation: none } }
       `}</style>
 
-      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center gap-4">
-          <button
-            onClick={props.onReset}
-            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="font-display text-sm font-black uppercase tracking-widest">⚔️ Match Simulator</h1>
+      <AppHeader actions={
+        <>
+          <button onClick={props.onReset} className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">← Back</button>
           <button
             onClick={() => {
               gtm.seriesPlaybackSkip({ games_revealed: Math.min(current + 1, games.length), games_total: games.length });
               setDone(true);
             }}
-            className="ml-auto text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
+            className="text-[11px] font-bold text-zinc-500 hover:text-white transition-colors"
           >
             Skip ⏭
           </button>
-        </div>
-      </header>
+        </>
+      } />
 
       <div className="max-w-lg mx-auto px-4 py-8 space-y-5">
         <div className="flex items-center justify-between">
@@ -718,17 +705,9 @@ export default function MatchupClient({ initialTeams }: { initialTeams?: import(
   // ── Picker ───────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-      <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur border-b border-zinc-800 px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            className="text-xs font-bold text-zinc-400 hover:text-white transition-colors"
-          >
-            ← Back
-          </button>
-          <h1 className="font-display text-sm font-black uppercase tracking-widest">⚔️ Match Simulator</h1>
-        </div>
-      </header>
+      <AppHeader actions={
+        <button onClick={() => router.back()} className="text-xs font-bold text-zinc-400 hover:text-white transition-colors">← Back</button>
+      } />
 
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         <p className="text-center text-sm text-zinc-400">

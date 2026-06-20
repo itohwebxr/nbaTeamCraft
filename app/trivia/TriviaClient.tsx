@@ -47,6 +47,9 @@ export default function TriviaClient() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [todayDone, setTodayDone] = useState(false);
+  const [resultShareId, setResultShareId] = useState<string | null>(null);
+  const [feedPosted, setFeedPosted] = useState(false);
+  const [feedPosting, setFeedPosting] = useState(false);
   const [fetchError, setFetchError] = useState(false);
   const [validating, setValidating] = useState(false);
   // Hard mode: player search
@@ -242,6 +245,27 @@ export default function TriviaClient() {
     }
   };
 
+  const postToTriviaFeed = (shareId: string, score: number, total: number) => {
+    setFeedPosting(true);
+    fetch("/api/trivia/feed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id: user?.id ?? null,
+        share_id: shareId,
+        score,
+        total,
+        gmode: gameMode,
+        difficulty,
+        display_name: user?.displayName ?? null,
+        avatar_url: user?.avatarUrl ?? null,
+      }),
+    })
+      .then(() => { setFeedPosted(true); })
+      .catch(() => {})
+      .finally(() => { setFeedPosting(false); });
+  };
+
   const shareToX = async () => {
     const score = answers.filter((a) => a.correct).length;
     const total = answers.length;
@@ -266,37 +290,29 @@ export default function TriviaClient() {
     };
 
     let resultUrl = `${siteUrl}/trivia`;
-    let shareId: string | null = null;
-    try {
-      const res = await fetch("/api/share", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(shareData),
-      });
-      const data = await res.json() as { url?: string };
-      if (data.url) {
-        const parts = data.url.split("/share/");
-        shareId = parts[1] ?? null;
-        resultUrl = data.url.replace("/share/", "/trivia/result/");
-      }
-    } catch { /* fallback to trivia page */ }
+    let shareId: string | null = resultShareId;
+    if (!shareId) {
+      try {
+        const res = await fetch("/api/share", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(shareData),
+        });
+        const data = await res.json() as { url?: string };
+        if (data.url) {
+          const parts = data.url.split("/share/");
+          shareId = parts[1] ?? null;
+          resultUrl = data.url.replace("/share/", "/trivia/result/");
+          if (shareId) setResultShareId(shareId);
+        }
+      } catch { /* fallback to trivia page */ }
+    } else {
+      resultUrl = `${siteUrl}/trivia/result/${shareId}`;
+    }
 
     // Post to trivia feed
-    if (shareId) {
-      fetch("/api/trivia/feed", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: user?.id ?? null,
-          share_id: shareId,
-          score,
-          total,
-          gmode: gameMode,
-          difficulty,
-          display_name: user?.displayName ?? null,
-          avatar_url: user?.avatarUrl ?? null,
-        }),
-      }).catch(() => {});
+    if (shareId && !feedPosted) {
+      postToTriviaFeed(shareId, score, total);
     }
 
     const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at #NBATeamCraft\n${resultUrl}`;
@@ -673,16 +689,59 @@ export default function TriviaClient() {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="space-y-3">
           <button
-            onClick={() => { void shareToX(); }}
-            className="flex-1 py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
+            onClick={async () => {
+              const score = answers.filter((a) => a.correct).length;
+              const total = answers.length;
+              if (!resultShareId) {
+                await shareToX();
+              } else {
+                const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
+                const emoji = score === total ? "🔥" : score >= total / 2 ? "💪" : "📚";
+                const resultUrl = `${siteUrl}/trivia/result/${resultShareId}`;
+                const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at #NBATeamCraft\n${resultUrl}`;
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
+              }
+            }}
+            className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
           >
-            <span>𝕏</span> Share
+            <span>𝕏</span> Share on 𝕏
           </button>
           <button
-            onClick={() => setMode("menu")}
-            className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm transition-colors"
+            onClick={async () => {
+              const score = answers.filter((a) => a.correct).length;
+              const total = answers.length;
+              let sid = resultShareId;
+              if (!sid) {
+                const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
+                const shareData = {
+                  kind: "trivia", score, total, difficulty, gmode: gameMode,
+                  answers: answers.map((a) => ({
+                    question: a.question.question, correct: a.correct,
+                    submitted: a.submittedName ?? a.question.options[a.selected] ?? undefined,
+                    correct_answer: a.correct ? undefined : (a.allCorrect?.[0] ?? a.question.options[a.question.answer_index]),
+                  })),
+                };
+                try {
+                  const res = await fetch("/api/share", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(shareData) });
+                  const data = await res.json() as { url?: string };
+                  if (data.url) {
+                    sid = data.url.split("/share/")[1] ?? null;
+                    if (sid) setResultShareId(sid);
+                  }
+                } catch { /* ignore */ }
+              }
+              if (sid) postToTriviaFeed(sid, score, total);
+            }}
+            disabled={feedPosted || feedPosting}
+            className="w-full py-3 rounded-xl bg-orange-500/20 border border-orange-500/50 hover:bg-orange-500/30 text-orange-400 font-bold text-sm transition-colors disabled:opacity-60"
+          >
+            {feedPosted ? "✓ Posted to Feed!" : feedPosting ? "Posting…" : "📢 Post to Trivia Feed"}
+          </button>
+          <button
+            onClick={() => { setResultShareId(null); setFeedPosted(false); setMode("menu"); }}
+            className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm transition-colors"
           >
             Play Again →
           </button>
