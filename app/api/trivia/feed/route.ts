@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
   try {
     const limit = Math.min(Number(req.nextUrl.searchParams.get("limit") ?? 10), 30);
     const cursor = req.nextUrl.searchParams.get("cursor");
+    const userId = req.nextUrl.searchParams.get("userId");
     const supabase = createServerClient();
 
     let query = supabase
@@ -15,6 +16,7 @@ export async function GET(req: NextRequest) {
       .order("created_at", { ascending: false })
       .limit(limit);
 
+    if (userId) query = query.eq("user_id", userId);
     if (cursor) query = query.lt("created_at", cursor);
 
     const { data, error } = await query;

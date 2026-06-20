@@ -7,21 +7,12 @@ import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { getBrowserId } from "@/lib/browserId";
 import { createAuthClient } from "@/lib/supabaseAuth";
-import { overallColor } from "@/lib/overallColor";
 import { gtm } from "@/lib/gtm";
 import { useDraftStore } from "@/stores/draftStore";
 import AppHeader from "@/components/layout/AppHeader";
-
-type MyTeam = {
-  id: string;
-  name: string;
-  overall: number;
-  tier: string;
-  like_count: number;
-  created_at: string;
-  is_sandbox?: boolean;
-  comment_count?: number;
-};
+import FeedCard from "@/components/home/FeedCard";
+import MyActivityFeed from "@/components/me/MyActivityFeed";
+import type { HomeTeam } from "@/lib/homeTeams";
 
 type TriviaStats = { total: number; correct: number; streak: number };
 
@@ -34,11 +25,6 @@ type NotificationItem = {
   actor_user_id: string | null;
   is_read: boolean;
   created_at: string;
-};
-
-const TIER_COLORS: Record<string, string> = {
-  S: "text-yellow-400", A: "text-orange-400", B: "text-sky-400",
-  C: "text-zinc-400", D: "text-zinc-500",
 };
 
 type MainTab = "craft" | "simulate" | "trivia";
@@ -55,7 +41,7 @@ export default function MyPage() {
   const { user, loading: authLoading } = useAuth();
   const resetDraft = useDraftStore((s) => s.reset);
   const setMode = useDraftStore((s) => s.setMode);
-  const [teams, setTeams] = useState<MyTeam[]>([]);
+  const [teams, setTeams] = useState<HomeTeam[]>([]);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -316,27 +302,9 @@ export default function MyPage() {
                   </button>
                 </div>
               ) : (
-                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl overflow-hidden">
                   {sandboxTeams.map((t) => (
-                    <div key={t.id} className="group flex items-center gap-2 px-4 py-3 border-b border-zinc-800 last:border-0">
-                      <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
-                          {t.overall}
-                        </span>
-                        <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
-                        <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
-                      </Link>
-                      {(t.comment_count ?? 0) > 0 && (
-                        <span className="text-xs text-zinc-600 shrink-0">💬 {t.comment_count}</span>
-                      )}
-                      <button
-                        onClick={() => setConfirmDeleteId(t.id)}
-                        className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
-                        title="Delete team"
-                      >
-                        ×
-                      </button>
-                    </div>
+                    <FeedCard key={t.id} team={t} onDelete={() => setConfirmDeleteId(t.id)} />
                   ))}
                 </div>
               )
@@ -358,28 +326,9 @@ export default function MyPage() {
                   </button>
                 </div>
               ) : (
-                <div className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden">
+                <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl overflow-hidden">
                   {regularTeams.map((t) => (
-                    <div key={t.id} className="group flex items-center gap-2 px-4 py-3 border-b border-zinc-800 last:border-0">
-                      <Link href={`/team/${t.id}`} className="flex items-center gap-2 flex-1 min-w-0">
-                        <span className={`font-display text-xl font-black w-9 text-right shrink-0 ${overallColor(t.overall)}`}>
-                          {t.overall}
-                        </span>
-                        <span className={`text-xs font-bold w-4 shrink-0 ${TIER_COLORS[t.tier] ?? "text-zinc-500"}`}>{t.tier}</span>
-                        <span className="flex-1 text-sm font-semibold text-white truncate">{t.name}</span>
-                      </Link>
-                      {(t.comment_count ?? 0) > 0 && (
-                        <span className="text-xs text-zinc-600 shrink-0">💬 {t.comment_count}</span>
-                      )}
-                      <span className="text-xs text-zinc-600 shrink-0">❤️ {t.like_count}</span>
-                      <button
-                        onClick={() => setConfirmDeleteId(t.id)}
-                        className="shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity text-zinc-600 hover:text-red-400 text-lg leading-none"
-                        title="Delete team"
-                      >
-                        ×
-                      </button>
-                    </div>
+                    <FeedCard key={t.id} team={t} onDelete={() => setConfirmDeleteId(t.id)} />
                   ))}
                 </div>
               )
@@ -433,6 +382,13 @@ export default function MyPage() {
               </div>
               <span className="ml-auto text-sky-400 font-bold text-sm group-hover:translate-x-1 transition-transform">→</span>
             </a>
+
+            {/* Your own shared simulations */}
+            {user && (
+              <div className="pt-2">
+                <MyActivityFeed type="sim" userId={user.id} />
+              </div>
+            )}
           </div>
         )}
 
@@ -495,6 +451,9 @@ export default function MyPage() {
                   Play Today&apos;s Challenge →
                 </Link>
               </div>
+
+              {/* Your own shared trivia results */}
+              <MyActivityFeed type="trivia" userId={user.id} />
             </div>
           )
         )}

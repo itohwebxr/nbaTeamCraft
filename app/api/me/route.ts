@@ -40,19 +40,23 @@ export async function GET(req: NextRequest) {
       browserId ? `created_by_browser_id.eq.${browserId}` : null,
     ].filter(Boolean).join(",");
 
-    type TeamRow = {
-      id: string; name: string; overall: number; tier: string;
-      offense: number; defense: number; rebound: number; playmaking: number;
-      like_count: number; created_at: string; is_sandbox?: boolean; comment_count?: number;
-    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    type TeamRow = any;
 
-    // Try to include is_sandbox; fall back if migration hasn't been applied yet
+    // Include roster_json/description and the creator profile so the client can
+    // render the same FeedCard used on /feed. Try the full column set first and
+    // fall back if a column/relationship is missing (migration pending).
+    const FULL_SELECT =
+      "id, share_id, name, overall, tier, offense, defense, rebound, playmaking, roster_json, description, metadata, like_count, created_at, is_sandbox, comment_count, profiles!user_id(display_name, avatar_url, x_handle)";
+    const FALLBACK_SELECT =
+      "id, share_id, name, overall, tier, offense, defense, rebound, playmaking, roster_json, description, metadata, like_count, created_at";
+
     let teams: TeamRow[] | null = null;
     let teamsErr: { code?: string; message?: string } | null = null;
 
     const fullRes = await supabase
       .from("public_teams")
-      .select("id, name, overall, tier, offense, defense, rebound, playmaking, like_count, created_at, is_sandbox, comment_count")
+      .select(FULL_SELECT)
       .or(orFilter)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -61,7 +65,7 @@ export async function GET(req: NextRequest) {
       // Column not found (migration pending) — fall back to safe column set
       const fallbackRes = await supabase
         .from("public_teams")
-        .select("id, name, overall, tier, offense, defense, rebound, playmaking, like_count, created_at")
+        .select(FALLBACK_SELECT)
         .or(orFilter)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -73,6 +77,19 @@ export async function GET(req: NextRequest) {
     }
 
     if (teamsErr) throw teamsErr;
+
+    // Flatten the joined profile into a `creator` object (HomeTeam shape).
+    teams = (teams ?? []).map((t: TeamRow) => {
+      const p = t.profiles;
+      const { profiles: _p, ...rest } = t;
+      void _p;
+      return {
+        ...rest,
+        creator: p
+          ? { displayName: p.display_name ?? null, avatarUrl: p.avatar_url ?? null, xHandle: p.x_handle ?? null }
+          : null,
+      };
+    });
 
     const entryFilter = [
       userId ? `user_id.eq.${userId}` : null,
