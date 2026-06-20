@@ -24,8 +24,16 @@ function timeAgo(iso: string): string {
   return `${d}d ago`;
 }
 
+const POS_COLOR: Record<string, string> = {
+  PG: "text-sky-400",
+  SG: "text-blue-400",
+  SF: "text-green-400",
+  PF: "text-yellow-400",
+  C:  "text-orange-400",
+};
+
 export default function FeedCard({ team }: { team: HomeTeam }) {
-  const topPlayers = team.roster_json.slice(0, 4).map((p) => p.name.split(" ").pop()).join(" · ");
+  const starters = team.roster_json.slice(0, 5);
 
   return (
     <div className="border-b border-zinc-800/60 last:border-0">
@@ -66,8 +74,18 @@ export default function FeedCard({ team }: { team: HomeTeam }) {
           <p className="text-xs text-zinc-300 leading-relaxed mb-2 line-clamp-2">{team.description}</p>
         ) : null}
 
-        {/* Players preview */}
-        <p className="text-xs text-zinc-600 truncate">{topPlayers}</p>
+        {/* Roster preview */}
+        <div className="space-y-1 mt-1">
+          {starters.map((p, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <span className={`text-[10px] font-black w-6 shrink-0 ${POS_COLOR[p.assignedPosition] ?? "text-zinc-500"}`}>
+                {p.assignedPosition}
+              </span>
+              <span className="text-xs text-zinc-300 truncate flex-1">{p.name}</span>
+              <span className={`text-xs font-black shrink-0 ${overallColor(p.overall)}`}>{p.overall}</span>
+            </div>
+          ))}
+        </div>
       </Link>
 
       {/* Engagement row — outside Link so like button works independently */}
