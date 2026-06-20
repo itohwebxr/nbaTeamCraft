@@ -18,7 +18,7 @@ const PRIMARY: Record<PageType, { target: Target; title: string; subtitle: strin
 };
 
 const DISMISS_DAYS = 7;
-const SCROLL_TRIGGER = 600;
+const SHOW_DELAY_MS = 3000;
 
 export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
   const router = useRouter();
@@ -55,18 +55,15 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
       /* ignore */
     }
 
-    const onScroll = () => {
-      if (window.scrollY > SCROLL_TRIGGER) {
-        setVisible(true);
-        if (!shownFired.current) {
-          shownFired.current = true;
-          gtm.nudgeShown({ page_type: pageType, placement: "sticky", target: primary.target });
-        }
+    // Surface the nudge a few seconds after the visitor lands.
+    const timer = setTimeout(() => {
+      setVisible(true);
+      if (!shownFired.current) {
+        shownFired.current = true;
+        gtm.nudgeShown({ page_type: pageType, placement: "sticky", target: primary.target });
       }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    }, SHOW_DELAY_MS);
+    return () => clearTimeout(timer);
   }, [pageType, primary.target]);
 
   if (!visible) return null;
