@@ -8,12 +8,13 @@ import { gtm } from "@/lib/gtm";
 type PageType = "team" | "sim" | "trivia";
 type Target = "craft" | "trivia";
 
-// The single highest-intent next action per landing type. team/sim push the
-// lateral creation loop (craft); trivia pushes the daily-challenge re-visit hook.
-const PRIMARY: Record<PageType, { target: Target; emoji: string; label: string }> = {
-  team:   { target: "craft",  emoji: "🏗️", label: "Craft your own team" },
-  sim:    { target: "craft",  emoji: "🏗️", label: "Craft a team to simulate" },
-  trivia: { target: "trivia", emoji: "🧠", label: "Play today's Daily Challenge" },
+// Experiment: funnel landing traffic (team / sim detail) into Trivia, the
+// repeat-usage hook. All landing types currently push Trivia with a bold,
+// hard-to-miss bar so we can measure whether the導線 drives retention.
+const PRIMARY: Record<PageType, { target: Target; title: string; subtitle: string }> = {
+  team:   { target: "trivia", title: "Test your NBA IQ", subtitle: "Play today's Trivia Challenge" },
+  sim:    { target: "trivia", title: "Test your NBA IQ", subtitle: "Play today's Trivia Challenge" },
+  trivia: { target: "trivia", title: "Daily Challenge", subtitle: "Play today's Trivia" },
 };
 
 const DISMISS_DAYS = 7;
@@ -26,6 +27,7 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
   const shownFired = useRef(false);
   const barRef = useRef<HTMLDivElement>(null);
   const primary = PRIMARY[pageType];
+  const isTrivia = primary.target === "trivia";
 
   // While the bar is on screen, reserve space at the bottom of the page equal
   // to the bar's height so it never overlaps the last content (e.g. What's next).
@@ -58,14 +60,14 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
         setVisible(true);
         if (!shownFired.current) {
           shownFired.current = true;
-          gtm.nudgeShown({ page_type: pageType, placement: "sticky" });
+          gtm.nudgeShown({ page_type: pageType, placement: "sticky", target: primary.target });
         }
       }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
-  }, [pageType]);
+  }, [pageType, primary.target]);
 
   if (!visible) return null;
 
@@ -76,7 +78,7 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
     } catch {
       /* ignore */
     }
-    gtm.nudgeDismissed({ page_type: pageType, placement: "sticky" });
+    gtm.nudgeDismissed({ page_type: pageType, placement: "sticky", target: primary.target });
   };
 
   const handleCta = () => {
@@ -89,20 +91,43 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
   };
 
   return (
-    <div ref={barRef} className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none">
-      <div className="max-w-lg mx-auto flex items-center gap-2 pointer-events-auto rounded-2xl bg-zinc-900/95 backdrop-blur border border-zinc-700 shadow-2xl shadow-black/50 p-2 pl-4">
-        <button
-          onClick={handleCta}
-          className="flex-1 flex items-center gap-2 py-2.5 text-left"
-        >
-          <span className="text-xl shrink-0">{primary.emoji}</span>
-          <span className="font-black text-white text-sm leading-tight">{primary.label}</span>
-          <span className="ml-auto text-orange-400 font-bold text-sm shrink-0">→</span>
+    <div
+      ref={barRef}
+      className="fixed inset-x-0 bottom-0 z-40 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 pointer-events-none"
+    >
+      <div
+        className={`max-w-lg mx-auto flex items-center gap-2 pointer-events-auto rounded-2xl p-2 pl-3 ${
+          isTrivia
+            ? "bg-gradient-to-r from-violet-600 via-fuchsia-600 to-orange-500 ring-1 ring-white/15 shadow-2xl shadow-fuchsia-900/40"
+            : "bg-zinc-900/95 backdrop-blur border border-zinc-700 shadow-2xl shadow-black/50"
+        }`}
+      >
+        <button onClick={handleCta} className="flex-1 flex items-center gap-3 py-1.5 text-left min-w-0">
+          {isTrivia ? (
+            <>
+              <span className="shrink-0 w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-2xl">
+                🧠
+              </span>
+              <span className="min-w-0">
+                <span className="block font-black text-white text-[15px] leading-tight">{primary.title}</span>
+                <span className="block text-white/85 text-xs leading-tight">{primary.subtitle}</span>
+              </span>
+              <span className="ml-auto text-white font-black text-lg shrink-0 pr-1">→</span>
+            </>
+          ) : (
+            <>
+              <span className="text-xl shrink-0">🏗️</span>
+              <span className="font-black text-white text-sm leading-tight">{primary.title}</span>
+              <span className="ml-auto text-orange-400 font-bold text-sm shrink-0">→</span>
+            </>
+          )}
         </button>
         <button
           onClick={dismiss}
           aria-label="Dismiss"
-          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 text-lg leading-none transition-colors"
+          className={`shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-lg leading-none transition-colors ${
+            isTrivia ? "text-white/70 hover:text-white hover:bg-white/15" : "text-zinc-500 hover:text-white hover:bg-zinc-800"
+          }`}
         >
           ×
         </button>

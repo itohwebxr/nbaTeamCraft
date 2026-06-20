@@ -1,13 +1,20 @@
 import type { SeasonShareData } from "@/app/api/season/share/route";
+import TeamName from "./TeamName";
 
 // Presentational 82-game season result. Shared by /season/result/[id] and /sim/[id].
-export default function SeasonResultView({ data }: { data: SeasonShareData }) {
+export default function SeasonResultView({
+  data,
+  links,
+}: {
+  data: SeasonShareData;
+  links?: Record<string, string>;
+}) {
   return (
     <div className="space-y-6 text-center">
       <p className="font-display text-xs font-bold text-orange-400 uppercase tracking-[0.3em]">
         82-Game Season
       </p>
-      <h1 className="font-display text-3xl font-black text-white">{data.team.name}</h1>
+      <TeamName name={data.team.name} teamId={links?.[data.team.name]} className="block font-display text-3xl font-black text-white" />
 
       <div className="flex items-baseline justify-center gap-3">
         <span className="font-display text-7xl font-black text-orange-400 tabular-nums">{data.wins}</span>

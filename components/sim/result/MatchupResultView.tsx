@@ -1,4 +1,5 @@
 import type { ParsedMatchup } from "@/lib/matchupResult";
+import TeamName from "./TeamName";
 
 function shortScorer(name: string, max = 13): string {
   const parts = name.trim().split(/\s+/);
@@ -8,8 +9,15 @@ function shortScorer(name: string, max = 13): string {
 }
 
 // Presentational scoreboard + per-game breakdown for a single match or series.
-// Shared by /matchup/result and /sim/[id].
-export default function MatchupResultView({ result }: { result: ParsedMatchup }) {
+// Shared by /matchup/result and /sim/[id]. `links` maps a team name to its
+// public-team id so the sim detail page can make the names tappable.
+export default function MatchupResultView({
+  result,
+  links,
+}: {
+  result: ParsedMatchup;
+  links?: Record<string, string>;
+}) {
   const { home, away, hs, as, kind, homeWon, games } = result;
   const winner = homeWon ? home : away;
 
@@ -22,17 +30,17 @@ export default function MatchupResultView({ result }: { result: ParsedMatchup })
       <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0 text-center">
-            <p className={`text-sm font-bold truncate ${homeWon ? "text-white" : "text-zinc-500"}`}>{home}</p>
+            <TeamName name={home} teamId={links?.[home]} className={`block text-sm font-bold truncate ${homeWon ? "text-white" : "text-zinc-500"}`} />
             <p className={`font-display text-6xl font-black mt-1 ${homeWon ? "text-orange-400" : "text-zinc-600"}`}>{hs}</p>
           </div>
           <span className="font-display text-2xl font-black text-zinc-600 shrink-0">VS</span>
           <div className="flex-1 min-w-0 text-center">
-            <p className={`text-sm font-bold truncate ${!homeWon ? "text-white" : "text-zinc-500"}`}>{away}</p>
+            <TeamName name={away} teamId={links?.[away]} className={`block text-sm font-bold truncate ${!homeWon ? "text-white" : "text-zinc-500"}`} />
             <p className={`font-display text-6xl font-black mt-1 ${!homeWon ? "text-orange-400" : "text-zinc-600"}`}>{as}</p>
           </div>
         </div>
         <p className="text-center text-sm text-zinc-400 mt-5 pt-4 border-t border-zinc-800">
-          🏆 <span className="text-white font-bold">{winner}</span>{" "}
+          🏆 <TeamName name={winner} teamId={links?.[winner]} className="text-white font-bold" />{" "}
           {kind === "series" ? "takes the series" : "wins"}
         </p>
 

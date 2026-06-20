@@ -14,6 +14,7 @@ import PlayoffResultView from "@/components/sim/result/PlayoffResultView";
 import { parseMatchupUrl } from "@/lib/matchupResult";
 import type { SeasonShareData } from "@/app/api/season/share/route";
 import type { PlayoffShareData } from "@/app/api/playoff/share/route";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
@@ -31,28 +32,59 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
+// Resolve the team names shown in a result to public-team ids so the detail
+// page can link each name to its team page. Names are user-chosen and not
+// guaranteed unique, so we pick the most-liked match for each name.
+async function resolveTeamLinks(
+  supabase: SupabaseClient,
+  names: string[]
+): Promise<Record<string, string>> {
+  const unique = [...new Set(names.filter(Boolean))];
+  if (unique.length === 0) return {};
+  const { data } = await supabase
+    .from("public_teams")
+    .select("id, name, like_count")
+    .in("name", unique)
+    .order("like_count", { ascending: false });
+  const map: Record<string, string> = {};
+  for (const t of (data ?? []) as { id: string; name: string }[]) {
+    if (!(t.name in map)) map[t.name] = t.id;
+  }
+  return map;
+}
+
 // Reconstruct the full result view from whatever the feed entry persisted:
-// matchup → result_url query string; season/playoff → the shares row.
-async function buildDetail(entry: {
-  kind: string;
-  share_id: string | null;
-  result_url: string | null;
-}): Promise<ReactNode> {
+// matchup → result_url query string; season/playoff → the shares row. Returns
+// the rendered detail plus the team names it references (for link resolution).
+async function buildDetail(
+  supabase: SupabaseClient,
+  entry: { kind: string; share_id: string | null; result_url: string | null }
+): Promise<{ render: (links: Record<string, string>) => ReactNode; names: string[] } | null> {
   if (entry.kind === "matchup" && entry.result_url) {
     const parsed = parseMatchupUrl(entry.result_url);
-    return parsed ? <MatchupResultView result={parsed} /> : null;
+    if (!parsed) return null;
+    return {
+      names: [parsed.home, parsed.away],
+      render: (links) => <MatchupResultView result={parsed} links={links} />,
+    };
   }
 
   if ((entry.kind === "season" || entry.kind === "playoff") && entry.share_id) {
-    const supabase = createServerClient();
     const { data: share } = await supabase
       .from("shares")
       .select("data")
       .eq("id", entry.share_id)
       .single();
     const d = share?.data as SeasonShareData | PlayoffShareData | undefined;
-    if (entry.kind === "season" && d?.kind === "season") return <SeasonResultView data={d} />;
-    if (entry.kind === "playoff" && d?.kind === "playoff") return <PlayoffResultView data={d} />;
+    if (entry.kind === "season" && d?.kind === "season") {
+      return { names: [d.team.name], render: (links) => <SeasonResultView data={d} links={links} /> };
+    }
+    if (entry.kind === "playoff" && d?.kind === "playoff") {
+      return {
+        names: [d.champion.name, ...d.path.map((p) => p.opp)],
+        render: (links) => <PlayoffResultView data={d} links={links} />,
+      };
+    }
   }
 
   return null;
@@ -74,7 +106,9 @@ export default async function SimFeedDetailPage({
   if (error || !entry) return notFound();
 
   const emoji = KIND_EMOJI[entry.kind] ?? "⚔️";
-  const detail = await buildDetail(entry);
+  const built = await buildDetail(supabase, entry);
+  const links = built ? await resolveTeamLinks(supabase, built.names) : {};
+  const detail = built ? built.render(links) : null;
   const displayName = entry.display_name ?? "Anonymous";
 
   return (
