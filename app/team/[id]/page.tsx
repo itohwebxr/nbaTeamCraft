@@ -16,6 +16,7 @@ import TeamSimHistory from "@/components/team/TeamSimHistory";
 import WhatsNext from "@/components/common/WhatsNext";
 import RelatedFeed from "@/components/common/RelatedFeed";
 import StickyCtaBar from "@/components/common/StickyCtaBar";
+import InlineTriviaNudge from "@/components/common/InlineTriviaNudge";
 import ScrollToTop from "@/components/common/ScrollToTop";
 
 export const dynamic = "force-dynamic";
@@ -336,6 +337,9 @@ export default async function TeamDetailPage({
           isSandbox={!!team.is_sandbox}
           roster={team.roster_json}
         />
+
+        {/* Experiment ① (variant B): in-context trivia nudge */}
+        <InlineTriviaNudge pageType="team" />
 
         {/* Simulators — pit this team against any other lineup */}
         {(() => {

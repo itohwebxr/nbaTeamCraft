@@ -8,6 +8,7 @@ import type { PlayoffShareData } from "@/app/api/playoff/share/route";
 import PlayoffResultView from "@/components/sim/result/PlayoffResultView";
 import WhatsNext from "@/components/common/WhatsNext";
 import StickyCtaBar from "@/components/common/StickyCtaBar";
+import InlineTriviaNudge from "@/components/common/InlineTriviaNudge";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,9 @@ export default async function PlayoffResultPage({
 
       <div className="fade-up max-w-lg mx-auto px-4 py-8 space-y-6">
         <PlayoffResultView data={share} />
+
+        {/* Experiment ① (variant B): in-context trivia nudge */}
+        <InlineTriviaNudge pageType="sim" />
 
         <Link
           href="/playoffs"

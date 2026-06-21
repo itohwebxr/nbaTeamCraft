@@ -8,6 +8,7 @@ import type { SeasonShareData } from "@/app/api/season/share/route";
 import SeasonResultView from "@/components/sim/result/SeasonResultView";
 import WhatsNext from "@/components/common/WhatsNext";
 import StickyCtaBar from "@/components/common/StickyCtaBar";
+import InlineTriviaNudge from "@/components/common/InlineTriviaNudge";
 
 export const dynamic = "force-dynamic";
 
@@ -79,6 +80,9 @@ export default async function SeasonResultPage({
 
       <div className="fade-up max-w-lg mx-auto px-4 py-10 space-y-6 text-center">
         <SeasonResultView data={share} />
+
+        {/* Experiment ① (variant B): in-context trivia nudge */}
+        <InlineTriviaNudge pageType="sim" />
 
         <Link
           href="/season"

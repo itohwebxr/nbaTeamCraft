@@ -8,6 +8,7 @@ import SimDetailActions from "./SimDetailActions";
 import WhatsNext from "@/components/common/WhatsNext";
 import RelatedFeed from "@/components/common/RelatedFeed";
 import StickyCtaBar from "@/components/common/StickyCtaBar";
+import InlineTriviaNudge from "@/components/common/InlineTriviaNudge";
 import ScrollToTop from "@/components/common/ScrollToTop";
 import MatchupResultView from "@/components/sim/result/MatchupResultView";
 import SeasonResultView from "@/components/sim/result/SeasonResultView";
@@ -146,6 +147,9 @@ export default async function SimFeedDetailPage({
               </div>
             </div>
           )}
+
+          {/* Experiment ① (variant B): in-context trivia nudge */}
+          <InlineTriviaNudge pageType="sim" />
 
           {/* Engagement + actions */}
           <div className="space-y-3">

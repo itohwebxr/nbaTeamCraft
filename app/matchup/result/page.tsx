@@ -6,6 +6,7 @@ import HeaderAuth from "@/components/auth/HeaderAuth";
 import WhatsNext from "@/components/common/WhatsNext";
 import StickyCtaBar from "@/components/common/StickyCtaBar";
 import MatchupResultView from "@/components/sim/result/MatchupResultView";
+import InlineTriviaNudge from "@/components/common/InlineTriviaNudge";
 import { parseMatchupSearchParams } from "@/lib/matchupResult";
 
 export const dynamic = "force-dynamic";
@@ -88,6 +89,9 @@ export default async function MatchupResultPage({
 
       <div className="fade-up max-w-lg mx-auto px-4 py-8 space-y-6">
         <MatchupResultView result={{ home, away, hs, as, kind, homeWon, games }} />
+
+        {/* Experiment ① (variant B): in-context trivia nudge */}
+        <InlineTriviaNudge pageType="sim" />
 
         {/* CTA into the simulator */}
         <Link
