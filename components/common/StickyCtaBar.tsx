@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStartCraft } from "@/hooks/useStartCraft";
+import { useVariant } from "@/hooks/useVariant";
+import { ENTRY_NUDGE_EXPERIMENT } from "@/lib/experiments";
 import { gtm } from "@/lib/gtm";
 
 type PageType = "team" | "sim" | "trivia";
@@ -29,6 +31,15 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
   const primary = PRIMARY[pageType];
   const isTrivia = primary.target === "trivia";
 
+  // Experiment ① (placement): on team/sim landings the sticky bar is variant A;
+  // variant B replaces it with an inline nudge, so suppress the bar there.
+  // Trivia pages are outside the experiment and always show the bar.
+  const inExperiment = pageType !== "trivia";
+  const variant = useVariant(ENTRY_NUDGE_EXPERIMENT);
+  const stickyEnabled = !inExperiment || variant === "A";
+  const expProps: { experiment?: string; variant?: string } =
+    inExperiment && variant ? { experiment: ENTRY_NUDGE_EXPERIMENT, variant } : {};
+
   // While the bar is on screen, reserve space at the bottom of the page equal
   // to the bar's height so it never overlaps the last content (e.g. What's next).
   useEffect(() => {
@@ -47,6 +58,7 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
   }, [visible]);
 
   useEffect(() => {
+    if (!stickyEnabled) return;
     const key = `tc_nudge_${pageType}`;
     try {
       const ts = Number(localStorage.getItem(key) ?? 0);
@@ -60,11 +72,12 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
       setVisible(true);
       if (!shownFired.current) {
         shownFired.current = true;
-        gtm.nudgeShown({ page_type: pageType, placement: "sticky", target: primary.target });
+        gtm.nudgeShown({ page_type: pageType, placement: "sticky", target: primary.target, ...expProps });
       }
     }, SHOW_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [pageType, primary.target]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageType, primary.target, stickyEnabled]);
 
   if (!visible) return null;
 
@@ -75,14 +88,14 @@ export default function StickyCtaBar({ pageType }: { pageType: PageType }) {
     } catch {
       /* ignore */
     }
-    gtm.nudgeDismissed({ page_type: pageType, placement: "sticky", target: primary.target });
+    gtm.nudgeDismissed({ page_type: pageType, placement: "sticky", target: primary.target, ...expProps });
   };
 
   const handleCta = () => {
     if (primary.target === "craft") {
       startCraft({ pageType, placement: "sticky" });
     } else {
-      gtm.landingNextCta({ page_type: pageType, target: "trivia", placement: "sticky" });
+      gtm.landingNextCta({ page_type: pageType, target: "trivia", placement: "sticky", ...expProps });
       router.push("/trivia");
     }
   };

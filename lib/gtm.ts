@@ -284,18 +284,24 @@ export const gtm = {
   landingNextCta: (params: {
     page_type: "team" | "sim" | "trivia";
     target: "craft" | "simulate" | "trivia";
-    placement: "whatsnext" | "sticky" | "related";
+    placement: "whatsnext" | "sticky" | "related" | "inline";
+    experiment?: string;
+    variant?: string;
   }) => push({ event: "landing_next_cta", ...params }),
 
   nudgeShown: (params: {
     page_type: "team" | "sim" | "trivia";
-    placement: "sticky";
+    placement: "sticky" | "inline";
     target: "craft" | "trivia";
+    experiment?: string;
+    variant?: string;
   }) => push({ event: "nudge_shown", ...params }),
 
   nudgeDismissed: (params: {
     page_type: "team" | "sim" | "trivia";
-    placement: "sticky";
+    placement: "sticky" | "inline";
     target: "craft" | "trivia";
+    experiment?: string;
+    variant?: string;
   }) => push({ event: "nudge_dismissed", ...params }),
 };
