@@ -2,10 +2,11 @@ import Link from "next/link";
 import { overallColor } from "@/lib/overallColor";
 import { fetchHomeTeams } from "@/lib/homeTeams";
 
-const RANK_MEDAL = ["🥇", "🥈", "🥉", "#4", "#5"];
+const MEDALS = ["🥇", "🥈", "🥉"];
+const rankLabel = (i: number) => MEDALS[i] ?? `#${i + 1}`;
 
 export default async function RankingPreview() {
-  const teams = await fetchHomeTeams({ kind: "dream", orderBy: "overall", limit: 5 });
+  const teams = await fetchHomeTeams({ kind: "dream", orderBy: "overall", limit: 10 });
 
   if (teams.length === 0) return null;
 
@@ -28,7 +29,7 @@ export default async function RankingPreview() {
             className="flex items-center gap-3 px-4 py-3 hover:bg-zinc-800/60 transition-colors border-b border-zinc-800/60 last:border-0"
           >
             <span className={`font-display font-black w-6 shrink-0 text-center ${i < 3 ? "text-base" : "text-xs text-zinc-500"}`}>
-              {RANK_MEDAL[i]}
+              {rankLabel(i)}
             </span>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white truncate">{team.name}</p>

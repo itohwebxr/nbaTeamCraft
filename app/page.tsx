@@ -4,6 +4,7 @@ import { Suspense } from "react";
 export const revalidate = 60;
 import LatestTeams from "@/components/home/LatestTeams";
 import LatestBuilderTeams from "@/components/home/LatestBuilderTeams";
+import RankingPreview from "@/components/home/RankingPreview";
 import HomeTabs from "@/components/home/HomeTabs";
 import HeaderAuth from "@/components/auth/HeaderAuth";
 
@@ -87,6 +88,11 @@ export default function Home() {
             dreamFeed={
               <Suspense fallback={null}>
                 <LatestTeams />
+              </Suspense>
+            }
+            dreamRanking={
+              <Suspense fallback={null}>
+                <RankingPreview />
               </Suspense>
             }
           />

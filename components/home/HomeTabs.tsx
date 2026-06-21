@@ -16,9 +16,11 @@ type FeedTab = "crafted" | "dream";
 export default function HomeTabs({
   builderFeed,
   dreamFeed,
+  dreamRanking,
 }: {
   builderFeed: React.ReactNode;
   dreamFeed: React.ReactNode;
+  dreamRanking: React.ReactNode;
 }) {
   const [activeTab, setActiveTab] = useState<MainTab>("craft");
   const [feedTab, setFeedTab] = useState<FeedTab>("crafted");
@@ -119,7 +121,14 @@ export default function HomeTabs({
               </button>
             </div>
             <div>
-              {feedTab === "crafted" ? builderFeed : dreamFeed}
+              {feedTab === "crafted" ? (
+                builderFeed
+              ) : (
+                <div className="space-y-5">
+                  {dreamRanking}
+                  {dreamFeed}
+                </div>
+              )}
             </div>
           </div>
         </div>

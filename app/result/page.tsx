@@ -591,19 +591,20 @@ export default function ResultPage() {
           </div>
         </div>
 
-        {/* PRIMARY CTA: Enter Rankings → unlock Cup */}
+        {/* PRIMARY CTA: Post the Dream Team to the feed & rankings */}
         {!isSandbox && !publishedId && (
-          <div className="space-y-2">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-4">
+            <div>
+              <p className="font-display text-xs font-bold text-orange-400 tracking-[0.2em] mb-1">🏀 DREAM TEAM</p>
+              <p className="text-xs text-zinc-500">Post this team to the feed &amp; rankings — get likes and comments from the community.</p>
+            </div>
             <button
               onClick={() => setShowEnterModal(true)}
               disabled={!evaluation || loading}
-              className="w-full py-4 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-base transition-colors"
+              className="w-full py-3 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-sm transition-colors"
             >
-              🏆 Enter the Cup
+              🔥 Post to Feed
             </button>
-            <p className="text-center text-xs text-zinc-600">
-              Play your first match instantly · you'll also be added to the rankings
-            </p>
           </div>
         )}
         {isSandbox && (

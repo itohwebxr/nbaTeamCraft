@@ -25,11 +25,11 @@ export default function EnterRankingsModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
       <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-sm">
         <h2 className="font-display text-xl font-black text-white mb-1 tracking-wide">
-          🏆 Enter the Cup
+          🔥 Post Your Team
         </h2>
         <p className="text-sm text-zinc-400 mb-5">
-          Name your team, then play your first Cup match right away. Your team is
-          also added to the rankings.
+          Name your team and post it to the feed &amp; rankings — get likes and
+          comments from the community.
         </p>
 
         <label className="block text-xs font-bold text-zinc-400 uppercase tracking-widest mb-2">
@@ -75,10 +75,10 @@ export default function EnterRankingsModal({
             {isSubmitting ? (
               <>
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Starting Match 1...
+                Posting...
               </>
             ) : (
-              "Enter & Play →"
+              "Post →"
             )}
           </button>
         </div>
