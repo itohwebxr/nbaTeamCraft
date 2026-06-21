@@ -1,13 +1,18 @@
 "use client";
 
+import { gtm } from "@/lib/gtm";
+
 interface Props {
   score: number;
   total: number;
   shareId: string | null;
+  gmode: "daily" | "practice";
+  difficulty: "normal" | "hard";
 }
 
-export default function TriviaDetailActions({ score, total, shareId }: Props) {
+export default function TriviaDetailActions({ score, total, shareId, gmode, difficulty }: Props) {
   const handleShare = () => {
+    gtm.triviaShare({ gmode, difficulty, score, total, source: "detail" });
     const emoji = score === total ? "🔥" : score >= total * 0.6 ? "💪" : "📚";
     const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
     const resultUrl = shareId ? `${siteUrl}/trivia/result/${shareId}` : `${siteUrl}/trivia`;

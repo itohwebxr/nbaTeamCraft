@@ -147,7 +147,13 @@ export default async function TriviaFeedDetailPage({
 
           {/* Actions */}
           <div className="space-y-3">
-            <TriviaDetailActions score={entry.score} total={entry.total} shareId={entry.share_id} />
+            <TriviaDetailActions
+              score={entry.score}
+              total={entry.total}
+              shareId={entry.share_id}
+              gmode={entry.gmode as "daily" | "practice"}
+              difficulty={entry.difficulty as "normal" | "hard"}
+            />
             <Link
               href="/trivia"
               className="block w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-sm text-center transition-colors"
