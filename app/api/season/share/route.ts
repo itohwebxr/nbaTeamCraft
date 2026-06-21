@@ -12,6 +12,10 @@ export type SeasonShareData = {
   losses: number;
   label: string;
   blurb: string;
+  // Optional (added later) — the 82-game W/L sequence and per-game win odds so
+  // the shared/detail view can render the full pip grid. Legacy shares omit these.
+  games?: boolean[];
+  winRate?: number;
 };
 
 function generateId(length = 8): string {

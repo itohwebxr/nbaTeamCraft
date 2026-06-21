@@ -51,13 +51,10 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
-// Persist the result and open the X composer with the short share URL so the
-// tweet carries the season OGP image.
-async function shareToX(result: SeasonResult) {
+// Persist the full season result to the shares table and return its id/url, so
+// both the X share and the feed post can carry the rich pip-grid result.
+async function createSeasonShare(result: SeasonResult): Promise<{ shareId: string | null; shareUrl: string }> {
   const { team, wins, losses, label } = result;
-  const text = `🏀 ${team.name}: ${wins}-${losses} (${label})\nSimulated by #NBATeamCraft`;
-  // Open blank tab synchronously (no noopener — we need to set location after await)
-  const win = window.open("", "_blank");
   let shareUrl = window.location.origin + "/season";
   let shareId: string | null = null;
   try {
@@ -71,6 +68,8 @@ async function shareToX(result: SeasonResult) {
         losses,
         label,
         blurb: result.blurb,
+        games: result.games,
+        winRate: result.winRate,
       }),
     });
     const json = await res.json();
@@ -81,6 +80,17 @@ async function shareToX(result: SeasonResult) {
   } catch {
     // fall back to the generic season URL
   }
+  return { shareId, shareUrl };
+}
+
+// Persist the result and open the X composer with the short share URL so the
+// tweet carries the season OGP image.
+async function shareToX(result: SeasonResult) {
+  const { team, wins, losses, label } = result;
+  const text = `🏀 ${team.name}: ${wins}-${losses} (${label})\nSimulated by #NBATeamCraft`;
+  // Open blank tab synchronously (no noopener — we need to set location after await)
+  const win = window.open("", "_blank");
+  const { shareId, shareUrl } = await createSeasonShare(result);
   fetch("/api/sim/feed", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -232,11 +242,14 @@ function SeasonPlayback({
             >
               Share on 𝕏
             </button>
-            <PostToSimFeedButton payload={{
-              kind: "season",
-              title: `🏀 ${result.team.name}: ${result.wins}-${result.losses}`,
-              subtitle: `Season · ${result.label}`,
-            }} />
+            <PostToSimFeedButton
+              payload={{
+                kind: "season",
+                title: `🏀 ${result.team.name}: ${result.wins}-${result.losses}`,
+                subtitle: `Season · ${result.label}`,
+              }}
+              getShareId={async () => (await createSeasonShare(result)).shareId}
+            />
             {sourceTeamId && !posted && (
               <button
                 onClick={async () => {

@@ -11,7 +11,15 @@ type FeedPayload = {
   result_url?: string;
 };
 
-export default function PostToSimFeedButton({ payload }: { payload: FeedPayload }) {
+export default function PostToSimFeedButton({
+  payload,
+  getShareId,
+}: {
+  payload: FeedPayload;
+  // Optional: lazily create a share (e.g. the full season result) at post time
+  // and attach its id so the detail page can render the rich result.
+  getShareId?: () => Promise<string | null>;
+}) {
   const { user } = useAuth();
   const [state, setState] = useState<"idle" | "posting" | "done">("idle");
 
@@ -19,11 +27,13 @@ export default function PostToSimFeedButton({ payload }: { payload: FeedPayload 
     if (state !== "idle") return;
     setState("posting");
     try {
+      const shareId = payload.share_id ?? (getShareId ? (await getShareId()) ?? undefined : undefined);
       const res = await fetch("/api/sim/feed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...payload,
+          share_id: shareId,
           user_id: user?.id ?? null,
           display_name: user?.displayName ?? null,
           avatar_url: user?.avatarUrl ?? null,
