@@ -8,6 +8,7 @@ import SimDetailActions from "./SimDetailActions";
 import WhatsNext from "@/components/common/WhatsNext";
 import RelatedFeed from "@/components/common/RelatedFeed";
 import StickyCtaBar from "@/components/common/StickyCtaBar";
+import ScrollToTop from "@/components/common/ScrollToTop";
 import MatchupResultView from "@/components/sim/result/MatchupResultView";
 import SeasonResultView from "@/components/sim/result/SeasonResultView";
 import PlayoffResultView from "@/components/sim/result/PlayoffResultView";
@@ -113,6 +114,7 @@ export default async function SimFeedDetailPage({
 
   return (
     <>
+      <ScrollToTop />
       <AppHeader />
       <main className="min-h-screen bg-zinc-950 text-white">
         <div className="max-w-lg mx-auto px-4 py-6 space-y-5">
