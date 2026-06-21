@@ -119,6 +119,7 @@ export default function TriviaClient() {
     setGameMode(gm);
     const qs = await fetchQuestions(gm, difficulty, questionType);
     if (!qs.length) { setFetchError(true); return; }
+    gtm.triviaStart({ gmode: gm, difficulty, category: questionType, question_count: qs.length });
     setQuestions(qs);
     setCurrentIdx(0);
     setAnswers([]);
@@ -139,6 +140,7 @@ export default function TriviaClient() {
     const q = questions[currentIdx];
     const correct = selected === q.answer_index;
     setAnswers((prev) => [...prev, { question: q, selected, correct }]);
+    gtm.triviaAnswer({ gmode: gameMode, difficulty, question_type: q.type, question_index: currentIdx + 1, is_correct: correct });
   };
 
   const handleSearchSubmit = async () => {
@@ -177,11 +179,13 @@ export default function TriviaClient() {
           allCorrect: data.all_correct,
         }]);
         gtm.triviaHardAnswerSelected({ is_correct: data.is_correct, player_name: playerName });
+        gtm.triviaAnswer({ gmode: gameMode, difficulty, question_type: q.type, question_index: currentIdx + 1, is_correct: data.is_correct });
       } catch {
         const idx = q.options.indexOf(playerName);
         const correct = playerName === q.options[q.answer_index];
         setSelected(idx === -1 ? 999 : idx);
         setAnswers((prev) => [...prev, { question: q, selected: idx === -1 ? 999 : idx, correct, submittedName: playerName }]);
+        gtm.triviaAnswer({ gmode: gameMode, difficulty, question_type: q.type, question_index: currentIdx + 1, is_correct: correct });
       } finally {
         setValidating(false);
       }
@@ -195,6 +199,7 @@ export default function TriviaClient() {
     const correct = playerName === q.options[q.answer_index];
     setAnswers((prev) => [...prev, { question: q, selected: answerIdx === -1 ? 999 : answerIdx, correct, submittedName: playerName }]);
     gtm.triviaHardAnswerSelected({ is_correct: correct, player_name: playerName });
+    gtm.triviaAnswer({ gmode: gameMode, difficulty, question_type: q.type, question_index: currentIdx + 1, is_correct: correct });
   };
 
   const filteredPlayers = searchQuery.trim().length < 2
@@ -211,6 +216,8 @@ export default function TriviaClient() {
       setSearchQuery("");
       setShowDropdown(false);
     } else {
+      const finalScore = answers.filter((a) => a.correct).length;
+      gtm.triviaComplete({ gmode: gameMode, difficulty, category: questionType, score: finalScore, total: answers.length });
       setMode("result");
       saveResults(answers);
     }
@@ -706,6 +713,7 @@ export default function TriviaClient() {
             onClick={async () => {
               const score = answers.filter((a) => a.correct).length;
               const total = answers.length;
+              gtm.triviaShare({ gmode: gameMode, difficulty, score, total, source: "result" });
               if (!resultShareId) {
                 await shareToX();
               } else {
@@ -724,6 +732,7 @@ export default function TriviaClient() {
             onClick={async () => {
               const score = answers.filter((a) => a.correct).length;
               const total = answers.length;
+              gtm.triviaFeedPost({ gmode: gameMode, difficulty, score, total });
               let sid = resultShareId;
               if (!sid) {
                 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");

@@ -234,6 +234,44 @@ export const gtm = {
     player_name: string;
   }) => push({ event: "trivia_hard_answer_selected", ...params }),
 
+  triviaStart: (params: {
+    gmode: "daily" | "practice";
+    difficulty: "normal" | "hard";
+    category: "mix" | "stats" | "career";
+    question_count: number;
+  }) => push({ event: "trivia_start", ...params }),
+
+  triviaAnswer: (params: {
+    gmode: "daily" | "practice";
+    difficulty: "normal" | "hard";
+    question_type: "stats" | "career";
+    question_index: number;
+    is_correct: boolean;
+  }) => push({ event: "trivia_answer", ...params }),
+
+  triviaComplete: (params: {
+    gmode: "daily" | "practice";
+    difficulty: "normal" | "hard";
+    category: "mix" | "stats" | "career";
+    score: number;
+    total: number;
+  }) => push({ event: "trivia_complete", ...params }),
+
+  triviaShare: (params: {
+    gmode: "daily" | "practice";
+    difficulty: "normal" | "hard";
+    score: number;
+    total: number;
+    source: "result" | "detail";
+  }) => push({ event: "trivia_share", ...params }),
+
+  triviaFeedPost: (params: {
+    gmode: "daily" | "practice";
+    difficulty: "normal" | "hard";
+    score: number;
+    total: number;
+  }) => push({ event: "trivia_feed_post", ...params }),
+
   feedTabView: (params: {
     main_tab: "craft" | "simulate" | "trivia";
     sub_tab: "builder" | "dream" | null;
