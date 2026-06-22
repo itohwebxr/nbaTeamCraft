@@ -129,6 +129,7 @@ export default function MyPage() {
   const startNewDraft = () => {
     resetDraft();
     setMode("draft");
+    gtm.dreamDraftStart();
     router.push("/draft");
   };
 

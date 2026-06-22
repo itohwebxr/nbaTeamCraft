@@ -5,12 +5,20 @@ import { headers } from "next/headers";
 import { createServerClient } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import type { SeasonShareData } from "@/app/api/season/share/route";
+import type { PublicTeamRosterItem } from "@/types";
 import SeasonResultView from "@/components/sim/result/SeasonResultView";
 import WhatsNext from "@/components/common/WhatsNext";
 import StickyCtaBar from "@/components/common/StickyCtaBar";
 import InlineTriviaNudge from "@/components/common/InlineTriviaNudge";
 
 export const dynamic = "force-dynamic";
+
+async function getRoster(teamId?: string): Promise<PublicTeamRosterItem[] | undefined> {
+  if (!teamId) return undefined;
+  const supabase = createServerClient();
+  const { data } = await supabase.from("public_teams").select("roster_json").eq("id", teamId).single();
+  return (data?.roster_json as PublicTeamRosterItem[] | undefined) ?? undefined;
+}
 
 async function getShare(id: string): Promise<SeasonShareData | null> {
   const supabase = createServerClient();
@@ -67,6 +75,7 @@ export default async function SeasonResultPage({
   const { id } = await params;
   const share = await getShare(id);
   if (!share) notFound();
+  const roster = await getRoster(share.teamId);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
@@ -79,7 +88,7 @@ export default async function SeasonResultPage({
       </header>
 
       <div className="fade-up max-w-lg mx-auto px-4 py-10 space-y-6 text-center">
-        <SeasonResultView data={share} />
+        <SeasonResultView data={share} roster={roster} />
 
         {/* Experiment ① (variant B): in-context trivia nudge */}
         <InlineTriviaNudge pageType="sim" />

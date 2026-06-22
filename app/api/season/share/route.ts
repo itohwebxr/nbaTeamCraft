@@ -16,6 +16,9 @@ export type SeasonShareData = {
   // the shared/detail view can render the full pip grid. Legacy shares omit these.
   games?: boolean[];
   winRate?: number;
+  // public_teams id of the simulated team, so the result/detail view can show
+  // its roster. Legacy shares omit this.
+  teamId?: string;
 };
 
 function generateId(length = 8): string {

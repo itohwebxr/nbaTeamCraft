@@ -16,6 +16,7 @@ import PlayoffResultView from "@/components/sim/result/PlayoffResultView";
 import { parseMatchupUrl } from "@/lib/matchupResult";
 import type { SeasonShareData } from "@/app/api/season/share/route";
 import type { PlayoffShareData } from "@/app/api/playoff/share/route";
+import type { PublicTeamRosterItem } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
@@ -79,7 +80,16 @@ async function buildDetail(
       .single();
     const d = share?.data as SeasonShareData | PlayoffShareData | undefined;
     if (entry.kind === "season" && d?.kind === "season") {
-      return { names: [d.team.name], render: (links) => <SeasonResultView data={d} links={links} /> };
+      let roster: PublicTeamRosterItem[] | undefined;
+      if (d.teamId) {
+        const { data: t } = await supabase
+          .from("public_teams")
+          .select("roster_json")
+          .eq("id", d.teamId)
+          .single();
+        roster = (t?.roster_json as PublicTeamRosterItem[] | undefined) ?? undefined;
+      }
+      return { names: [d.team.name], render: (links) => <SeasonResultView data={d} links={links} roster={roster} /> };
     }
     if (entry.kind === "playoff" && d?.kind === "playoff") {
       return {

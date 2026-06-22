@@ -64,6 +64,7 @@ async function createSeasonShare(result: SeasonResult): Promise<{ shareId: strin
       body: JSON.stringify({
         kind: "season",
         team: { name: team.name, tier: team.tier, overall: team.overall },
+        teamId: team.id,
         wins,
         losses,
         label,

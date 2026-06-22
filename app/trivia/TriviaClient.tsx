@@ -30,6 +30,37 @@ type Answer = {
   allCorrect?: string[];    // Hard played_for_all: all valid answers
 };
 
+// The daily challenge is keyed by the UTC date, so it resets at the next UTC
+// midnight. Time remaining until then = when the next challenge unlocks.
+function msUntilNextDailyReset(): number {
+  const now = new Date();
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0, 0);
+  return next - now.getTime();
+}
+
+// Live countdown shown once today's challenge is done.
+function NextChallengeCountdown() {
+  const [ms, setMs] = useState<number | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMs(msUntilNextDailyReset());
+    const id = setInterval(() => setMs(msUntilNextDailyReset()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (ms === null) return null;
+  const h = Math.floor(ms / 3_600_000);
+  const m = Math.floor((ms % 3_600_000) / 60_000);
+  const time = h > 0 ? `${h}h ${m}m` : `${m}m`;
+
+  return (
+    <span className="flex items-baseline gap-1.5">
+      <span className="text-xs text-zinc-400">Next challenge in</span>
+      <span className="font-display text-lg font-black text-green-400 leading-none tabular-nums">{time}</span>
+    </span>
+  );
+}
+
 export default function TriviaClient() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -433,7 +464,7 @@ export default function TriviaClient() {
               </button>
               <div className="flex items-center gap-3 px-1">
                 {todayDone
-                  ? <span className="text-xs text-green-500">Come back tomorrow for a new challenge!</span>
+                  ? <NextChallengeCountdown />
                   : <span className="text-xs text-zinc-600">5 questions · score saved to profile</span>
                 }
                 {!user && !todayDone && <span className="text-xs text-zinc-600 ml-auto">Login to save</span>}
