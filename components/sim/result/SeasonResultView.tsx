@@ -1,4 +1,7 @@
 import type { SeasonShareData } from "@/app/api/season/share/route";
+import type { PublicTeamRosterItem } from "@/types";
+import { STARTER_SLOTS } from "@/types";
+import { overallColor } from "@/lib/overallColor";
 import TeamName from "./TeamName";
 
 const TIER_COLORS: Record<string, string> = {
@@ -25,12 +28,19 @@ const GRADE_TEXT: Record<string, string> = {
 export default function SeasonResultView({
   data,
   links,
+  roster,
 }: {
   data: SeasonShareData;
   links?: Record<string, string>;
+  roster?: PublicTeamRosterItem[];
 }) {
   const gradeClass = GRADE_TEXT[data.label] ?? "text-white";
   const games = data.games;
+
+  const starters = roster
+    ? STARTER_SLOTS.map((slot) => roster.find((e) => e.slot === slot))
+    : [];
+  const bench = roster ? roster.filter((e) => e.slot === "BENCH1") : [];
 
   return (
     <div className="flex flex-col items-center text-center space-y-5">
@@ -84,6 +94,52 @@ export default function SeasonResultView({
           )}
         </div>
       </div>
+
+      {/* Roster of the simulated team */}
+      {roster && roster.length > 0 && (
+        <div className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-5 text-left">
+          <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">Roster</h3>
+
+          <p className="text-xs text-zinc-600 mb-2">STARTERS</p>
+          <div className="space-y-2 mb-4">
+            {starters.map((entry, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-xs font-bold text-orange-400 w-8 shrink-0">{STARTER_SLOTS[i]}</span>
+                {entry ? (
+                  <>
+                    <span className="text-sm font-semibold text-white flex-1 truncate">{entry.name}</span>
+                    <span className="text-xs text-zinc-500 shrink-0">{entry.season}</span>
+                    <span className={`font-display text-xs font-black w-6 text-right shrink-0 ${overallColor(entry.overall)}`}>
+                      {entry.overall}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-sm text-zinc-700 flex-1">—</span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {bench.length > 0 && (
+            <>
+              <p className="text-xs text-zinc-600 mb-2">6TH MAN</p>
+              <div className="space-y-2">
+                {bench.map((entry, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-zinc-500 w-8 shrink-0">BN</span>
+                    <span className="text-xs text-zinc-400 mr-1 shrink-0">{entry.assignedPosition}</span>
+                    <span className="text-sm font-semibold text-white flex-1 truncate">{entry.name}</span>
+                    <span className="text-xs text-zinc-500 shrink-0">{entry.season}</span>
+                    <span className={`font-display text-xs font-black w-6 text-right shrink-0 ${overallColor(entry.overall)}`}>
+                      {entry.overall}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
