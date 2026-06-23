@@ -283,7 +283,7 @@ export const gtm = {
 
   landingNextCta: (params: {
     page_type: "team" | "sim" | "trivia";
-    target: "craft" | "simulate" | "trivia";
+    target: "craft" | "simulate" | "trivia" | "theme";
     placement: "whatsnext" | "sticky" | "related" | "inline";
     experiment?: string;
     variant?: string;
@@ -292,7 +292,7 @@ export const gtm = {
   nudgeShown: (params: {
     page_type: "team" | "sim" | "trivia";
     placement: "sticky" | "inline";
-    target: "craft" | "trivia";
+    target: "craft" | "trivia" | "theme";
     experiment?: string;
     variant?: string;
   }) => push({ event: "nudge_shown", ...params }),
@@ -300,8 +300,27 @@ export const gtm = {
   nudgeDismissed: (params: {
     page_type: "team" | "sim" | "trivia";
     placement: "sticky" | "inline";
-    target: "craft" | "trivia";
+    target: "craft" | "trivia" | "theme";
     experiment?: string;
     variant?: string;
   }) => push({ event: "nudge_dismissed", ...params }),
+
+  themeFeaturedView: (params: {
+    theme_slug: string;
+    placement: "home" | "landing";
+  }) => push({ event: "theme_featured_view", ...params }),
+
+  themeCtaClick: (params: {
+    theme_slug: string;
+    placement: "home" | "landing";
+  }) => push({ event: "theme_cta_click", ...params }),
+
+  themePost: (params: {
+    theme_slug: string;
+    mode: "sandbox" | "draft";
+  }) => push({ event: "theme_post", ...params }),
+
+  themeFeedView: (params: {
+    theme_slug: string;
+  }) => push({ event: "theme_feed_view", ...params }),
 };

@@ -18,6 +18,8 @@ import RelatedFeed from "@/components/common/RelatedFeed";
 import StickyCtaBar from "@/components/common/StickyCtaBar";
 import InlineTriviaNudge from "@/components/common/InlineTriviaNudge";
 import ScrollToTop from "@/components/common/ScrollToTop";
+import ThemeChip from "@/components/themes/ThemeChip";
+import { getTeamThemes } from "@/lib/themes";
 
 export const dynamic = "force-dynamic";
 
@@ -164,7 +166,7 @@ export default async function TeamDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [team, cupRecord] = await Promise.all([getTeam(id), getCupRecord(id)]);
+  const [team, cupRecord, themes] = await Promise.all([getTeam(id), getCupRecord(id), getTeamThemes(id)]);
   if (!team) notFound();
 
   const creator = await getCreator(team.user_id);
@@ -207,6 +209,13 @@ export default async function TeamDetailPage({
                 {team.overall}
               </p>
               <p className={`font-display text-sm font-bold mt-1 ${tierColor}`}>{team.tier} Tier</p>
+              {themes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                  {themes.map((t) => (
+                    <ThemeChip key={t.id} theme={t} />
+                  ))}
+                </div>
+              )}
             </div>
             <div className="shrink-0">
               <RadarChart

@@ -18,6 +18,7 @@ import HeaderAuth from "@/components/auth/HeaderAuth";
 import { useAuth } from "@/hooks/useAuth";
 import { startXLogin } from "@/lib/xLogin";
 import { withShareUtm } from "@/lib/utm";
+import type { Theme } from "@/lib/themes";
 
 function SlotLabel({ slot }: { slot: string }) {
   if (slot === "BENCH1") return "6TH";
@@ -76,6 +77,8 @@ export default function ResultPage() {
   const [publishedId, setPublishedId] = useState<string | null>(null);
   const [publishedRank, setPublishedRank] = useState<PublicTeamRank | null>(null);
   const [sharePageUrl, setSharePageUrl] = useState<string | null>(null);
+  // Theme attached at post time — remembered so the X share text can carry its hashtag.
+  const [postedTheme, setPostedTheme] = useState<Theme | null>(null);
   // Exhibition match state
   const [matchLoading, setMatchLoading] = useState(false);
   const [match, setMatch] = useState<{
@@ -169,9 +172,10 @@ export default function ResultPage() {
       .filter((e): e is NonNullable<typeof e> => e != null)
       .map((e) => `${slotLabel(e.slot)} : ${formatName(e.playerSeason.name)}`)
       .join("\n");
+    const tags = postedTheme ? `#${postedTheme.hashtag} #NBATeamCraft` : "#NBATeamCraft";
     const text = evaluation
-      ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\nCreated by #NBATeamCraft`
-      : `🏀 ${label}\n${rosterLines}\nCreated by #NBATeamCraft`;
+      ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\nCreated by ${tags}`
+      : `🏀 ${label}\n${rosterLines}\nCreated by ${tags}`;
 
     if (evaluation) {
       gtm.shareTeam({ team_name: label, overall: evaluation.overall, tier: evaluation.tier, mode });
@@ -267,7 +271,8 @@ export default function ResultPage() {
   // callers can chain the cup entry without waiting on React state updates.
   const publishToRankings = async (
     name: string,
-    description = ""
+    description = "",
+    theme: Theme | null = null
   ): Promise<{ id: string; rank: PublicTeamRank } | null> => {
     if (!evaluation) return null;
 
@@ -324,6 +329,7 @@ export default function ResultPage() {
           created_by_browser_id: getBrowserId(),
           user_id: user?.id ?? null,
           description,
+          theme_id: theme?.id ?? null,
         }),
       });
       const json = await res.json();
@@ -331,6 +337,7 @@ export default function ResultPage() {
         setPublishedId(json.id);
         setPublishedRank(json.rank);
         setTeamName(name);
+        setPostedTheme(theme);
         gtm.enterRankings({
           team_name: name,
           overall: evaluation.overall,
@@ -338,6 +345,7 @@ export default function ResultPage() {
           rank_overall: json.rank.overall,
           has_description: description.trim().length > 0,
         });
+        if (theme) gtm.themePost({ theme_slug: theme.slug, mode: "draft" });
         return { id: json.id, rank: json.rank };
       }
     } catch {
@@ -347,11 +355,11 @@ export default function ResultPage() {
   };
 
   // Publish to feed then redirect to team detail page.
-  const handleEnterCupFlow = async (name: string, description = "") => {
+  const handleEnterCupFlow = async (name: string, description = "", theme: Theme | null = null) => {
     if (isPublishing || !evaluation) return;
     setIsPublishing(true);
     try {
-      const published = await publishToRankings(name, description);
+      const published = await publishToRankings(name, description, theme);
       if (!published) return;
       router.push(`/team/${published.id}`);
     } finally {
@@ -363,14 +371,15 @@ export default function ResultPage() {
   const handleShareRanking = () => {
     if (!evaluation || !publishedRank) return;
     const label = teamName || "My NBA Team";
-    const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\nCreated by #NBATeamCraft`;
+    const tags = postedTheme ? `#${postedTheme.hashtag} #NBATeamCraft` : "#NBATeamCraft";
+    const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\nCreated by ${tags}`;
     const url = withShareUtm(sharePageUrl ?? `${window.location.origin}/`, { handle: user?.xHandle, campaign: "ranking_share" });
     gtm.shareRanking({ team_name: label, overall: evaluation.overall, rank_overall: publishedRank.overall });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
     window.open(tweetUrl, "_blank", "noopener");
   };
 
-  const handleSandboxSave = async (nameOverride?: string, descriptionOverride = "") => {
+  const handleSandboxSave = async (nameOverride?: string, descriptionOverride = "", theme: Theme | null = null) => {
     if (sandboxSaving || sandboxSaved || !evaluation) return;
     setSandboxSaving(true);
     setSandboxError(false);
@@ -433,6 +442,7 @@ export default function ResultPage() {
           user_id: user?.id ?? null,
           description: descriptionOverride,
           is_sandbox: true,
+          theme_id: theme?.id ?? null,
         }),
       });
       if (res.ok) {
@@ -440,7 +450,9 @@ export default function ResultPage() {
         const newId = json?.id ?? null;
         if (newId) setSavedTeamId(newId);
         setSandboxSaved(true);
+        setPostedTheme(theme);
         gtm.sandboxSave({ team_name: name, overall: evaluation.overall, tier: evaluation.tier, has_description: descriptionOverride.trim().length > 0 });
+        if (theme) gtm.themePost({ theme_slug: theme.slug, mode: "sandbox" });
         // Redirect to team detail after brief success pause
         if (newId) setTimeout(() => router.push(`/team/${newId}`), 1200);
       } else {
@@ -789,10 +801,10 @@ export default function ResultPage() {
       {showSaveModal && (
         <SaveBuildModal
           initialName={teamName}
-          onConfirm={(name, description) => {
+          onConfirm={(name, description, theme) => {
             setTeamName(name);
             setShowSaveModal(false);
-            handleSandboxSave(name, description);
+            handleSandboxSave(name, description, theme);
           }}
           onCancel={() => setShowSaveModal(false)}
           isSubmitting={sandboxSaving}

@@ -1,0 +1,27 @@
+-- Curated starter themes ("お題"). Idempotent on slug.
+INSERT INTO themes (slug, title, hashtag, emoji, description, category) VALUES
+  ('all-time-defense',       'All-Time Best Defensive Team', 'AllTimeDefense',     '🛡️', 'Build a lock-down lineup from any era.',            'alltime'),
+  ('all-time-3d',            'All-Time 3&D Squad',           'AllTime3AndD',       '🎯', 'Shooters who actually defend.',                     'alltime'),
+  ('all-time-international',  'All-Time International Team',  'AllTimeInternational','🌍', 'Best players born outside the USA.',                'alltime'),
+  ('all-time-undrafted',     'All-Time Undrafted Team',      'AllTimeUndrafted',   '💎', 'No draft pedigree, all production.',                'alltime'),
+  ('all-time-point-guards',  'All-Time Point Guards',        'AllTimePGs',         '🎩', 'Floor generals across every era.',                  'alltime'),
+  ('all-time-bigs',          'All-Time Frontcourt',          'AllTimeBigs',        '🏔️', 'Dominant bigs only.',                               'alltime'),
+  ('2026-fantasy-trade',     '2026 Fantasy Trade Team',      '2026FantasyTrade',   '🔄', 'Your dream 2026 trade build.',                      'trade'),
+  ('giannis-trade',          'Where Should Giannis Go?',     'GiannisTrade',       '🦌', 'Build Giannis''s next team.',                       'trade'),
+  ('lebron-last-dance',      'LeBron''s Last Dance Team',    'LeBronLastDance',    '👑', 'Build the perfect team around LeBron.',             'trade'),
+  ('lakers-rebuild',         'Rebuild the Lakers',           'LakersRebuild',      '💜', 'Fix LA through trades.',                            'trade'),
+  ('greatest-lakers',        'Greatest Lakers Lineup',       'GreatestLakers',     '🏆', 'All-time purple & gold.',                           'team'),
+  ('greatest-celtics',       'Greatest Celtics Lineup',      'GreatestCeltics',    '☘️', 'All-time Boston green.',                            'team'),
+  ('greatest-warriors',      'Greatest Warriors Lineup',     'GreatestWarriors',   '🌉', 'Bay Area dynasty, all eras.',                       'team'),
+  ('one-franchise',          'One-Franchise Team',           'OneFranchise',       '🏟️', 'All five from a single franchise.',                 'team'),
+  ('under-90-ovr',           'Best Team Under 90 OVR',       'Under90',            '🧩', 'No superstar ratings allowed.',                     'constraint'),
+  ('best-2010s',             'Best of the 2010s',            'Best2010s',          '📅', 'Players from the 2010s only.',                      'constraint'),
+  ('best-2000s',             'Best of the 2000s',            'Best2000s',          '💿', 'Y2K-era ballers only.',                             'constraint'),
+  ('one-draft-class',        'One Draft Class Team',         'OneDraftClass',      '🎓', 'All five from the same draft year.',                'constraint'),
+  ('twin-towers',            'Twin Towers Build',            'TwinTowers',         '🗼', 'Go huge — size over spacing.',                      'constraint'),
+  ('small-ball',             'Small-Ball Death Lineup',      'SmallBall',          '⚡', 'Speed and switching, no true center.',              'constraint'),
+  ('bucket-getters',         'Bucket-Getters Only',          'BucketGetters',      '🪣', 'Five elite scorers, defense be damned.',            'constraint'),
+  ('defense-wins',           'Defense Wins Championships',   'DefenseWins',        '🔒', 'Grit-and-grind, stops over buckets.',               'constraint'),
+  ('hometown-heroes',        'Your Hometown Heroes',         'HometownHeroes',     '🏠', 'Best players from your city or region.',            'fun'),
+  ('one-and-done',           'One-and-Done Stars',           'OneAndDone',         '🌟', 'Stars who played one college season.',              'fun')
+ON CONFLICT (slug) DO NOTHING;

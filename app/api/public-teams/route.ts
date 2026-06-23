@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
       user_id,
       description,
       is_sandbox = false,
+      theme_id,
     }: {
       share_id?: string;
       name: string;
@@ -36,6 +37,7 @@ export async function POST(req: NextRequest) {
       user_id?: string | null;
       description?: string | null;
       is_sandbox?: boolean;
+      theme_id?: string | null;
     } = body;
 
     if ((!share_id && !is_sandbox) || !name || !evaluation || !roster) {
@@ -104,6 +106,12 @@ export async function POST(req: NextRequest) {
         continue;
       }
       if (attempts++ > 5) throw new Error("Failed to create public team");
+    }
+
+    // Tag the team with the selected theme (best-effort — never fail the post).
+    if (theme_id) {
+      const { error: tagErr } = await supabase.from("team_themes").insert({ team_id: id, theme_id });
+      if (tagErr) console.error("team_themes insert error:", tagErr.message);
     }
 
     // Calculate ranks (count of non-sandbox teams with higher score in each dimension)
