@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 const TriviaEntryCard = dynamic(() => import("@/components/trivia/TriviaEntryCard"), { ssr: false });
 const TriviaFeed = dynamic(() => import("@/components/trivia/TriviaFeed"), { ssr: false });
 const SimFeed = dynamic(() => import("@/components/sim/SimFeed"), { ssr: false });
+const TodayThemeCard = dynamic(() => import("@/components/themes/TodayThemeCard"), { ssr: false });
 
 type MainTab = "craft" | "simulate" | "trivia";
 type FeedTab = "crafted" | "dream";
@@ -78,6 +79,9 @@ export default function HomeTabs({
       {/* ── Tab 1: Craft a Team ── */}
       {activeTab === "craft" && (
         <div className="space-y-4">
+          {/* Today's featured theme prompt */}
+          <TodayThemeCard />
+
           {/* Two CTA buttons */}
           <button
             onClick={startSandbox}

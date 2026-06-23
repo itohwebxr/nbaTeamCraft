@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import ThemePicker from "@/components/themes/ThemePicker";
+import type { Theme } from "@/lib/themes";
 
 interface SaveBuildModalProps {
   initialName: string;
   initialDescription?: string;
-  onConfirm: (name: string, description: string) => void;
+  onConfirm: (name: string, description: string, theme: Theme | null) => void;
   onCancel: () => void;
   isSubmitting: boolean;
 }
@@ -19,6 +21,7 @@ export default function SaveBuildModal({
 }: SaveBuildModalProps) {
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
+  const [theme, setTheme] = useState<Theme | null>(null);
 
   const trimmed = name.trim();
   const isValid = trimmed.length >= 1 && trimmed.length <= 50;
@@ -41,7 +44,7 @@ export default function SaveBuildModal({
           value={name}
           onChange={(e) => setName(e.target.value.slice(0, 50))}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && isValid && !isSubmitting) onConfirm(trimmed, description.trim());
+            if (e.key === "Enter" && isValid && !isSubmitting) onConfirm(trimmed, description.trim(), theme);
           }}
           placeholder='e.g. "1996 Bulls Dynasty"'
           maxLength={50}
@@ -61,7 +64,11 @@ export default function SaveBuildModal({
           rows={3}
           className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-sm placeholder-zinc-600 focus:outline-none focus:border-orange-500 mb-1 resize-none"
         />
-        <p className="text-xs text-zinc-600 text-right mb-5">{description.trim().length}/280</p>
+        <p className="text-xs text-zinc-600 text-right mb-4">{description.trim().length}/280</p>
+
+        <div className="mb-5">
+          <ThemePicker value={theme} onChange={setTheme} />
+        </div>
 
         <div className="flex gap-3">
           <button
@@ -72,7 +79,7 @@ export default function SaveBuildModal({
             Cancel
           </button>
           <button
-            onClick={() => isValid && onConfirm(trimmed, description.trim())}
+            onClick={() => isValid && onConfirm(trimmed, description.trim(), theme)}
             disabled={!isValid || isSubmitting}
             className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-400 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm transition-colors flex items-center justify-center gap-2"
           >
