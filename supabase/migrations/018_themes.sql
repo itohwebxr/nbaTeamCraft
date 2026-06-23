@@ -16,7 +16,7 @@ CREATE INDEX IF NOT EXISTS themes_active_featured_idx ON themes (is_active, is_f
 
 -- team_themes: which posted teams are tagged with which themes (M:N)
 CREATE TABLE IF NOT EXISTS team_themes (
-  team_id    uuid NOT NULL REFERENCES public_teams(id) ON DELETE CASCADE,
+  team_id    text NOT NULL REFERENCES public_teams(id) ON DELETE CASCADE,
   theme_id   uuid NOT NULL REFERENCES themes(id) ON DELETE CASCADE,
   created_at timestamptz DEFAULT now(),
   PRIMARY KEY (team_id, theme_id)
