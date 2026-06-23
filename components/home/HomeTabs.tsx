@@ -201,7 +201,7 @@ export default function HomeTabs({
       )}
 
       <p className="text-xs text-zinc-600 font-display tracking-widest">
-        DATA: NBA SEASONS 2001–2026
+        DATA: NBA SEASONS 1976–2026
       </p>
     </div>
   );

@@ -24,8 +24,12 @@ const supabase = createClient(
   { realtime: { transport: ws as any } }
 );
 
-// 2000-01 season onwards (season column value "2001" = 2000-01)
-const MIN_SEASON_YEAR = 2001;
+// 1976-77 season onwards (season column value "1977" = 1976-77).
+// 1976-77 is the NBA–ABA merger: the start of the unified modern NBA, with
+// steals/blocks fully tracked (since 1973-74). The per-season percentile model
+// (calcOverall) rates each player against same-season peers, so older eras do
+// not distort ratings.
+const MIN_SEASON_YEAR = 1977;
 const MIN_GAMES = 5;
 
 // Normalize column names from CSV (case-insensitive, strip spaces)
@@ -128,6 +132,9 @@ const TEAM_NAMES: Record<string, string> = {
   SAS: "San Antonio Spurs", SEA: "Seattle SuperSonics", TOR: "Toronto Raptors",
   UTA: "Utah Jazz", VAN: "Vancouver Grizzlies", WAS: "Washington Wizards",
   WSB: "Washington Bullets",
+  // Relocated / defunct franchises appearing from 1976-77 onward
+  KCK: "Kansas City Kings", SDC: "San Diego Clippers", NOJ: "New Orleans Jazz",
+  BUF: "Buffalo Braves", NYN: "New York Nets",
 };
 
 interface PlayerStats {
@@ -334,7 +341,7 @@ async function main() {
 
   console.log(`Loading: ${csvPath}`);
   const players = loadCSV(csvPath);
-  console.log(`Loaded ${players.length} player-season-team records (season >= 2000-01, games >= ${MIN_GAMES})`);
+  console.log(`Loaded ${players.length} player-season-team records (season >= 1976-77, games >= ${MIN_GAMES})`);
 
   if (players.length === 0) {
     console.error("No records loaded. Check CSV column names in the output above.");
