@@ -365,7 +365,7 @@ export default function TriviaClient() {
       postToTriviaFeed(shareId, score, total);
     }
 
-    const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at #NBATeamCraft\n${resultUrl}`;
+    const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at @nbaTeamCraft\n${resultUrl}`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -751,7 +751,7 @@ export default function TriviaClient() {
                 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
                 const emoji = score === total ? "🔥" : score >= total / 2 ? "💪" : "📚";
                 const resultUrl = `${siteUrl}/trivia/result/${resultShareId}`;
-                const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at #NBATeamCraft\n${resultUrl}`;
+                const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at @nbaTeamCraft\n${resultUrl}`;
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
               }
             }}

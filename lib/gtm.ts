@@ -323,4 +323,8 @@ export const gtm = {
   themeFeedView: (params: {
     theme_slug: string;
   }) => push({ event: "theme_feed_view", ...params }),
+
+  followCtaClick: (params: {
+    placement: "post_success" | "theme_feed" | "result_published";
+  }) => push({ event: "follow_cta_click", ...params }),
 };

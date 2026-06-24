@@ -52,7 +52,7 @@ export default function TeamActions({
       .sort((a, b) => (SLOT_ORDER[a.slot] ?? 9) - (SLOT_ORDER[b.slot] ?? 9))
       .map((e) => `${slotLabel(e.slot)} : ${formatName(e.name)}`)
       .join("\n");
-    const text = `🏀 ${label}\nOverall: ${overall} (${tier} Tier)\n${rosterLines}\nCreated by #NBATeamCraft`;
+    const text = `🏀 ${label}\nOverall: ${overall} (${tier} Tier)\n${rosterLines}\nCreated by @nbaTeamCraft`;
     // The team detail page now carries rich roster OGP, so share it directly —
     // visitors land on the interactive team page (Remix / Build CTAs) instead
     // of being bounced to the top page via /share.
