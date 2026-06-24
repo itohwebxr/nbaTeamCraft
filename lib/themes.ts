@@ -93,6 +93,53 @@ export async function getTeamThemes(teamId: string): Promise<Theme[]> {
   }
 }
 
+// A caller-owned team that has not yet been entered into any theme — the
+// candidates for the "attach an existing post" flows.
+export type UnthemedTeam = {
+  id: string;
+  name: string;
+  overall: number;
+  tier: string;
+  is_sandbox: boolean;
+  created_at: string;
+};
+
+// Lists the caller's teams (matched by user_id OR browser_id) that are not yet
+// attached to any theme, newest first.
+export async function getUnthemedTeams(
+  userId: string | null,
+  browserId: string | null,
+  limit = 50
+): Promise<UnthemedTeam[]> {
+  if (!userId && !browserId) return [];
+  try {
+    const supabase = createServerClient();
+    const orFilter = [
+      userId ? `user_id.eq.${userId}` : null,
+      browserId ? `created_by_browser_id.eq.${browserId}` : null,
+    ].filter(Boolean).join(",");
+
+    const { data: owned, error } = await supabase
+      .from("public_teams")
+      .select("id, name, overall, tier, is_sandbox, created_at")
+      .or(orFilter)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw error;
+    const teams = (owned ?? []) as UnthemedTeam[];
+    if (teams.length === 0) return [];
+
+    const { data: tagged } = await supabase
+      .from("team_themes")
+      .select("team_id")
+      .in("team_id", teams.map((t) => t.id));
+    const themed = new Set((tagged ?? []).map((r) => r.team_id as string));
+    return teams.filter((t) => !themed.has(t.id));
+  } catch {
+    return [];
+  }
+}
+
 // Teams tagged with a theme, newest first, as HomeTeam[] for FeedCard.
 export async function getThemeTeams(themeId: string, limit = 30): Promise<HomeTeam[]> {
   try {

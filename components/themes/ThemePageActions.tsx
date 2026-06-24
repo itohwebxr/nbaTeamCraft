@@ -5,6 +5,7 @@ import { useBuildTheme } from "@/hooks/useBuildTheme";
 import { gtm } from "@/lib/gtm";
 import type { Theme } from "@/lib/themes";
 import FollowBrandButton from "@/components/common/FollowBrandButton";
+import AttachExistingTeam from "@/components/themes/AttachExistingTeam";
 
 // Fires the feed-view event and renders the "Build for this theme" CTA on a
 // theme feed page.
@@ -27,6 +28,7 @@ export default function ThemePageActions({ theme }: { theme: Theme }) {
       >
         Build your take on {theme.emoji ?? ""} #{theme.hashtag} →
       </button>
+      <AttachExistingTeam themeId={theme.id} themeSlug={theme.slug} />
       <FollowBrandButton placement="theme_feed" />
     </div>
   );

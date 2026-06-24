@@ -320,6 +320,12 @@ export const gtm = {
     mode: "sandbox" | "draft";
   }) => push({ event: "theme_post", ...params }),
 
+  // Attaching an existing team to a theme after the fact.
+  themeAttach: (params: {
+    theme_slug: string;
+    source: "theme_page" | "team_page";
+  }) => push({ event: "theme_attach", ...params }),
+
   themeFeedView: (params: {
     theme_slug: string;
   }) => push({ event: "theme_feed_view", ...params }),
