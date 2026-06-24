@@ -19,6 +19,7 @@ import StickyCtaBar from "@/components/common/StickyCtaBar";
 import InlineTriviaNudge from "@/components/common/InlineTriviaNudge";
 import ScrollToTop from "@/components/common/ScrollToTop";
 import ThemeChip from "@/components/themes/ThemeChip";
+import AttachTeamTheme from "@/components/team/AttachTeamTheme";
 import { getTeamThemes } from "@/lib/themes";
 
 export const dynamic = "force-dynamic";
@@ -345,6 +346,14 @@ export default async function TeamDetailPage({
           likeCount={team.like_count}
           isSandbox={!!team.is_sandbox}
           roster={team.roster_json}
+        />
+
+        {/* Owner-only: enter this team into a theme (while it has none) */}
+        <AttachTeamTheme
+          teamId={team.id}
+          teamUserId={team.user_id ?? null}
+          teamBrowserId={team.created_by_browser_id ?? null}
+          hasTheme={themes.length > 0}
         />
 
         {/* Experiment ① (variant B): in-context trivia nudge */}
