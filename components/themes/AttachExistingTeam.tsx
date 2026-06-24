@@ -30,6 +30,7 @@ export default function AttachExistingTeam({
   const openPicker = async () => {
     setOpen(true);
     setError(null);
+    setSubmittingId(null);
     setFetching(true);
     try {
       const params = new URLSearchParams({ userId: user.id, browserId: getBrowserId() });
@@ -60,7 +61,10 @@ export default function AttachExistingTeam({
         return;
       }
       gtm.themeAttach({ theme_slug: themeSlug, source: "theme_page" });
-      setOpen(false);
+      // Keep the picker open so the user can attach more in a row — just drop
+      // the team we attached from the list.
+      setTeams((prev) => (prev ? prev.filter((t) => t.id !== teamId) : prev));
+      setSubmittingId(null);
       router.refresh();
     } catch {
       setError("Couldn't add this team. Try again.");
