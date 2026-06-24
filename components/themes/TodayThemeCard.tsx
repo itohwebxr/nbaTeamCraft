@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { useFeaturedTheme } from "@/hooks/useFeaturedTheme";
 import { useBuildTheme } from "@/hooks/useBuildTheme";
 import { gtm } from "@/lib/gtm";
+import FollowBrandButton from "@/components/common/FollowBrandButton";
 
 // Home (Craft tab) surface: today's featured theme (1 main + 2 subs). The main
 // prompt drives a themed build; subs link to their theme feeds.
@@ -46,6 +47,8 @@ export default function TodayThemeCard() {
       >
         Build your take →
       </button>
+
+      <FollowBrandButton placement="home_theme" label="Follow for the daily theme" compact />
 
       {subs.length > 0 && (
         <div className="flex flex-wrap gap-1.5 pt-0.5">

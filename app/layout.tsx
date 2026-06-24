@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, DM_Sans } from "next/font/google";
 import "./globals.css";
+import RetentionTracker from "@/components/common/RetentionTracker";
 
 const barlow = Barlow_Condensed({
   variable: "--font-barlow",
@@ -75,6 +76,7 @@ export default function RootLayout({
             style={{ display: "none", visibility: "hidden" }}
           />
         </noscript>
+        <RetentionTracker />
         {children}
       </body>
     </html>

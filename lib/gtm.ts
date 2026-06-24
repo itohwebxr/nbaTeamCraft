@@ -325,6 +325,21 @@ export const gtm = {
   }) => push({ event: "theme_feed_view", ...params }),
 
   followCtaClick: (params: {
-    placement: "post_success" | "theme_feed" | "result_published";
+    placement: "post_success" | "theme_feed" | "result_published" | "home_theme";
   }) => push({ event: "follow_cta_click", ...params }),
+
+  // Stitch logged-in users across devices (GA4 user_id) — pushed once the auth
+  // session is known.
+  identify: (params: { user_id: string }) =>
+    push({ event: "identify", ...params }),
+
+  // First-party visit/retention context, pushed once per page load. GA4 tracks
+  // new-vs-returning on its own, but exposing these as event params lets us
+  // segment any event (e.g. theme_post) by returning vs. new in Explorations
+  // and read the paid-cohort funnel.
+  appOpen: (params: {
+    visit_number: number;
+    returning: boolean;
+    days_since_first_visit: number;
+  }) => push({ event: "app_open", ...params }),
 };
