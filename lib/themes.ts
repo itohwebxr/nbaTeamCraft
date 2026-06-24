@@ -140,7 +140,8 @@ export async function getUnthemedTeams(
   }
 }
 
-// Teams tagged with a theme, newest first, as HomeTeam[] for FeedCard.
+// Teams tagged with a theme, ordered by the team's POST date (newest first) —
+// not the attach date — as HomeTeam[] for FeedCard.
 export async function getThemeTeams(themeId: string, limit = 30): Promise<HomeTeam[]> {
   try {
     const supabase = createServerClient();
@@ -148,7 +149,7 @@ export async function getThemeTeams(themeId: string, limit = 30): Promise<HomeTe
       .from("team_themes")
       .select("public_teams!inner(*, profiles!user_id(display_name, avatar_url, x_handle))")
       .eq("theme_id", themeId)
-      .order("created_at", { ascending: false })
+      .order("created_at", { ascending: false, referencedTable: "public_teams" })
       .limit(limit);
     if (error) throw error;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -166,7 +167,12 @@ export async function getThemeTeams(themeId: string, limit = 30): Promise<HomeTe
             ? { displayName: p.display_name ?? null, avatarUrl: p.avatar_url ?? null, xHandle: p.x_handle ?? null }
             : null,
         } as HomeTeam;
-      });
+      })
+      // Sort by the team's post date (created_at) regardless of when it was
+      // attached to the theme.
+      .sort((a: HomeTeam, b: HomeTeam) =>
+        Date.parse(b.created_at ?? "") - Date.parse(a.created_at ?? "")
+      );
   } catch {
     return [];
   }
