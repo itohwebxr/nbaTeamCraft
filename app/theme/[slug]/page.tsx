@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import AppHeader from "@/components/layout/AppHeader";
 import FeedCard from "@/components/home/FeedCard";
 import ScrollToTop from "@/components/common/ScrollToTop";
@@ -7,6 +8,14 @@ import ThemePageActions from "@/components/themes/ThemePageActions";
 import { getThemeBySlug, getThemeTeams } from "@/lib/themes";
 
 export const dynamic = "force-dynamic";
+
+async function getSiteUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/+$/, "");
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "localhost:3000";
+  const proto = host.startsWith("localhost") ? "http" : "https";
+  return `${proto}://${host}`;
+}
 
 export async function generateMetadata({
   params,
@@ -18,7 +27,16 @@ export async function generateMetadata({
   if (!theme) return { title: "NBA TeamCraft" };
   const title = `${theme.emoji ?? ""} ${theme.title} | NBA TeamCraft`;
   const description = theme.description ?? `Build your take on ${theme.title}.`;
-  return { title, description, openGraph: { title, description }, twitter: { card: "summary", title, description } };
+  const ogParams = new URLSearchParams({ title: theme.title, hashtag: theme.hashtag });
+  if (theme.emoji) ogParams.set("emoji", theme.emoji);
+  if (theme.description) ogParams.set("desc", theme.description);
+  const ogImage = `${await getSiteUrl()}/api/og/theme?${ogParams.toString()}`;
+  return {
+    title,
+    description,
+    openGraph: { title, description, images: [{ url: ogImage, width: 1200, height: 630, alt: title }] },
+    twitter: { card: "summary_large_image", title, description, images: [ogImage] },
+  };
 }
 
 export default async function ThemePage({

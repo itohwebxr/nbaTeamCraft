@@ -16,7 +16,7 @@ export default function TriviaDetailActions({ score, total, shareId, gmode, diff
     const emoji = score === total ? "🔥" : score >= total * 0.6 ? "💪" : "📚";
     const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
     const resultUrl = shareId ? `${siteUrl}/trivia/result/${shareId}` : `${siteUrl}/trivia`;
-    const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at #NBATeamCraft\n${resultUrl}`;
+    const text = `${emoji} Trivia Challenge: ${score}/${total} correct!\nTest your NBA knowledge at @nbaTeamCraft\n${resultUrl}`;
     window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, "_blank");
   };
 

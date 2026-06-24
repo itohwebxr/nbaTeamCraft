@@ -108,7 +108,7 @@ function buildShareData(result: PlayoffResult) {
 // champion OGP image.
 async function shareToX(result: PlayoffResult) {
   const { champion, size } = result;
-  const text = `🏆 ${champion.name} wins the ${size}-Team Playoff!\nSimulated by #NBATeamCraft`;
+  const text = `🏆 ${champion.name} wins the ${size}-Team Playoff!\nSimulated by @nbaTeamCraft`;
   // Open blank tab synchronously (no noopener — we need to set location after await)
   const win = window.open("", "_blank");
   let shareUrl = window.location.origin + "/playoffs";

@@ -253,7 +253,7 @@ function SeriesResult({
         <button
           onClick={() =>
             shareToX(
-              `🏀 ${home.name} ${wins.home}–${wins.away} ${away.name}\n${winnerName} takes the series! Simulated by #NBATeamCraft`,
+              `🏀 ${home.name} ${wins.home}–${wins.away} ${away.name}\n${winnerName} takes the series! Simulated by @nbaTeamCraft`,
               {
                 home: home.name,
                 away: away.name,
@@ -642,7 +642,7 @@ export default function MatchupClient({ initialTeams }: { initialTeams?: import(
   if (sim?.mode === "single" && home && away) {
     const r = sim.result;
     const winnerName = r.winner === "home" ? sim.home.name : sim.away.name;
-    const shareText = `🏀 ${sim.home.name} ${r.homeTotal}–${r.awayTotal} ${sim.away.name}\n${winnerName} wins! Simulated by #NBATeamCraft`;
+    const shareText = `🏀 ${sim.home.name} ${r.homeTotal}–${r.awayTotal} ${sim.away.name}\n${winnerName} wins! Simulated by @nbaTeamCraft`;
     const singleSourceId = (() => {
       const sp = params.get("homeTeamId");
       return sp && sp !== RANDOM_ID ? sp : null;

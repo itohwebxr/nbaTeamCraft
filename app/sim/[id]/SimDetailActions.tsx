@@ -27,7 +27,7 @@ export default function SimDetailActions({ title, shareId, resultUrl, kind }: Pr
     : resultUrl ?? "";
 
   const handleShare = () => {
-    const text = `${title}\nSimulated by #NBATeamCraft`;
+    const text = `${title}\nSimulated by @nbaTeamCraft`;
     const url = shareUrl
       ? `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`
       : `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;

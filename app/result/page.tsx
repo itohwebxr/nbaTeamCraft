@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { startXLogin } from "@/lib/xLogin";
 import { withShareUtm } from "@/lib/utm";
 import type { Theme } from "@/lib/themes";
+import FollowBrandButton from "@/components/common/FollowBrandButton";
 
 function SlotLabel({ slot }: { slot: string }) {
   if (slot === "BENCH1") return "6TH";
@@ -172,7 +173,7 @@ export default function ResultPage() {
       .filter((e): e is NonNullable<typeof e> => e != null)
       .map((e) => `${slotLabel(e.slot)} : ${formatName(e.playerSeason.name)}`)
       .join("\n");
-    const tags = postedTheme ? `#${postedTheme.hashtag} #NBATeamCraft` : "#NBATeamCraft";
+    const tags = postedTheme ? `#${postedTheme.hashtag} @nbaTeamCraft` : "@nbaTeamCraft";
     const text = evaluation
       ? `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\n${rosterLines}\nCreated by ${tags}`
       : `🏀 ${label}\n${rosterLines}\nCreated by ${tags}`;
@@ -371,7 +372,7 @@ export default function ResultPage() {
   const handleShareRanking = () => {
     if (!evaluation || !publishedRank) return;
     const label = teamName || "My NBA Team";
-    const tags = postedTheme ? `#${postedTheme.hashtag} #NBATeamCraft` : "#NBATeamCraft";
+    const tags = postedTheme ? `#${postedTheme.hashtag} @nbaTeamCraft` : "@nbaTeamCraft";
     const text = `🏀 ${label}\nOverall: ${evaluation.overall} (${evaluation.tier} Tier)\nRanked #${publishedRank.overall} Overall\nCreated by ${tags}`;
     const url = withShareUtm(sharePageUrl ?? `${window.location.origin}/`, { handle: user?.xHandle, campaign: "ranking_share" });
     gtm.shareRanking({ team_name: label, overall: evaluation.overall, rank_overall: publishedRank.overall });
@@ -532,6 +533,7 @@ export default function ResultPage() {
                 <span>𝕏</span> Share Ranking
               </button>
             </div>
+            <FollowBrandButton placement="result_published" />
           </div>
         )}
 
@@ -631,6 +633,7 @@ export default function ResultPage() {
                   <span className="text-emerald-400">✓</span>
                   <span className="text-sm font-bold text-emerald-400">Posted to the feed!</span>
                 </div>
+                <FollowBrandButton placement="post_success" />
                 {!user && (
                   <div className="bg-zinc-800 rounded-xl p-4 space-y-2">
                     <p className="text-xs text-zinc-400 font-bold">Keep it across devices</p>

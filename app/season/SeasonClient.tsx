@@ -88,7 +88,7 @@ async function createSeasonShare(result: SeasonResult): Promise<{ shareId: strin
 // tweet carries the season OGP image.
 async function shareToX(result: SeasonResult) {
   const { team, wins, losses, label } = result;
-  const text = `🏀 ${team.name}: ${wins}-${losses} (${label})\nSimulated by #NBATeamCraft`;
+  const text = `🏀 ${team.name}: ${wins}-${losses} (${label})\nSimulated by @nbaTeamCraft`;
   // Open blank tab synchronously (no noopener — we need to set location after await)
   const win = window.open("", "_blank");
   const { shareId, shareUrl } = await createSeasonShare(result);

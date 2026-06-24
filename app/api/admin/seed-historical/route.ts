@@ -1,4 +1,4 @@
-// Admin-only route to seed every real NBA team (2000–2026) into public_teams
+// Admin-only route to seed every real NBA team (1976–2026) into public_teams
 // as ready-made simulator opponents. Source NBA data (teams / players /
 // player_seasons) is only READ — nothing is mutated. Generated rows are tagged
 // with created_by_browser_id = "__historical__" so they can be excluded from
