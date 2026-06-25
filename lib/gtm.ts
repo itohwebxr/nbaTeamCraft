@@ -43,6 +43,25 @@ export const gtm = {
     mode: string;
   }) => push({ event: "draft_complete", ...params }),
 
+  // Left /draft with an incomplete roster (started picking but didn't finish).
+  draftAbandon: (params: {
+    roster_size: number;
+    teams_seen_count: number;
+    mode: string;
+  }) => push({ event: "draft_abandon", ...params }),
+
+  // Used the "auto-fill the rest" shortcut to finish a partial roster.
+  draftAutofill: (params: {
+    filled_count: number;
+    roster_size: number;
+    mode: string;
+  }) => push({ event: "draft_autofill", ...params }),
+
+  // Recovery nudge shown to a stalling/leaving drafter, and what they did.
+  draftExitNudge: (params: {
+    action: "shown" | "autofill" | "theme" | "dismiss";
+  }) => push({ event: "draft_exit_nudge", ...params }),
+
   viewResult: (params: {
     overall: number;
     tier: string;
