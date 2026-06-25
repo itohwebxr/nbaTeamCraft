@@ -309,6 +309,7 @@ export default async function TeamDetailPage({
                     <img
                       src={creator.avatarUrl}
                       alt={creator.displayName ?? "Creator"}
+                      referrerPolicy="no-referrer"
                       className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0"
                     />
                   ) : (

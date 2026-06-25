@@ -162,7 +162,7 @@ export default function TeamComments({ teamId }: { teamId: string }) {
             <div key={c.id} className="flex gap-3">
               {c.author?.avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={c.author.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0" />
+                <img src={c.author.avatarUrl} alt="" referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs text-zinc-500 shrink-0">
                   {authorLabel(c.author).charAt(c.author ? 1 : 0).toUpperCase() || "G"}

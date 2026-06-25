@@ -105,7 +105,7 @@ export default function ActivityFeedCard(props: Props) {
         <div className="flex items-center gap-2 mb-3">
           {entry.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={entry.avatar_url} alt="" className="w-6 h-6 rounded-full border border-zinc-700 shrink-0 object-cover" />
+            <img src={entry.avatar_url} alt="" referrerPolicy="no-referrer" className="w-6 h-6 rounded-full border border-zinc-700 shrink-0 object-cover" />
           ) : (
             <div className="w-6 h-6 rounded-full bg-zinc-700 shrink-0 flex items-center justify-center text-[10px] font-bold text-zinc-400">
               {displayName.charAt(0).toUpperCase()}

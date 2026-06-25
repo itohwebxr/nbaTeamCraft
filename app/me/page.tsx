@@ -172,7 +172,7 @@ export default function MyPage() {
             <div className="flex items-center gap-4">
               {user.avatarUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.avatarUrl} alt="" className="w-14 h-14 rounded-full border-2 border-zinc-700 shrink-0" />
+                <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" className="w-14 h-14 rounded-full border-2 border-zinc-700 shrink-0" />
               )}
               <div className="flex-1 min-w-0">
                 <h1 className="font-display text-xl font-black text-white truncate">{user.displayName}</h1>

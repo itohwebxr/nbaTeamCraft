@@ -47,6 +47,7 @@ export default function FeedCard({
             <img
               src={team.creator.avatarUrl}
               alt=""
+              referrerPolicy="no-referrer"
               className="w-6 h-6 rounded-full border border-zinc-700 shrink-0"
             />
           ) : (

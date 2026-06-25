@@ -119,7 +119,7 @@ export default function FeedComments({ feedType, feedId }: Props) {
             <div key={c.id} className="flex gap-3">
               {c.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={c.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0" />
+                <img src={c.avatar_url} alt="" referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs text-zinc-500 shrink-0">
                   {(c.display_name ?? "G").charAt(0).toUpperCase()}

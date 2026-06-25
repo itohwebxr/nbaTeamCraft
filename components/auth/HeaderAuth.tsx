@@ -41,6 +41,7 @@ export default function HeaderAuth() {
           <img
             src={user.avatarUrl}
             alt={user.displayName ?? "My Page"}
+            referrerPolicy="no-referrer"
             className="w-8 h-8 rounded-full border border-zinc-700 hover:border-orange-400 transition-colors"
           />
         ) : (

@@ -41,7 +41,7 @@ export default function XLoginButton({ user, browserId, returnTo = "/result", on
         <div className="flex items-center gap-2">
           {user.avatarUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatarUrl} alt={user.displayName ?? ""} className="w-7 h-7 rounded-full border border-zinc-700" />
+            <img src={user.avatarUrl} alt={user.displayName ?? ""} referrerPolicy="no-referrer" className="w-7 h-7 rounded-full border border-zinc-700" />
           )}
           <button
             onClick={handleLogout}
@@ -57,7 +57,7 @@ export default function XLoginButton({ user, browserId, returnTo = "/result", on
       <div className="flex items-center gap-3 px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-xl">
         {user.avatarUrl && (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={user.avatarUrl} alt="" className="w-9 h-9 rounded-full border border-zinc-700 shrink-0" />
+          <img src={user.avatarUrl} alt="" referrerPolicy="no-referrer" className="w-9 h-9 rounded-full border border-zinc-700 shrink-0" />
         )}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-white truncate">{user.displayName}</p>

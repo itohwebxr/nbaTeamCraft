@@ -82,7 +82,7 @@ export default async function TriviaFeedDetailPage({
             <div className="flex items-center gap-2">
               {entry.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={entry.avatar_url} alt="" className="w-8 h-8 rounded-full border border-zinc-700 object-cover shrink-0" />
+                <img src={entry.avatar_url} alt="" referrerPolicy="no-referrer" className="w-8 h-8 rounded-full border border-zinc-700 object-cover shrink-0" />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-zinc-400 shrink-0">
                   {(entry.display_name ?? "A").charAt(0).toUpperCase()}
