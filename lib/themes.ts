@@ -29,31 +29,67 @@ export async function getActiveThemes(): Promise<Theme[]> {
   }
 }
 
-// Today's featured themes: a deterministic daily rotation over the featured
-// pool. 1 main + up to 2 subs. Stable per UTC day.
+// Today's featured themes: 1 main + up to 2 subs.
+// Manual pins (themes.featured_priority) take precedence — the highest-priority
+// pinned theme becomes the main and the next pins fill the sub slots. With no
+// pins, falls back to a deterministic daily rotation over the featured pool
+// (stable per UTC day). Sub slots short of 2 are topped up from the rotation.
 export async function getFeaturedThemes(): Promise<{ main: Theme; subs: Theme[] } | null> {
   try {
     const supabase = createServerClient();
-    const { data, error } = await supabase
+
+    // 1) Manual pins take precedence.
+    const { data: pinnedData } = await supabase
+      .from("themes")
+      .select(THEME_COLS)
+      .eq("is_active", true)
+      .not("featured_priority", "is", null)
+      .order("featured_priority", { ascending: false })
+      .order("created_at", { ascending: true });
+    const pinned = (pinnedData ?? []) as Theme[];
+
+    // 2) Rotation pool — also used to top up sub slots.
+    const { data: poolData, error } = await supabase
       .from("themes")
       .select(THEME_COLS)
       .eq("is_active", true)
       .eq("is_featured", true)
       .order("created_at", { ascending: true });
     if (error) throw error;
-    const pool = (data ?? []) as Theme[];
-    if (pool.length === 0) return null;
+    const pool = (poolData ?? []) as Theme[];
 
-    const dayIndex = Math.floor(Date.now() / 86_400_000);
-    const n = pool.length;
-    const offset = ((dayIndex % n) + n) % n;
-    const pick = (k: number) => pool[(offset + k) % n];
-    const main = pick(0);
     const subs: Theme[] = [];
-    for (let k = 1; k < n && subs.length < 2; k++) {
-      const t = pick(k);
-      if (t.id !== main.id && !subs.some((s) => s.id === t.id)) subs.push(t);
+    const used = new Set<string>();
+    let main: Theme | null = null;
+
+    const addSub = (t: Theme) => {
+      if (subs.length < 2 && !used.has(t.id)) {
+        subs.push(t);
+        used.add(t.id);
+      }
+    };
+
+    if (pinned.length > 0) {
+      main = pinned[0];
+      used.add(main.id);
+      for (let i = 1; i < pinned.length; i++) addSub(pinned[i]);
+    } else if (pool.length > 0) {
+      const n = pool.length;
+      const offset = ((Math.floor(Date.now() / 86_400_000) % n) + n) % n;
+      main = pool[offset];
+      used.add(main.id);
+      for (let k = 1; k < n; k++) addSub(pool[(offset + k) % n]);
     }
+
+    if (!main) return null;
+
+    // Top up remaining sub slots from the rotation pool (deterministic by day).
+    if (subs.length < 2 && pool.length > 0) {
+      const n = pool.length;
+      const offset = ((Math.floor(Date.now() / 86_400_000) % n) + n) % n;
+      for (let k = 0; k < n; k++) addSub(pool[(offset + k) % n]);
+    }
+
     return { main, subs };
   } catch {
     return null;
