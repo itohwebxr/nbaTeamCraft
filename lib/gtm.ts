@@ -57,6 +57,11 @@ export const gtm = {
     mode: string;
   }) => push({ event: "draft_autofill", ...params }),
 
+  // Recovery nudge shown to a stalling/leaving drafter, and what they did.
+  draftExitNudge: (params: {
+    action: "shown" | "autofill" | "theme" | "dismiss";
+  }) => push({ event: "draft_exit_nudge", ...params }),
+
   viewResult: (params: {
     overall: number;
     tier: string;

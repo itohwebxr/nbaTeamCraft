@@ -15,6 +15,8 @@ import PositionSelectModal from "@/components/draft/PositionSelectModal";
 import TeamLoadingScreen from "@/components/draft/TeamLoadingScreen";
 import SandboxFilterBar from "@/components/sandbox/SandboxFilterBar";
 import HeaderAuth from "@/components/auth/HeaderAuth";
+import DraftThemeStrip from "@/components/draft/DraftThemeStrip";
+import DraftExitNudge from "@/components/draft/DraftExitNudge";
 
 export default function DraftPage() {
   const router = useRouter();
@@ -281,6 +283,8 @@ export default function DraftPage() {
         </div>
       </header>
 
+      <DraftThemeStrip />
+
       {store.mode === "sandbox" && <SandboxFilterBar />}
 
       <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col lg:flex-row gap-4">
@@ -451,6 +455,15 @@ export default function DraftPage() {
           )}
         </div>
       </div>
+
+      {/* Recovery nudge for stalling / leaving drafters */}
+      <DraftExitNudge
+        rosterSize={filledSlots}
+        totalSlots={TOTAL_ROSTER_SIZE}
+        canAutofill={isSandbox}
+        onAutofill={handleAutofill}
+        autofilling={autofilling}
+      />
 
       {/* Position select modal */}
       {pendingDraft && (
