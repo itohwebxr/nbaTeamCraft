@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -26,6 +26,32 @@ export default function DraftPage() {
     positions: Position[];
   } | null>(null);
   const [showResetModal, setShowResetModal] = useState(false);
+  const [autofilling, setAutofilling] = useState(false);
+  // Set once we navigate to results (manually or via auto-fill) so the unmount
+  // cleanup doesn't misfire a draft_abandon event.
+  const completedRef = useRef(false);
+
+  // Fire draft_abandon when leaving /draft mid-build (started picking but didn't
+  // finish). Covers client navigation (cleanup) and tab close (pagehide).
+  useEffect(() => {
+    const fire = () => {
+      if (completedRef.current) return;
+      const s = useDraftStore.getState();
+      if (s.roster.length >= 1 && s.roster.length < TOTAL_ROSTER_SIZE) {
+        completedRef.current = true;
+        gtm.draftAbandon({
+          roster_size: s.roster.length,
+          teams_seen_count: s.appearedTeamIds.length,
+          mode: s.mode,
+        });
+      }
+    };
+    window.addEventListener("pagehide", fire);
+    return () => {
+      window.removeEventListener("pagehide", fire);
+      fire();
+    };
+  }, []);
 
   // True if at least one player on this team can actually be drafted
   // (position available AND budget allows finishing the roster)
@@ -188,13 +214,55 @@ export default function DraftPage() {
   const draftedFromCurrentTeam = currentPlayers.some((p) => store.isPlayerDrafted(p.nba_player_id));
 
   const goToResults = () => {
+    // Read fresh state — auto-fill mutates the store right before navigating.
+    const s = useDraftStore.getState();
+    completedRef.current = true;
     gtm.draftComplete({
-      used_budget: usedBudget,
-      remaining_budget: TOTAL_BUDGET - usedBudget,
-      teams_seen_count: store.appearedTeamIds.length,
-      mode: store.mode,
+      used_budget: s.usedBudget,
+      remaining_budget: TOTAL_BUDGET - s.usedBudget,
+      teams_seen_count: s.appearedTeamIds.length,
+      mode: s.mode,
     });
     router.push("/result");
+  };
+
+  // Fill the remaining slots with the best-available players, then go to results.
+  const handleAutofill = async () => {
+    if (autofilling) return;
+    setAutofilling(true);
+    try {
+      const s = useDraftStore.getState();
+      const vacantStarters = s.getVacantStarterSlots();
+      const vacantBenchCount = s.getVacantBenchSlots().length;
+      const res = await fetch("/api/draft/autofill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vacantStarters,
+          vacantBenchCount,
+          draftedPlayerIds: s.draftedPlayerIds,
+          season: s.sandboxConfig.seasonFilter !== "Random" ? s.sandboxConfig.seasonFilter : undefined,
+          teamAbbr: s.sandboxConfig.teamFilter !== "Random" ? s.sandboxConfig.teamFilter : undefined,
+        }),
+      });
+      if (!res.ok) throw new Error("autofill failed");
+      const json = await res.json();
+      const picks = (json.picks ?? []) as {
+        playerSeason: PlayerSeason;
+        slot: RosterSlot;
+        assignedPosition: Position;
+      }[];
+      for (const p of picks) store.draftPlayer(p.playerSeason, p.slot, p.assignedPosition);
+      gtm.draftAutofill({
+        filled_count: picks.length,
+        roster_size: useDraftStore.getState().roster.length,
+        mode: s.mode,
+      });
+      goToResults();
+    } catch (e) {
+      console.error(e);
+      setAutofilling(false);
+    }
   };
 
   return (
@@ -328,13 +396,33 @@ export default function DraftPage() {
                 🏆 View Results
               </button>
             ) : (
-              <button
-                disabled
-                className="w-full mt-4 py-3.5 rounded-xl font-display font-bold text-sm tracking-wide uppercase
-                  bg-zinc-800 text-zinc-500 cursor-not-allowed"
-              >
-                Pick {TOTAL_ROSTER_SIZE - filledSlots} more to finish
-              </button>
+              <div className="mt-4 space-y-2">
+                <button
+                  disabled
+                  className="w-full py-3.5 rounded-xl font-display font-bold text-sm tracking-wide uppercase
+                    bg-zinc-800 text-zinc-500 cursor-not-allowed"
+                >
+                  Pick {TOTAL_ROSTER_SIZE - filledSlots} more to finish
+                </button>
+                {filledSlots >= 1 && (
+                  <button
+                    onClick={handleAutofill}
+                    disabled={autofilling}
+                    className="w-full py-3 rounded-xl border border-orange-500/50 hover:border-orange-500
+                      bg-orange-500/10 hover:bg-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed
+                      text-orange-300 font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    {autofilling ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-orange-300/40 border-t-orange-300 rounded-full animate-spin" />
+                        Building…
+                      </>
+                    ) : (
+                      <>⚡ Auto-fill the rest &amp; see results</>
+                    )}
+                  </button>
+                )}
+              </div>
             )
           ) : (
             <>
