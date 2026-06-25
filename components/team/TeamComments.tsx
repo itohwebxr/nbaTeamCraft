@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getBrowserId } from "@/lib/browserId";
 import { gtm } from "@/lib/gtm";
+import Avatar from "@/components/common/Avatar";
 
 type Author = { xHandle: string | null; displayName: string | null; avatarUrl: string | null } | null;
 
@@ -160,14 +161,11 @@ export default function TeamComments({ teamId }: { teamId: string }) {
         <div className="space-y-4">
           {comments.map((c) => (
             <div key={c.id} className="flex gap-3">
-              {c.author?.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={c.author.avatarUrl} alt="" referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs text-zinc-500 shrink-0">
-                  {authorLabel(c.author).charAt(c.author ? 1 : 0).toUpperCase() || "G"}
-                </div>
-              )}
+              <Avatar
+                src={c.author?.avatarUrl}
+                name={c.author?.displayName ?? c.author?.xHandle ?? "G"}
+                className="w-8 h-8 rounded-full border border-zinc-700 shrink-0"
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   {c.author?.xHandle ? (

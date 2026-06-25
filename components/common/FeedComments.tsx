@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { getBrowserId } from "@/lib/browserId";
+import Avatar from "@/components/common/Avatar";
 
 interface Props {
   feedType: "sim" | "trivia";
@@ -117,14 +118,11 @@ export default function FeedComments({ feedType, feedId }: Props) {
         <div className="space-y-4">
           {comments.map((c) => (
             <div key={c.id} className="flex gap-3">
-              {c.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={c.avatar_url} alt="" referrerPolicy="no-referrer" className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0" />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs text-zinc-500 shrink-0">
-                  {(c.display_name ?? "G").charAt(0).toUpperCase()}
-                </div>
-              )}
+              <Avatar
+                src={c.avatar_url}
+                name={c.display_name ?? "G"}
+                className="w-8 h-8 rounded-full border border-zinc-700 shrink-0"
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-sm font-bold text-zinc-300 truncate">

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import FeedLikeButton from "./FeedLikeButton";
+import Avatar from "@/components/common/Avatar";
 
 export type SimEntry = {
   id: string;
@@ -103,14 +104,12 @@ export default function ActivityFeedCard(props: Props) {
       >
         {/* Author row */}
         <div className="flex items-center gap-2 mb-3">
-          {entry.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={entry.avatar_url} alt="" referrerPolicy="no-referrer" className="w-6 h-6 rounded-full border border-zinc-700 shrink-0 object-cover" />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-zinc-700 shrink-0 flex items-center justify-center text-[10px] font-bold text-zinc-400">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
+          <Avatar
+            src={entry.avatar_url}
+            name={displayName}
+            className="w-6 h-6 rounded-full border border-zinc-700 shrink-0"
+            textClassName="text-[10px]"
+          />
           <span className="text-xs font-bold text-zinc-300 truncate">{displayName}</span>
           <span className="text-zinc-600 text-xs shrink-0">·</span>
           <span className="text-zinc-600 text-xs shrink-0">{timeAgo(entry.created_at)}</span>
