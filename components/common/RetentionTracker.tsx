@@ -55,12 +55,16 @@ export default function RetentionTracker() {
     }
   }, []);
 
-  // GA4 user_id stitching once the session is known.
+  // GA4 user_id stitching + profile refresh once the session is known.
   useEffect(() => {
     if (loading || !user?.id) return;
     if (identifiedFor.current === user.id) return;
     identifiedFor.current = user.id;
     gtm.identify({ user_id: user.id });
+    // Refresh the stored profile (display name / avatar) from the live session
+    // so feeds don't show stale data when the user changed their X profile
+    // without re-signing-in. Best-effort.
+    fetch("/api/profile/sync", { method: "POST" }).catch(() => {});
   }, [user, loading]);
 
   return null;
