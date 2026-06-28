@@ -45,6 +45,7 @@ export default async function UserProfilePage({
             <img
               src={profile.avatar_url}
               alt={profile.display_name ?? ""}
+              referrerPolicy="no-referrer"
               className="w-14 h-14 rounded-full border-2 border-zinc-700 object-cover shrink-0"
             />
           ) : (

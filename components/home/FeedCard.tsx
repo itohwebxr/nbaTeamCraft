@@ -4,6 +4,7 @@ import Link from "next/link";
 import { overallColor } from "@/lib/overallColor";
 import type { HomeTeam } from "@/lib/homeTeams";
 import LikeButton from "@/components/common/LikeButton";
+import Avatar from "@/components/common/Avatar";
 
 const TIER_COLOR: Record<string, string> = {
   S: "text-yellow-400",
@@ -42,18 +43,12 @@ export default function FeedCard({
       >
         {/* Header row: creator + time */}
         <div className="flex items-center gap-2 mb-2">
-          {team.creator?.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={team.creator.avatarUrl}
-              alt=""
-              className="w-6 h-6 rounded-full border border-zinc-700 shrink-0"
-            />
-          ) : (
-            <div className="w-6 h-6 rounded-full bg-zinc-700 shrink-0 flex items-center justify-center text-[10px] font-bold text-zinc-400">
-              {team.creator?.displayName?.charAt(0).toUpperCase() ?? "?"}
-            </div>
-          )}
+          <Avatar
+            src={team.creator?.avatarUrl}
+            name={team.creator?.displayName ?? team.creator?.xHandle}
+            className="w-6 h-6 rounded-full border border-zinc-700 shrink-0"
+            textClassName="text-[10px]"
+          />
           <span className="text-xs font-bold text-zinc-300 truncate">
             {team.creator?.displayName ?? (team.creator?.xHandle ? `@${team.creator.xHandle}` : "Anonymous")}
           </span>

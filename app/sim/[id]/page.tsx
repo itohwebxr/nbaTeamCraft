@@ -18,6 +18,7 @@ import type { SeasonShareData } from "@/app/api/season/share/route";
 import type { PlayoffShareData } from "@/app/api/playoff/share/route";
 import type { PublicTeamRosterItem } from "@/types";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import Avatar from "@/components/common/Avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -132,14 +133,12 @@ export default async function SimFeedDetailPage({
 
           {/* Author */}
           <div className="flex items-center gap-2">
-            {entry.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={entry.avatar_url} alt="" className="w-8 h-8 rounded-full border border-zinc-700 object-cover shrink-0" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-zinc-400 shrink-0">
-                {displayName.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <Avatar
+              src={entry.avatar_url}
+              name={displayName}
+              className="w-8 h-8 rounded-full border border-zinc-700 shrink-0"
+              textClassName="text-sm"
+            />
             <div className="min-w-0">
               <p className="text-sm font-bold text-white truncate">{displayName}</p>
               <p className="text-xs text-zinc-500">{timeAgo(entry.created_at)}</p>

@@ -19,6 +19,7 @@ import StickyCtaBar from "@/components/common/StickyCtaBar";
 import InlineTriviaNudge from "@/components/common/InlineTriviaNudge";
 import ScrollToTop from "@/components/common/ScrollToTop";
 import ThemeChip from "@/components/themes/ThemeChip";
+import Avatar from "@/components/common/Avatar";
 import AttachTeamTheme from "@/components/team/AttachTeamTheme";
 import { getTeamThemes } from "@/lib/themes";
 
@@ -304,18 +305,11 @@ export default async function TeamDetailPage({
                   rel="noopener noreferrer"
                   className={`flex items-center gap-2.5 ${creator.xHandle ? "group" : "pointer-events-none"}`}
                 >
-                  {creator.avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={creator.avatarUrl}
-                      alt={creator.displayName ?? "Creator"}
-                      className="w-8 h-8 rounded-full object-cover border border-zinc-700 shrink-0"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center text-xs text-zinc-500 shrink-0">
-                      {(creator.displayName ?? creator.xHandle ?? "?").charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  <Avatar
+                    src={creator.avatarUrl}
+                    name={creator.displayName ?? creator.xHandle}
+                    className="w-8 h-8 rounded-full border border-zinc-700 shrink-0"
+                  />
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-white truncate group-hover:text-orange-400 transition-colors">
                       {creator.displayName ?? (creator.xHandle ? `@${creator.xHandle}` : "Anonymous")}
